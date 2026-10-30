@@ -27,6 +27,7 @@ import { Route as JogadorMissivasRouteImport } from './routes/jogador/missivas'
 import { Route as JogadorMochilaRouteImport } from './routes/jogador/mochila'
 import { Route as JogadorOficinaRouteImport } from './routes/jogador/oficina'
 import { Route as JogadorReceitasRouteImport } from './routes/jogador/receitas'
+import { Route as MestreIndexRouteImport } from './routes/mestre/index'
 import { Route as MestreBestiarioRouteImport } from './routes/mestre/bestiario'
 import { Route as MestreCampanhaRouteImport } from './routes/mestre/campanha'
 import { Route as MestreGrimorioRouteImport } from './routes/mestre/grimorio'
@@ -126,6 +127,11 @@ const JogadorReceitasRoute = JogadorReceitasRouteImport.update({
   path: '/receitas',
   getParentRoute: () => JogadorRoute,
 } as any)
+const MestreIndexRoute = MestreIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MestreRoute,
+} as any)
 const MestreBestiarioRoute = MestreBestiarioRouteImport.update({
   id: '/bestiario',
   path: '/bestiario',
@@ -194,13 +200,13 @@ export interface FileRoutesByFullPath {
   '/mestre/mesa': typeof MestreMesaRoute
   '/mestre/oficina': typeof MestreOficinaRoute
   '/mestre/sistema': typeof MestreSistemaRoute
+  '/mestre/': typeof MestreIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/batalha': typeof BatalhaRoute
   '/jogador': typeof JogadorRouteWithChildren
   '/mesa': typeof MesaRoute
-  '/mestre': typeof MestreRouteWithChildren
   '/tv': typeof TvRoute
   '/jogador/arvore': typeof JogadorArvoreRoute
   '/jogador/combate': typeof JogadorCombateRoute
@@ -222,6 +228,7 @@ export interface FileRoutesByTo {
   '/mestre/mesa': typeof MestreMesaRoute
   '/mestre/oficina': typeof MestreOficinaRoute
   '/mestre/sistema': typeof MestreSistemaRoute
+  '/mestre': typeof MestreIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -251,6 +258,7 @@ export interface FileRoutesById {
   '/mestre/mesa': typeof MestreMesaRoute
   '/mestre/oficina': typeof MestreOficinaRoute
   '/mestre/sistema': typeof MestreSistemaRoute
+  '/mestre/': typeof MestreIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -281,13 +289,13 @@ export interface FileRouteTypes {
     | '/mestre/mesa'
     | '/mestre/oficina'
     | '/mestre/sistema'
+    | '/mestre/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/batalha'
     | '/jogador'
     | '/mesa'
-    | '/mestre'
     | '/tv'
     | '/jogador/arvore'
     | '/jogador/combate'
@@ -309,6 +317,7 @@ export interface FileRouteTypes {
     | '/mestre/mesa'
     | '/mestre/oficina'
     | '/mestre/sistema'
+    | '/mestre'
   id:
     | '__root__'
     | '/'
@@ -337,6 +346,7 @@ export interface FileRouteTypes {
     | '/mestre/mesa'
     | '/mestre/oficina'
     | '/mestre/sistema'
+    | '/mestre/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -476,6 +486,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JogadorReceitasRouteImport
       parentRoute: typeof JogadorRoute
     }
+    '/mestre/': {
+      id: '/mestre/'
+      path: '/'
+      fullPath: '/mestre/'
+      preLoaderRoute: typeof MestreIndexRouteImport
+      parentRoute: typeof MestreRoute
+    }
     '/mestre/bestiario': {
       id: '/mestre/bestiario'
       path: '/bestiario'
@@ -577,6 +594,7 @@ interface MestreRouteChildren {
   MestreMesaRoute: typeof MestreMesaRoute
   MestreOficinaRoute: typeof MestreOficinaRoute
   MestreSistemaRoute: typeof MestreSistemaRoute
+  MestreIndexRoute: typeof MestreIndexRoute
 }
 
 const MestreRouteChildren: MestreRouteChildren = {
@@ -588,6 +606,7 @@ const MestreRouteChildren: MestreRouteChildren = {
   MestreMesaRoute: MestreMesaRoute,
   MestreOficinaRoute: MestreOficinaRoute,
   MestreSistemaRoute: MestreSistemaRoute,
+  MestreIndexRoute: MestreIndexRoute,
 }
 
 const MestreRouteWithChildren =

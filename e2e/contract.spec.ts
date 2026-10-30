@@ -235,4 +235,54 @@ test.describe.serial('Fundação & Prompt 01: Santuário Inicial, TV e Isolament
     expect(consoleErrors).toEqual([]);
     await mobileContext.close();
   });
+
+  test('6. Mestre: Altar ao vivo, tira vida de teste_1 com resposta < 1s', async ({ browser }) => {
+    const dmContext = await browser.newContext();
+    const dmPage = await dmContext.newPage();
+
+    await dmPage.goto('/mestre/jogadores');
+    await expect(dmPage.getByRole('heading', { name: 'Herói Teste 1' })).toBeVisible();
+
+    // Vida inicial é 20
+    const heroCard = dmPage.locator('article', { hasText: 'Herói Teste 1' });
+    await expect(heroCard.getByText('20 /20')).toBeVisible();
+
+    const tStart = Date.now();
+
+    // Mestre clica no botão "-" de vida de Herói Teste 1
+    const minusBtn = dmPage.getByRole('button', { name: 'Diminuir Vida de Herói Teste 1' });
+    await minusBtn.click();
+
+    // UI atualiza imediatamente para 19 /20 de forma otimista em menos de 1s
+    await expect(heroCard.getByText('19 /20')).toBeVisible();
+    const optimisticElapsed = Date.now() - tStart;
+    expect(optimisticElapsed).toBeLessThan(1000);
+
+    // Confirma sincronização no banco Supabase
+    let synced = false;
+    const syncStart = Date.now();
+    while (Date.now() - syncStart < 3000) {
+      const { data } = await supabase.from('characters').select('health').eq('id', 'teste_1').single();
+      if (data?.health === 19) {
+        synced = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 50));
+    }
+
+    expect(synced).toBe(true);
+
+    // Testa abertura do modal de Dádiva com busca no catálogo
+    await heroCard.getByRole('button', { name: 'Dádiva' }).click();
+    await expect(dmPage.getByText('Conceder Dádiva a Herói Teste 1')).toBeVisible();
+    await dmPage.getByPlaceholder('Buscar item no catálogo oficial...').fill('Espada');
+    await dmPage.getByRole('button', { name: 'Cancelar' }).click();
+
+    // Testa abertura da Ficha Completa
+    await heroCard.getByTitle('Abrir Detalhe Completo e Mochila').click();
+    await expect(dmPage.getByRole('button', { name: 'Ficha & Atributos' })).toBeVisible();
+    await dmPage.getByRole('button', { name: 'Fechar' }).click();
+
+    await dmContext.close();
+  });
 });

@@ -39,9 +39,9 @@ export const HEROES_SANCTUARY_DATA: SanctuaryHero[] = [
   {
     id: 'kaelis_moonfire',
     name: 'Kaelis Moonfire',
-    epithet: 'O Tecelão da Névoa',
+    epithet: 'A Tecelã da Névoa',
     caminho: 'Bardo & Músico Tático',
-    race: 'Filho do Pântano',
+    race: 'Filha do Pântano',
     icon: '🌙',
     portrait: `${STORAGE_BASE}/avatar_kaelis_moonfire_1791420794353_ev6he.jpg`,
     oath: 'Nunca poderei voltar a um lugar ou a algo que repita o meu passado, e nunca abandonarei meus companheiros.',

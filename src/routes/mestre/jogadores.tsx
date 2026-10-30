@@ -1,12 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PlaceholderView } from '../../shared/ui/PlaceholderView.tsx';
+import { AltarView } from '../../features/dm-dashboard/components/AltarView';
 
 export const Route = createFileRoute('/mestre/jogadores')({
-  component: () => (
-    <PlaceholderView
-      title="Painel dos Jogadores"
-      category="Módulo do Mestre · Prompt 02"
-      description="Monitoramento ao vivo de vida, foco, condições, inventário e ações dos heróis em tempo real."
-    />
-  ),
+  component: AltarView,
 });
