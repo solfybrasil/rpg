@@ -20,6 +20,7 @@ import {
   uploadBattleMedia,
 } from '../media/mediaProcessor.ts';
 import { supabase } from '../../../shared/supabase/client.ts';
+import { battleSupabase } from '../api/battleApi.ts';
 import type { ChromaMode } from '../engine/types.ts';
 
 export interface MediaBattleTarget {
@@ -414,14 +415,52 @@ export function MediaBattleModal({
       setProgressText('Salvando registro no banco…');
       setProgressPercent(95);
 
-      const tableName = targetType === 'heroi' ? 'characters' : 'creature_catalog';
-      const { error: dbError } = await supabase
-        .from(tableName as any)
-        .update(mediaUpdates)
-        .eq('id', id);
+      // 1. Atualiza tokens de batalha na tabela battle_tokens (onde as propriedades táticas existem)
+      const tokenUpdates = {
+        media_url: idleWebmUrl || idleMp4Url || imageUrl || posterUrl,
+        idle_mp4_url: idleMp4Url,
+        idle_webm_url: idleWebmUrl,
+        poster_url: posterUrl,
+        media_type: isVideo ? 'video' : 'imagem',
+        chroma,
+        anchor_x: Number(anchorX),
+        anchor_y: Number(anchorY),
+        size: Number(size),
+        facing: Number(facing),
+        updated_at: new Date().toISOString(),
+      };
 
-      if (dbError) {
-        throw new Error(`Falha ao gravar no banco: ${dbError.message}`);
+      try {
+        await battleSupabase
+          .from('battle_tokens')
+          .update(tokenUpdates)
+          .or(`hero_id.eq.${id},beast_id.eq.${id},id.eq.${id}`);
+      } catch (err) {
+        console.warn('[BATTLE TOKEN UPDATE]', err);
+      }
+
+      // 2. Atualiza avatar do personagem ou imagem da fera no banco principal
+      if (imageUrl || posterUrl) {
+        const publicMediaUrl = imageUrl || posterUrl;
+        if (targetType === 'heroi') {
+          try {
+            await supabase
+              .from('characters')
+              .update({ avatar_icon: publicMediaUrl, updated_at: new Date().toISOString() })
+              .eq('id', id);
+          } catch (err) {
+            console.warn('[CHARACTERS AVATAR UPDATE]', err);
+          }
+        } else {
+          try {
+            await supabase
+              .from('creature_catalog')
+              .update({ image_url: publicMediaUrl, updated_at: new Date().toISOString() })
+              .eq('id', id);
+          } catch (err) {
+            console.warn('[CREATURE CATALOG IMAGE UPDATE]', err);
+          }
+        }
       }
 
       // Propaga evento para tokens ativos da mesa atualizarem em tempo real
