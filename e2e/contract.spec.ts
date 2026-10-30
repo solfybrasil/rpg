@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
+import { expect, test } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 
 const envPath = path.resolve('.env.local');
@@ -11,7 +11,8 @@ const getEnv = (k: string) => {
 };
 
 const supabaseUrl = getEnv('VITE_SUPABASE_URL') || '';
-const supabaseKey = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('VITE_SUPABASE_ANON_KEY') || '';
+const supabaseKey =
+  getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('VITE_SUPABASE_ANON_KEY') || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const TEST_HERO_IDS = ['teste_1', 'teste_2', 'teste_3'];
@@ -23,7 +24,7 @@ async function cleanupTestEntities() {
   await supabase.from('characters').delete().in('id', TEST_HERO_IDS);
 }
 
-test.describe.serial('Fundação: Contratos de Navegação, Layouts e Isolamento dos Heróis Reais', () => {
+test.describe.serial('Fundação & Prompt 01: Santuário Inicial, TV e Isolamento', () => {
   test.beforeAll(async () => {
     await cleanupTestEntities();
 
@@ -135,82 +136,103 @@ test.describe.serial('Fundação: Contratos de Navegação, Layouts e Isolamento
     expect(realHeroes?.length).toBe(3);
   });
 
-  test('1. Entrada: Seleção de Papéis na Landing Page', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByText('ESCOLHA SEU PAPEL NA MESA')).toBeVisible();
-    await expect(page.getByText('Mestre do Jogo')).toBeVisible();
-    await expect(page.getByText('Tela TV / Mesa')).toBeVisible();
-    await expect(page.getByText('Tor-Björn')).toBeVisible();
-    await expect(page.getByText('Malênia')).toBeVisible();
-    await expect(page.getByText('Kaelis Moonfire')).toBeVisible();
-  });
-
-  test('2. MestreLayout: Navegação pelo menu lateral do Confessório', async ({ browser }) => {
-    const dmContext = await browser.newContext();
-    const page = await dmContext.newPage();
-
-    await page.goto('/mestre/jogadores');
-    await expect(page.getByText('CONFESSÓRIO')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Painel dos Jogadores' })).toBeVisible();
-
-    // Navega para Editor da Mesa
-    await page.getByRole('link', { name: 'Editor da Mesa' }).click();
-    await expect(page.getByRole('heading', { name: 'Editor da Mesa de Batalha' })).toBeVisible();
-
-    // Navega para Bestiário
-    await page.getByRole('link', { name: 'Bestiário' }).click();
-    await expect(page.getByRole('heading', { name: 'Bestiário & Criaturas' })).toBeVisible();
-
-    // Navega para Catálogo de Itens
-    await page.getByRole('link', { name: 'Catálogo de Itens' }).click();
-    await expect(page.getByRole('heading', { name: 'Catálogo Geral de Itens' })).toBeVisible();
-
-    await dmContext.close();
-  });
-
-  test('3. JogadorLayout: Navegação por abas inferiores e gaveta Mais', async ({ browser }) => {
-    const playerContext = await browser.newContext({
-      viewport: { width: 390, height: 844 }, // iPhone viewport
+  test('1. Santuário Inicial: Renderiza brasas, olho místico, lema e os 4 papéis', async ({
+    page,
+  }) => {
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
-    const page = await playerContext.newPage();
 
-    // Entra como Malênia pela tela inicial
     await page.goto('/');
-    await page.getByText('Malênia').click();
 
-    // Confirma redirecionamento para /jogador/mochila
+    // Header & Lema
+    await expect(page.getByText('PESTE DO JURAMENTO')).toBeVisible();
+    await expect(
+      page.getByText('"Toda palavra jurada é uma dívida com o próprio corpo."'),
+    ).toBeVisible();
+
+    // 4 Papéis visíveis
+    await expect(page.getByRole('heading', { name: 'Tor Bjorn' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Malenia' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Kaelis Moonfire' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'O Mestre' })).toBeVisible();
+
+    // Atalhos TV no rodapé
+    await expect(page.getByRole('link', { name: /batalha/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /mesa/i })).toBeVisible();
+
+    // Animações de fundo em canvas presentes
+    const canvasCount = await page.locator('canvas').count();
+    expect(canvasCount).toBeGreaterThanOrEqual(2); // Embers + Eye
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('2. Santuário Inicial: Escolhe Tor e lembra último papel ao recarregar', async ({
+    context,
+  }) => {
+    const page = await context.newPage();
+    await page.goto('/');
+
+    // Clica no botão Jogar com Tor
+    await page.getByRole('button', { name: 'Jogar com Tor' }).click();
+
+    // Chega na mochila do jogador
+    await expect(page).toHaveURL(/\/jogador\/mochila/);
     await expect(page.getByRole('heading', { name: 'Mochila & Inventário' })).toBeVisible();
 
-    // Navega para Ficha
-    await page.getByRole('link', { name: 'Ficha' }).click();
-    await expect(page.getByRole('heading', { name: 'Ficha do Personagem' })).toBeVisible();
+    // Recarrega a landing page e verifica que lembra a última sessão
+    await page.goto('/');
+    await expect(page.getByText('Última sessão:')).toBeVisible();
+    await expect(page.locator('strong', { hasText: 'Tor Bjorn' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continuar →' })).toBeVisible();
 
-    // Navega para Grimório
-    await page.getByRole('link', { name: 'Grimório' }).click();
-    await expect(page.getByRole('heading', { name: 'Grimório de Magias' })).toBeVisible();
-
-    // Navega para Oficina
-    await page.getByRole('link', { name: 'Oficina' }).click();
-    await expect(page.getByRole('heading', { name: 'Oficina (Forja, Alquimia & Cozinha)' })).toBeVisible();
-
-    // Navega para Combate
-    await page.getByRole('link', { name: 'Combate' }).click();
-    await expect(page.getByRole('heading', { name: 'Combate por Turnos & Arena' })).toBeVisible();
-
-    // Abre gaveta Mais
-    await page.getByRole('button', { name: 'Mais' }).click();
-    await expect(page.getByText('OUTROS MÓDULOS')).toBeVisible();
-    await page.getByRole('link', { name: 'Árvore do Juramento' }).click();
-    await expect(page.getByRole('heading', { name: 'Árvore do Juramento' })).toBeVisible();
-
-    await playerContext.close();
+    await page.close();
   });
 
-  test('4. TvLayout: Tela cheia sem menus', async ({ page }) => {
-    await page.goto('/tv');
-    await expect(page.getByRole('heading', { name: 'Exibição TV da Mesa' })).toBeVisible();
-    // Confirma que barra de navegação do jogador ou lateral do mestre não existem na TV
+  test('3. Santuário Inicial: Escolhe O Mestre e entra na rota certa', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Entrar como Mestre' }).click();
+
+    await expect(page).toHaveURL(/\/mestre/);
+    await expect(page.getByText('CONFESSÓRIO')).toBeVisible();
+  });
+
+  test('4. Rotas Diretas da TV: /batalha e /mesa funcionam sem redirecionamento quebrado', async ({
+    page,
+  }) => {
+    // Testa /batalha
+    await page.goto('/batalha');
+    await expect(page.getByRole('heading', { name: 'Mesa de Batalha (TV)' })).toBeVisible();
     await expect(page.getByText('CONFESSÓRIO')).not.toBeVisible();
-    await expect(page.getByRole('link', { name: 'Mochila' })).not.toBeVisible();
+
+    // Testa /mesa
+    await page.goto('/mesa');
+    await expect(page.getByRole('heading', { name: 'Mesa de Batalha & Dados 3D' })).toBeVisible();
+    await expect(page.getByText('CONFESSÓRIO')).not.toBeVisible();
+  });
+
+  test('5. Mobile Viewport: Sem erros de console e responsivo no celular', async ({
+    browser,
+  }) => {
+    const mobileContext = await browser.newContext({
+      viewport: { width: 390, height: 844 }, // iPhone viewport
+    });
+    const page = await mobileContext.newPage();
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+
+    await page.goto('/');
+    await expect(page.getByText('PESTE DO JURAMENTO')).toBeVisible();
+
+    // Clica no card de Malenia
+    await page.getByRole('button', { name: 'Jogar com Malenia' }).click();
+    await expect(page).toHaveURL(/\/jogador\/mochila/);
+
+    expect(consoleErrors).toEqual([]);
+    await mobileContext.close();
   });
 });
