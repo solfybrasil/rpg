@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.output/
+test-results/
+playwright-report/
+backups/
+.env.local
+.DS_Store
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*

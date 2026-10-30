@@ -1,0 +1,252 @@
+/* ==========================================================================
+   BASE & RESET STYLES — Elden Ring Modern Minimalist
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+  max-width: 100%;
+  width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  touch-action: pan-y pinch-zoom;
+}
+
+body {
+  min-height: 100%;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  max-width: 100%;
+  width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  position: relative;
+}
+
+#root {
+  max-width: 100%;
+  width: 100%;
+  min-height: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -999;
+  pointer-events: none;
+  background-image: radial-gradient(
+      ellipse at 50% 30%,
+      rgba(20, 18, 14, 0.4) 0%,
+      rgba(11, 10, 8, 0.95) 100%
+    ),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* Foco Visível Elegante */
+:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Seleção de Texto */
+::selection {
+  background: var(--surface-3);
+  color: var(--gold-bright);
+}
+
+/* Scrollbars Finas e Douradas */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-dim);
+}
+
+/* Tipografia Base */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-title);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  color: var(--gold-bright);
+}
+
+p,
+span,
+label,
+input,
+textarea,
+button {
+  font-family: inherit;
+}
+
+button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-family: var(--font-title);
+}
+
+input,
+textarea,
+select {
+  font-family: var(--font-ui);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: var(--radius-input);
+  font-size: var(--text-base);
+  padding: var(--space-2) var(--space-3);
+  transition: border-color var(--dur-hover) var(--ease);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--gold);
+  outline: none;
+}
+
+/* Divisor Ornamental Reutilizável: linha — losango — linha */
+.ornamental-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: var(--space-3) 0;
+  gap: var(--space-3);
+}
+
+.ornamental-divider::before,
+.ornamental-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+}
+
+.ornamental-divider .diamond {
+  width: 5px;
+  height: 5px;
+  background-color: var(--gold-dim);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+/* Pulsação Leve para Esqueletos de Carregamento */
+.skeleton-pulse {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  animation: skeletonFade 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes skeletonFade {
+  0% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0.9;
+  }
+}
+
+/* ==========================================================================
+   MOBILE GLOBAL OVERFLOW CONTAINMENT (Nenhuma tela desliza para os lados)
+   ========================================================================== */
+/* ==========================================================================
+   MOBILE GLOBAL OVERFLOW CONTAINMENT (Nenhuma tela desliza para os lados)
+   ========================================================================== */
+@media (max-width: 900px) {
+  html,
+  body,
+  #root,
+  .app {
+    overflow-x: clip !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overscroll-behavior-x: none !important;
+    box-sizing: border-box !important;
+  }
+
+  .app {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Impede qualquer elemento filho de estourar a viewport */
+  *,
+  *::before,
+  *::after {
+    max-width: 100%;
+  }
+
+  .er-nav-header {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: clip !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Containers, cards e formulários */
+  .confessor-page-container {
+    padding: 0.5rem 0.5rem calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .game-hud-module,
+  .panel,
+  .card,
+  .player-modal-card {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
