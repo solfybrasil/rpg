@@ -103,6 +103,12 @@ export class BattleEngine {
   private pinchZ0 = 1;
   private panView0: CameraView | null = null;
 
+  // Estados do Editor DM
+  private isPaintingBlock = false;
+  private isErasingBlock = false;
+  private draggedTokenId: string | null = null;
+  private isDraggingToken = false;
+
   constructor(canvas: HTMLCanvasElement, options: BattleEngineOptions) {
     this.cv = canvas;
     const context = canvas.getContext('2d', { alpha: false });
@@ -235,6 +241,12 @@ export class BattleEngine {
     }
 
     return { url, chroma };
+  }
+
+  public setOptions(opts: Partial<BattleEngineOptions>): void {
+    this.options = { ...this.options, ...opts };
+    this.recomputeReach();
+    this.dirty = true;
   }
 
   public setTokens(tokens: BattleToken[]): void {
@@ -635,9 +647,12 @@ export class BattleEngine {
     // Anel do herói / base isométrica com 1.5px
     // Jogador: --gold; Outros heróis: --moss; Feras: --blood
     diamond(ctx, s.x, s.y, this.TW * 0.9, this.TH * 0.9);
-    ctx.lineWidth = (1.5 / this.scale) * (isMyHero ? 1.6 : 1.0);
+    const isSelected = this.options.selectedTokenId === s.token.id;
+    ctx.lineWidth = (1.5 / this.scale) * (isSelected ? 2.5 : isMyHero ? 1.6 : 1.0);
 
-    if (isMyHero) {
+    if (isSelected) {
+      ctx.strokeStyle = '#f5b65b'; // --gold reticle
+    } else if (isMyHero) {
       ctx.strokeStyle = '#f5b65b'; // --gold
     } else if (s.kind === 'heroi') {
       ctx.strokeStyle = '#4a7c59'; // --moss
@@ -645,6 +660,22 @@ export class BattleEngine {
       ctx.strokeStyle = '#c8423a'; // --blood
     }
     ctx.stroke();
+
+    if (isSelected) {
+      ctx.beginPath();
+      ctx.ellipse(
+        s.x,
+        s.y + this.TH * 0.14,
+        (this.TW / 2) * 0.9,
+        (this.TH / 2) * 0.9,
+        0,
+        0,
+        Math.PI * 2,
+      );
+      ctx.strokeStyle = '#f5b65b';
+      ctx.lineWidth = 1.2 / this.scale;
+      ctx.stroke();
+    }
 
     // Desenho do sprite / vídeo com chroma key
     const entry = this.pool.get(s.mediaUrl, s.chromaMode);
@@ -757,13 +788,80 @@ export class BattleEngine {
     this.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (this.pts.size === 1) {
+      const pt = this.toImg(e.clientX, e.clientY);
       this.pressStart = {
-        pt: this.toImg(e.clientX, e.clientY),
+        pt,
         client: { x: e.clientX, y: e.clientY },
         time: performance.now(),
       };
       this.panView0 = { ...this.view };
       this.isDragging = false;
+
+      // ── MODO DM INTERAÇÃO ──
+      if (this.options.mode === 'dm') {
+        const tool = this.options.tool || 'select';
+        const cell = pick(
+          pt.x,
+          pt.y,
+          this.valid,
+          this.OX,
+          this.OY,
+          this.TW,
+          this.TH,
+          this.imgW,
+          this.imgH,
+        );
+
+        if (tool === 'paint_block') {
+          if (cell) {
+            const k = cellKey(cell.c, cell.r);
+            this.blocked.add(k);
+            this.options.onUpdateBlocked?.(Array.from(this.blocked));
+            this.dirty = true;
+          }
+          this.isPaintingBlock = true;
+          return;
+        }
+
+        if (tool === 'erase_block') {
+          if (cell) {
+            const k = cellKey(cell.c, cell.r);
+            this.blocked.delete(k);
+            this.options.onUpdateBlocked?.(Array.from(this.blocked));
+            this.dirty = true;
+          }
+          this.isErasingBlock = true;
+          return;
+        }
+
+        if (tool === 'select') {
+          let clickedToken: LocalTokenState | null = null;
+          for (const s of this.tokenStates.values()) {
+            if (cell && s.c === cell.c && s.r === cell.r) {
+              clickedToken = s;
+              break;
+            }
+            if (Math.hypot(pt.x - s.x, pt.y - s.y) < this.TW * 0.6) {
+              clickedToken = s;
+              break;
+            }
+          }
+
+          if (clickedToken) {
+            this.options.selectedTokenId = clickedToken.token.id;
+            this.options.onSelectTokenId?.(clickedToken.token.id);
+            this.options.onSelectToken?.(clickedToken.token);
+            this.draggedTokenId = clickedToken.token.id;
+            this.dirty = true;
+          } else {
+            this.options.selectedTokenId = null;
+            this.options.onSelectTokenId?.(null);
+            this.options.onSelectToken?.(null);
+            this.draggedTokenId = null;
+            this.dirty = true;
+          }
+        }
+      }
     } else if (this.pts.size === 2) {
       // Início do pinch zoom
       const [p1, p2] = [...this.pts.values()];
@@ -777,7 +875,7 @@ export class BattleEngine {
   private handlePointerMove(e: PointerEvent): void {
     if (!this.pts.has(e.pointerId)) {
       // Hover do mouse (quando nenhum botão está pressionado)
-      if (this.options.mode === 'player') {
+      if (this.options.mode === 'player' || this.options.mode === 'dm') {
         const pt = this.toImg(e.clientX, e.clientY);
         const cell = pick(
           pt.x,
@@ -803,6 +901,94 @@ export class BattleEngine {
     }
 
     this.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // ── MODO DM ARRASTO ──
+    if (this.options.mode === 'dm') {
+      const tool = this.options.tool || 'select';
+
+      if (this.isPaintingBlock && tool === 'paint_block') {
+        const pt = this.toImg(e.clientX, e.clientY);
+        const cell = pick(
+          pt.x,
+          pt.y,
+          this.valid,
+          this.OX,
+          this.OY,
+          this.TW,
+          this.TH,
+          this.imgW,
+          this.imgH,
+        );
+        if (cell) {
+          const k = cellKey(cell.c, cell.r);
+          if (!this.blocked.has(k)) {
+            this.blocked.add(k);
+            this.options.onUpdateBlocked?.(Array.from(this.blocked));
+            this.dirty = true;
+          }
+        }
+        return;
+      }
+
+      if (this.isErasingBlock && tool === 'erase_block') {
+        const pt = this.toImg(e.clientX, e.clientY);
+        const cell = pick(
+          pt.x,
+          pt.y,
+          this.valid,
+          this.OX,
+          this.OY,
+          this.TW,
+          this.TH,
+          this.imgW,
+          this.imgH,
+        );
+        if (cell) {
+          const k = cellKey(cell.c, cell.r);
+          if (this.blocked.has(k)) {
+            this.blocked.delete(k);
+            this.options.onUpdateBlocked?.(Array.from(this.blocked));
+            this.dirty = true;
+          }
+        }
+        return;
+      }
+
+      if (this.draggedTokenId && tool === 'select' && this.pressStart) {
+        const dx = e.clientX - this.pressStart.client.x;
+        const dy = e.clientY - this.pressStart.client.y;
+        if (Math.hypot(dx, dy) > 8) {
+          this.isDraggingToken = true;
+        }
+        if (this.isDraggingToken) {
+          const pt = this.toImg(e.clientX, e.clientY);
+          const cell = pick(
+            pt.x,
+            pt.y,
+            this.valid,
+            this.OX,
+            this.OY,
+            this.TW,
+            this.TH,
+            this.imgW,
+            this.imgH,
+          );
+          if (cell) {
+            const state = this.tokenStates.get(this.draggedTokenId);
+            if (state && (state.c !== cell.c || state.r !== cell.r)) {
+              state.c = cell.c;
+              state.r = cell.r;
+              const pos = center(cell.c, cell.r, this.OX, this.OY, this.TW, this.TH);
+              state.x = pos.x;
+              state.y = pos.y;
+              this.options.onMoveTokenDirect?.(this.draggedTokenId, cell.c, cell.r);
+              this.dirty = true;
+            }
+          }
+          return;
+        }
+      }
+    }
 
     if (this.pts.size === 1 && this.panView0 && this.pressStart) {
       const dx = e.clientX - this.pressStart.client.x;
@@ -838,7 +1024,7 @@ export class BattleEngine {
   private handlePointerUp(e: PointerEvent): void {
     this.pts.delete(e.pointerId);
 
-    // Toque ou clique rápido sem arrastar = AÇÃO DE MOVIMENTO
+    // Toque ou clique rápido sem arrastar = AÇÃO DE MOVIMENTO (modo player)
     if (!this.isDragging && this.pressStart && this.options.mode === 'player') {
       const pt = this.pressStart.pt;
       const cell = pick(
@@ -857,6 +1043,11 @@ export class BattleEngine {
         this.handleCellAction(cell);
       }
     }
+
+    this.isPaintingBlock = false;
+    this.isErasingBlock = false;
+    this.isDraggingToken = false;
+    this.draggedTokenId = null;
 
     if (this.pts.size === 0) {
       this.pressStart = null;

@@ -249,5 +249,79 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     await pageTV.waitForTimeout(500);
     await pageTV.screenshot({ path: path.join(outDir, 'tv_batalha_pc_dark.png') });
     await tvDark.close();
+
+    // 14. Mestre Mesa Celular Escuro (390x844)
+    const dmMobDark = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pageDMMobDark = await dmMobDark.newPage();
+    await pageDMMobDark.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre' }, version: 0 }),
+      );
+    });
+    await pageDMMobDark.goto('/mestre/mesa');
+    await expect(pageDMMobDark.getByTestId('dm-battle-editor')).toBeVisible();
+    await pageDMMobDark.waitForTimeout(500);
+    await pageDMMobDark.screenshot({ path: path.join(outDir, 'mestre_mesa_mobile_dark.png') });
+    await dmMobDark.close();
+
+    // 15. Mestre Mesa Celular Pergaminho (390x844)
+    const dmMobParch = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pageDMMobParch = await dmMobParch.newPage();
+    await pageDMMobParch.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre' }, version: 0 }),
+      );
+    });
+    await pageDMMobParch.goto('/mestre/mesa');
+    await pageDMMobParch.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pageDMMobParch.getByTestId('dm-battle-editor')).toBeVisible();
+    await pageDMMobParch.waitForTimeout(500);
+    await pageDMMobParch.screenshot({ path: path.join(outDir, 'mestre_mesa_mobile_parchment.png') });
+    await dmMobParch.close();
+
+    // 16. Mestre Mesa PC Escuro (1440x900)
+    const dmPCDark = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pageDMPCDark = await dmPCDark.newPage();
+    await pageDMPCDark.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre' }, version: 0 }),
+      );
+    });
+    await pageDMPCDark.goto('/mestre/mesa');
+    await expect(pageDMPCDark.getByTestId('dm-battle-editor')).toBeVisible();
+    await pageDMPCDark.waitForTimeout(500);
+    await pageDMPCDark.screenshot({ path: path.join(outDir, 'mestre_mesa_pc_dark.png') });
+    await dmPCDark.close();
+
+    // 17. Mestre Mesa PC Pergaminho (1440x900)
+    const dmPCParch = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pageDMPCParch = await dmPCParch.newPage();
+    await pageDMPCParch.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre' }, version: 0 }),
+      );
+    });
+    await pageDMPCParch.goto('/mestre/mesa');
+    await pageDMPCParch.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pageDMPCParch.getByTestId('dm-battle-editor')).toBeVisible();
+    await pageDMPCParch.waitForTimeout(500);
+    await pageDMPCParch.screenshot({ path: path.join(outDir, 'mestre_mesa_pc_parchment.png') });
+    await dmPCParch.close();
   });
 });

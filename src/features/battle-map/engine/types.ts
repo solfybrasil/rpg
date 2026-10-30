@@ -63,13 +63,19 @@ export interface CameraView {
 }
 
 export type BattleEngineMode = 'player' | 'tv' | 'dm';
+export type BattleEditorTool = 'select' | 'paint_block' | 'erase_block' | 'pan';
 
 export interface BattleEngineOptions {
   mode: BattleEngineMode;
+  tool?: BattleEditorTool;
+  selectedTokenId?: string | null;
   myHeroTokenId?: string | null;
   myHeroId?: string | null;
   onMoveToken?: (tokenId: string, c: number, r: number, path: Array<[number, number]>) => Promise<boolean | void> | void;
+  onMoveTokenDirect?: (tokenId: string, c: number, r: number) => void;
   onSelectToken?: (token: BattleToken | null) => void;
+  onSelectTokenId?: (tokenId: string | null) => void;
+  onUpdateBlocked?: (blocked: string[]) => void;
   onHoverCell?: (coord: CellCoord | null) => void;
   onFpsUpdate?: (fps: number, jsFrameMs: number) => void;
 }
