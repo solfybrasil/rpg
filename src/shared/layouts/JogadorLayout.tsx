@@ -1,4 +1,4 @@
-import { Link, Outlet, useRouterState } from '@tanstack/react-router';
+import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import {
   Backpack,
   BookOpen,
@@ -8,6 +8,7 @@ import {
   GitFork,
   Hammer,
   Mail,
+  MapPin,
   MoreHorizontal,
   ShoppingBag,
   Swords,
@@ -15,17 +16,45 @@ import {
   X,
 } from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useActiveBattleMap } from '../../features/battle-map/api/useBattle.ts';
 import { useHero } from '../hooks/baseHooks.ts';
 import { useSessionStore } from '../stores/session.ts';
 import { Bar } from '../ui/Card.tsx';
 
 export const JogadorLayout: React.FC = () => {
   const routerState = useRouterState();
+  const navigate = useNavigate();
   const currentPath = routerState.location.pathname;
   const heroId = useSessionStore((s) => s.heroId);
   const { hero } = useHero(heroId);
+  const { data: activeBattleMap } = useActiveBattleMap();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  const isBattleLive = activeBattleMap?.status === 'ao_vivo';
+
+  const previousStatusRef = useRef<string | null | undefined>(undefined);
+
+  // Abre sozinha quando a mesa liga (transição para 'ao_vivo') e volta quando desliga
+  useEffect(() => {
+    const prev = previousStatusRef.current;
+    const current = activeBattleMap?.status;
+    previousStatusRef.current = current;
+
+    if (prev !== undefined) {
+      if (prev !== 'ao_vivo' && current === 'ao_vivo') {
+        // Mesa acabou de ser iniciada pelo Mestre -> abre automaticamente
+        navigate({ to: '/jogador/mesa' });
+      } else if (
+        prev === 'ao_vivo' &&
+        current !== 'ao_vivo' &&
+        currentPath.includes('/jogador/mesa')
+      ) {
+        // Mesa acabou de ser desligada enquanto o jogador estava nela -> volta para a ficha
+        navigate({ to: '/jogador/ficha' });
+      }
+    }
+  }, [activeBattleMap?.status, currentPath, navigate]);
 
   const mainTabs = [
     { label: 'Mochila', path: '/jogador/mochila', icon: Backpack },
@@ -36,6 +65,7 @@ export const JogadorLayout: React.FC = () => {
   ];
 
   const extraTabs = [
+    { label: 'Mesa de Batalha', path: '/jogador/mesa', icon: MapPin },
     { label: 'Árvore do Juramento', path: '/jogador/arvore', icon: GitFork },
     { label: 'Livro de Receitas', path: '/jogador/receitas', icon: BookOpen },
     { label: 'Mapa do Mundo', path: '/jogador/mapa', icon: Compass },
@@ -70,6 +100,25 @@ export const JogadorLayout: React.FC = () => {
           </div>
         )}
       </header>
+
+      {/* Banner de Batalha Ao Vivo */}
+      {isBattleLive && !currentPath.includes('/jogador/mesa') && (
+        <Link
+          to="/jogador/mesa"
+          className="h-10 bg-[#f5b65b]/20 border-b border-[#f5b65b]/40 px-4 flex items-center justify-between text-xs font-serif text-[#ffd59a] hover:bg-[#f5b65b]/30 transition-colors shrink-0"
+        >
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#f5b65b] animate-ping" />
+            <span className="font-semibold">⚔️ Mesa de Batalha Ao Vivo</span>
+            <span className="text-white/60 text-[11px] font-sans">
+              — O Mestre iniciou o combate
+            </span>
+          </div>
+          <span className="text-[10px] uppercase font-sans tracking-wider text-[#f5b65b] font-bold">
+            Entrar no Mapa →
+          </span>
+        </Link>
+      )}
 
       {/* Área Central / Conteúdo da Aba */}
       <main className="flex-1 overflow-y-auto flex flex-col relative">

@@ -5,6 +5,7 @@ dist/
 test-results/
 playwright-report/
 backups/
+prototipo_mesa/
 .env.local
 .DS_Store
 *.local

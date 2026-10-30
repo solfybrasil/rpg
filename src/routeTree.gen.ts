@@ -24,6 +24,7 @@ import { Route as JogadorFichaRouteImport } from './routes/jogador/ficha'
 import { Route as JogadorGrimorioRouteImport } from './routes/jogador/grimorio'
 import { Route as JogadorLojaRouteImport } from './routes/jogador/loja'
 import { Route as JogadorMapaRouteImport } from './routes/jogador/mapa'
+import { Route as JogadorMesaRouteImport } from './routes/jogador/mesa'
 import { Route as JogadorMissivasRouteImport } from './routes/jogador/missivas'
 import { Route as JogadorMochilaRouteImport } from './routes/jogador/mochila'
 import { Route as JogadorOficinaRouteImport } from './routes/jogador/oficina'
@@ -113,6 +114,11 @@ const JogadorMapaRoute = JogadorMapaRouteImport.update({
   path: '/mapa',
   getParentRoute: () => JogadorRoute,
 } as any)
+const JogadorMesaRoute = JogadorMesaRouteImport.update({
+  id: '/mesa',
+  path: '/mesa',
+  getParentRoute: () => JogadorRoute,
+} as any)
 const JogadorMissivasRoute = JogadorMissivasRouteImport.update({
   id: '/missivas',
   path: '/missivas',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/jogador/grimorio': typeof JogadorGrimorioRoute
   '/jogador/loja': typeof JogadorLojaRoute
   '/jogador/mapa': typeof JogadorMapaRoute
+  '/jogador/mesa': typeof JogadorMesaRoute
   '/jogador/missivas': typeof JogadorMissivasRoute
   '/jogador/mochila': typeof JogadorMochilaRoute
   '/jogador/oficina': typeof JogadorOficinaRoute
@@ -224,6 +231,7 @@ export interface FileRoutesByTo {
   '/jogador/grimorio': typeof JogadorGrimorioRoute
   '/jogador/loja': typeof JogadorLojaRoute
   '/jogador/mapa': typeof JogadorMapaRoute
+  '/jogador/mesa': typeof JogadorMesaRoute
   '/jogador/missivas': typeof JogadorMissivasRoute
   '/jogador/mochila': typeof JogadorMochilaRoute
   '/jogador/oficina': typeof JogadorOficinaRoute
@@ -255,6 +263,7 @@ export interface FileRoutesById {
   '/jogador/grimorio': typeof JogadorGrimorioRoute
   '/jogador/loja': typeof JogadorLojaRoute
   '/jogador/mapa': typeof JogadorMapaRoute
+  '/jogador/mesa': typeof JogadorMesaRoute
   '/jogador/missivas': typeof JogadorMissivasRoute
   '/jogador/mochila': typeof JogadorMochilaRoute
   '/jogador/oficina': typeof JogadorOficinaRoute
@@ -287,6 +296,7 @@ export interface FileRouteTypes {
     | '/jogador/grimorio'
     | '/jogador/loja'
     | '/jogador/mapa'
+    | '/jogador/mesa'
     | '/jogador/missivas'
     | '/jogador/mochila'
     | '/jogador/oficina'
@@ -316,6 +326,7 @@ export interface FileRouteTypes {
     | '/jogador/grimorio'
     | '/jogador/loja'
     | '/jogador/mapa'
+    | '/jogador/mesa'
     | '/jogador/missivas'
     | '/jogador/mochila'
     | '/jogador/oficina'
@@ -346,6 +357,7 @@ export interface FileRouteTypes {
     | '/jogador/grimorio'
     | '/jogador/loja'
     | '/jogador/mapa'
+    | '/jogador/mesa'
     | '/jogador/missivas'
     | '/jogador/mochila'
     | '/jogador/oficina'
@@ -478,6 +490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JogadorMapaRouteImport
       parentRoute: typeof JogadorRoute
     }
+    '/jogador/mesa': {
+      id: '/jogador/mesa'
+      path: '/mesa'
+      fullPath: '/jogador/mesa'
+      preLoaderRoute: typeof JogadorMesaRouteImport
+      parentRoute: typeof JogadorRoute
+    }
     '/jogador/missivas': {
       id: '/jogador/missivas'
       path: '/missivas'
@@ -581,6 +600,7 @@ interface JogadorRouteChildren {
   JogadorGrimorioRoute: typeof JogadorGrimorioRoute
   JogadorLojaRoute: typeof JogadorLojaRoute
   JogadorMapaRoute: typeof JogadorMapaRoute
+  JogadorMesaRoute: typeof JogadorMesaRoute
   JogadorMissivasRoute: typeof JogadorMissivasRoute
   JogadorMochilaRoute: typeof JogadorMochilaRoute
   JogadorOficinaRoute: typeof JogadorOficinaRoute
@@ -596,6 +616,7 @@ const JogadorRouteChildren: JogadorRouteChildren = {
   JogadorGrimorioRoute: JogadorGrimorioRoute,
   JogadorLojaRoute: JogadorLojaRoute,
   JogadorMapaRoute: JogadorMapaRoute,
+  JogadorMesaRoute: JogadorMesaRoute,
   JogadorMissivasRoute: JogadorMissivasRoute,
   JogadorMochilaRoute: JogadorMochilaRoute,
   JogadorOficinaRoute: JogadorOficinaRoute,

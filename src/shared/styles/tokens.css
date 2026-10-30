@@ -53,6 +53,8 @@
   --plague: #ffb340;
   --focus-blue: #0a84ff;
   --life: #ff453a;
+  --blood: #c8423a;
+  --moss: #4a7c59;
 
   /* Raridades */
   --r-comum: #8e8e93;
@@ -136,6 +138,8 @@ body.theme-parchment,
   --gold-leaf: #e6ca65;
   --gold-bright: #fff0b8;
   --gold-dim: #a68124;
+  --blood: #b8332b;
+  --moss: #3e684a;
 }
 
 /* Escala Tipográfica Mobile */

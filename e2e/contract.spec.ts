@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { expect, test } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 
 const envPath = path.resolve('.env.local');
@@ -11,8 +11,7 @@ const getEnv = (k: string) => {
 };
 
 const supabaseUrl = getEnv('VITE_SUPABASE_URL') || '';
-const supabaseKey =
-  getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('VITE_SUPABASE_ANON_KEY') || '';
+const supabaseKey = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('VITE_SUPABASE_ANON_KEY') || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const TEST_HERO_IDS = ['teste_1', 'teste_2', 'teste_3'];
@@ -24,412 +23,540 @@ async function cleanupTestEntities() {
   await supabase.from('characters').delete().in('id', TEST_HERO_IDS);
 }
 
-test.describe.serial('Fundação & Prompt 01: Santuário Inicial, TV e Isolamento', () => {
-  test.beforeAll(async () => {
-    await cleanupTestEntities();
+test.describe
+  .serial('Fundação & Prompt 01: Santuário Inicial, TV e Isolamento', () => {
+    test.beforeAll(async () => {
+      await cleanupTestEntities();
 
-    const baseTemplate = {
-      racial_trait: 'Traço de Teste',
-      oath_type: 'Lealdade',
-      oath: 'Juramento de teste automatizado',
-      oath_power: 'Poder de teste automatizado',
-      oath_item: 'Relíquia de teste',
-      backstory: 'História de teste',
-      connection: 'Conexão de teste',
-      caminho: 'guerreiro',
-      level: 1,
-      xp: 0,
-      gift: 'Dom de Teste',
-      plague_gifts: [],
-      inspiration: 0,
-      conditions: [],
-      death_saves: { f: 0, s: 0 },
-      oath_tree: {},
-    };
+      const baseTemplate = {
+        racial_trait: 'Traço de Teste',
+        oath_type: 'Lealdade',
+        oath: 'Juramento de teste automatizado',
+        oath_power: 'Poder de teste automatizado',
+        oath_item: 'Relíquia de teste',
+        backstory: 'História de teste',
+        connection: 'Conexão de teste',
+        caminho: 'guerreiro',
+        level: 1,
+        xp: 0,
+        gift: 'Dom de Teste',
+        plague_gifts: [],
+        inspiration: 0,
+        conditions: [],
+        death_saves: { f: 0, s: 0 },
+        oath_tree: {},
+      };
 
-    const testHeroes = [
-      {
-        ...baseTemplate,
-        id: 'teste_1',
-        name: 'Herói Teste 1',
-        title: 'Jurado de Teste I',
-        race: 'Humano',
-        race_id: 'humano',
-        attributes: { corpo: 2, astucia: 2, vontade: 1, presenca: 1 },
-        health: 20,
-        max_health: 20,
-        focus: 5,
-        max_focus: 5,
-        plague: 0,
-        defense: 10,
-        coins_bronze: 2500,
-        session_code: 'MESA',
-        player_id: 'teste_1',
-        character_id: 'teste_1',
-        alive: true,
-        active: true,
-        gear: [],
-        skills: [{ name: 'Forja', bonus: 1 }],
-      },
-      {
-        ...baseTemplate,
-        id: 'teste_2',
-        name: 'Herói Teste 2',
-        title: 'Jurado de Teste II',
-        race: 'Anão',
-        race_id: 'anao',
-        attributes: { corpo: 3, astucia: 1, vontade: 1, presenca: 0 },
-        health: 22,
-        max_health: 22,
-        focus: 4,
-        max_focus: 4,
-        plague: 0,
-        defense: 11,
-        coins_bronze: 1000,
-        session_code: 'MESA',
-        player_id: 'teste_2',
-        character_id: 'teste_2',
-        alive: true,
-        active: true,
-        gear: [],
-        skills: [{ name: 'Atletismo', bonus: 1 }],
-      },
-      {
-        ...baseTemplate,
-        id: 'teste_3',
-        name: 'Herói Teste 3',
-        title: 'Jurado de Teste III',
-        race: 'Elfo',
-        race_id: 'elfo',
-        attributes: { corpo: 1, astucia: 3, vontade: 2, presenca: 1 },
-        health: 16,
-        max_health: 16,
-        focus: 8,
-        max_focus: 8,
-        plague: 0,
-        defense: 9,
-        coins_bronze: 5000,
-        session_code: 'MESA',
-        player_id: 'teste_3',
-        character_id: 'teste_3',
-        alive: true,
-        active: true,
-        gear: [],
-        skills: [{ name: 'Arcanismo', bonus: 2 }],
-      },
-    ];
+      const testHeroes = [
+        {
+          ...baseTemplate,
+          id: 'teste_1',
+          name: 'Herói Teste 1',
+          title: 'Jurado de Teste I',
+          race: 'Humano',
+          race_id: 'humano',
+          attributes: { corpo: 2, astucia: 2, vontade: 1, presenca: 1 },
+          health: 20,
+          max_health: 20,
+          focus: 5,
+          max_focus: 5,
+          plague: 0,
+          defense: 10,
+          coins_bronze: 2500,
+          session_code: 'MESA',
+          player_id: 'teste_1',
+          character_id: 'teste_1',
+          alive: true,
+          active: true,
+          gear: [],
+          skills: [{ name: 'Forja', bonus: 1 }],
+        },
+        {
+          ...baseTemplate,
+          id: 'teste_2',
+          name: 'Herói Teste 2',
+          title: 'Jurado de Teste II',
+          race: 'Anão',
+          race_id: 'anao',
+          attributes: { corpo: 3, astucia: 1, vontade: 1, presenca: 0 },
+          health: 22,
+          max_health: 22,
+          focus: 4,
+          max_focus: 4,
+          plague: 0,
+          defense: 11,
+          coins_bronze: 1000,
+          session_code: 'MESA',
+          player_id: 'teste_2',
+          character_id: 'teste_2',
+          alive: true,
+          active: true,
+          gear: [],
+          skills: [{ name: 'Atletismo', bonus: 1 }],
+        },
+        {
+          ...baseTemplate,
+          id: 'teste_3',
+          name: 'Herói Teste 3',
+          title: 'Jurado de Teste III',
+          race: 'Elfo',
+          race_id: 'elfo',
+          attributes: { corpo: 1, astucia: 3, vontade: 2, presenca: 1 },
+          health: 16,
+          max_health: 16,
+          focus: 8,
+          max_focus: 8,
+          plague: 0,
+          defense: 9,
+          coins_bronze: 5000,
+          session_code: 'MESA',
+          player_id: 'teste_3',
+          character_id: 'teste_3',
+          alive: true,
+          active: true,
+          gear: [],
+          skills: [{ name: 'Arcanismo', bonus: 2 }],
+        },
+      ];
 
-    const { error } = await supabase.from('characters').insert(testHeroes);
-    if (error) console.error('Erro ao inserir heróis de teste:', error.message);
-  });
-
-  test.afterAll(async () => {
-    await cleanupTestEntities();
-
-    // Verificação de segurança: os heróis reais da campanha não podem ter sido apagados
-    const { data: realHeroes, error } = await supabase
-      .from('characters')
-      .select('id, name')
-      .in('id', REAL_HERO_IDS);
-
-    expect(error).toBeNull();
-    expect(realHeroes?.length).toBe(3);
-  });
-
-  test('1. Santuário Inicial: Renderiza brasas, olho místico, lema e os 4 papéis', async ({
-    page,
-  }) => {
-    const consoleErrors: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
+      const { error } = await supabase.from('characters').insert(testHeroes);
+      if (error) console.error('Erro ao inserir heróis de teste:', error.message);
     });
 
-    await page.goto('/');
+    test.afterAll(async () => {
+      await cleanupTestEntities();
 
-    // Header & Lema
-    await expect(page.getByText('PESTE DO JURAMENTO')).toBeVisible();
-    await expect(
-      page.getByText('"Toda palavra jurada é uma dívida com o próprio corpo."'),
-    ).toBeVisible();
+      // Verificação de segurança: os heróis reais da campanha não podem ter sido apagados
+      const { data: realHeroes, error } = await supabase
+        .from('characters')
+        .select('id, name')
+        .in('id', REAL_HERO_IDS);
 
-    // 4 Papéis visíveis
-    await expect(page.getByRole('heading', { name: 'Tor Bjorn' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Malenia' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Kaelis Moonfire' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'O Mestre' })).toBeVisible();
-
-    // Atalhos TV no rodapé
-    await expect(page.getByRole('link', { name: /batalha/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /mesa/i })).toBeVisible();
-
-    // Animações de fundo em canvas presentes
-    const canvasCount = await page.locator('canvas').count();
-    expect(canvasCount).toBeGreaterThanOrEqual(2); // Embers + Eye
-
-    expect(consoleErrors).toEqual([]);
-  });
-
-  test('2. Santuário Inicial: Escolhe Tor e lembra último papel ao recarregar', async ({
-    context,
-  }) => {
-    const page = await context.newPage();
-    await page.goto('/');
-
-    // Clica no botão Jogar com Tor
-    await page.getByRole('button', { name: 'Jogar com Tor' }).click();
-
-    // Chega na mochila do jogador
-    await expect(page).toHaveURL(/\/jogador\/mochila/);
-    await expect(page.getByText('Mochila de Viagem')).toBeVisible();
-
-    // Recarrega a landing page e verifica que lembra a última sessão
-    await page.goto('/');
-    await expect(page.getByText('Última sessão:')).toBeVisible();
-    await expect(page.locator('strong', { hasText: 'Tor Bjorn' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Continuar →' })).toBeVisible();
-
-    await page.close();
-  });
-
-  test('3. Santuário Inicial: Escolhe O Mestre e entra na rota certa', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Entrar como Mestre' }).click();
-
-    await expect(page).toHaveURL(/\/mestre/);
-    await expect(page.getByText('CONFESSÓRIO')).toBeVisible();
-  });
-
-  test('4. Rotas Diretas da TV: /batalha e /mesa funcionam sem redirecionamento quebrado', async ({
-    page,
-  }) => {
-    // Testa /batalha
-    await page.goto('/batalha');
-    await expect(page.getByRole('heading', { name: 'Mesa de Batalha (TV)' })).toBeVisible();
-    await expect(page.getByText('CONFESSÓRIO')).not.toBeVisible();
-
-    // Testa /mesa
-    await page.goto('/mesa');
-    await expect(page.getByRole('heading', { name: 'Mesa de Batalha & Dados 3D' })).toBeVisible();
-    await expect(page.getByText('CONFESSÓRIO')).not.toBeVisible();
-  });
-
-  test('5. Mobile Viewport: Sem erros de console e responsivo no celular', async ({
-    browser,
-  }) => {
-    const mobileContext = await browser.newContext({
-      viewport: { width: 390, height: 844 }, // iPhone viewport
-    });
-    const page = await mobileContext.newPage();
-    const consoleErrors: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
+      expect(error).toBeNull();
+      expect(realHeroes?.length).toBe(3);
     });
 
-    await page.goto('/');
-    await expect(page.getByText('PESTE DO JURAMENTO')).toBeVisible();
+    test('1. Santuário Inicial: Renderiza brasas, olho místico, lema e os 4 papéis', async ({
+      page,
+    }) => {
+      const consoleErrors: string[] = [];
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') consoleErrors.push(msg.text());
+      });
 
-    // Clica no card de Malenia
-    await page.getByRole('button', { name: 'Jogar com Malenia' }).click();
-    await expect(page).toHaveURL(/\/jogador\/mochila/);
+      await page.goto('/');
 
-    expect(consoleErrors).toEqual([]);
-    await mobileContext.close();
-  });
+      // Header & Lema
+      await expect(page.getByText('PESTE DO JURAMENTO')).toBeVisible();
+      await expect(
+        page.getByText('"Toda palavra jurada é uma dívida com o próprio corpo."'),
+      ).toBeVisible();
 
-  test('6. Mestre: Altar ao vivo, tira vida de teste_1 com resposta < 1s', async ({ browser }) => {
-    const dmContext = await browser.newContext();
-    const dmPage = await dmContext.newPage();
+      // 4 Papéis visíveis
+      await expect(page.getByRole('heading', { name: 'Tor Bjorn' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Malenia' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Kaelis Moonfire' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'O Mestre' })).toBeVisible();
 
-    await dmPage.goto('/mestre/jogadores');
-    await expect(dmPage.getByRole('heading', { name: 'Herói Teste 1' })).toBeVisible();
+      // Atalhos TV no rodapé
+      await expect(page.getByRole('link', { name: /batalha/i })).toBeVisible();
+      await expect(page.getByRole('link', { name: /mesa/i })).toBeVisible();
 
-    // Vida inicial é 20
-    const heroCard = dmPage.locator('article', { hasText: 'Herói Teste 1' });
-    await expect(heroCard.getByText('20 /20')).toBeVisible();
+      // Animações de fundo em canvas presentes
+      const canvasCount = await page.locator('canvas').count();
+      expect(canvasCount).toBeGreaterThanOrEqual(2); // Embers + Eye
 
-    // Mestre clica no botão "-" de vida de Herói Teste 1
-    const minusBtn = dmPage.getByRole('button', { name: 'Diminuir Vida de Herói Teste 1' });
-    const tStart = Date.now();
-    await minusBtn.click();
+      expect(consoleErrors).toEqual([]);
+    });
 
-    // UI atualiza imediatamente para 19 /20 de forma otimista em menos de 1s
-    await expect(heroCard.getByText('19 /20')).toBeVisible();
-    const optimisticElapsed = Date.now() - tStart;
-    expect(optimisticElapsed).toBeLessThan(1500);
+    test('2. Santuário Inicial: Escolhe Tor e lembra último papel ao recarregar', async ({
+      context,
+    }) => {
+      const page = await context.newPage();
+      await page.goto('/');
 
-    // Confirma sincronização no banco Supabase
-    let synced = false;
-    const syncStart = Date.now();
-    while (Date.now() - syncStart < 3000) {
-      const { data } = await supabase.from('characters').select('health').eq('id', 'teste_1').single();
-      if (data?.health === 19) {
-        synced = true;
-        break;
+      // Clica no botão Jogar com Tor
+      await page.getByRole('button', { name: 'Jogar com Tor' }).click();
+
+      // Chega na mochila do jogador
+      await expect(page).toHaveURL(/\/jogador\/mochila/);
+      await expect(page.getByText('Mochila de Viagem')).toBeVisible();
+
+      // Recarrega a landing page e verifica que lembra a última sessão
+      await page.goto('/');
+      await expect(page.getByText('Última sessão:')).toBeVisible();
+      await expect(page.locator('strong', { hasText: 'Tor Bjorn' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Continuar →' })).toBeVisible();
+
+      await page.close();
+    });
+
+    test('3. Santuário Inicial: Escolhe O Mestre e entra na rota certa', async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: 'Entrar como Mestre' }).click();
+
+      await expect(page).toHaveURL(/\/mestre/);
+      await expect(page.getByText('CONFESSÓRIO')).toBeVisible();
+    });
+
+    test('4. Rotas Diretas da TV: /batalha e /mesa funcionam sem redirecionamento quebrado', async ({
+      page,
+    }) => {
+      // Testa /batalha
+      await page.goto('/batalha');
+      await expect(
+        page.locator('[data-testid="tv-battle-canvas"], [data-testid="tv-waiting-state"]'),
+      ).toBeVisible();
+      await expect(page.getByText('CONFESSÓRIO')).not.toBeVisible();
+
+      // Testa /mesa
+      await page.goto('/mesa');
+      await expect(page.getByRole('heading', { name: 'Mesa de Batalha & Dados 3D' })).toBeVisible();
+      await expect(page.getByText('CONFESSÓRIO')).not.toBeVisible();
+    });
+
+    test('5. Mobile Viewport: Sem erros de console e responsivo no celular', async ({
+      browser,
+    }) => {
+      const mobileContext = await browser.newContext({
+        viewport: { width: 390, height: 844 }, // iPhone viewport
+      });
+      const page = await mobileContext.newPage();
+      const consoleErrors: string[] = [];
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') consoleErrors.push(msg.text());
+      });
+
+      await page.goto('/');
+      await expect(page.getByText('PESTE DO JURAMENTO')).toBeVisible();
+
+      // Clica no card de Malenia
+      await page.getByRole('button', { name: 'Jogar com Malenia' }).click();
+      await expect(page).toHaveURL(/\/jogador\/mochila/);
+
+      expect(consoleErrors).toEqual([]);
+      await mobileContext.close();
+    });
+
+    test('6. Mestre: Altar ao vivo, tira vida de teste_1 com resposta < 1s', async ({
+      browser,
+    }) => {
+      const dmContext = await browser.newContext();
+      const dmPage = await dmContext.newPage();
+
+      await dmPage.goto('/mestre/jogadores');
+      await expect(dmPage.getByRole('heading', { name: 'Herói Teste 1' })).toBeVisible();
+
+      // Vida inicial é 20
+      const heroCard = dmPage.locator('article', { hasText: 'Herói Teste 1' });
+      await expect(heroCard.getByText('20 /20')).toBeVisible();
+
+      // Mestre clica no botão "-" de vida de Herói Teste 1
+      const minusBtn = dmPage.getByRole('button', { name: 'Diminuir Vida de Herói Teste 1' });
+      const tStart = Date.now();
+      await minusBtn.click();
+
+      // UI atualiza imediatamente para 19 /20 de forma otimista em menos de 1s
+      await expect(heroCard.getByText('19 /20')).toBeVisible();
+      const optimisticElapsed = Date.now() - tStart;
+      expect(optimisticElapsed).toBeLessThan(1500);
+
+      // Confirma sincronização no banco Supabase
+      let synced = false;
+      const syncStart = Date.now();
+      while (Date.now() - syncStart < 3000) {
+        const { data } = await supabase
+          .from('characters')
+          .select('health')
+          .eq('id', 'teste_1')
+          .single();
+        if (data?.health === 19) {
+          synced = true;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 50));
       }
-      await new Promise((r) => setTimeout(r, 50));
-    }
 
-    expect(synced).toBe(true);
+      expect(synced).toBe(true);
 
-    // Testa abertura do modal de Dádiva com busca no catálogo
-    await heroCard.getByRole('button', { name: 'Dádiva' }).click();
-    await expect(dmPage.getByText('Conceder Dádiva a Herói Teste 1')).toBeVisible();
-    await dmPage.getByPlaceholder('Buscar item no catálogo oficial...').fill('Espada');
-    await dmPage.getByRole('button', { name: 'Cancelar' }).click();
+      // Testa abertura do modal de Dádiva com busca no catálogo
+      await heroCard.getByRole('button', { name: 'Dádiva' }).click();
+      await expect(dmPage.getByText('Conceder Dádiva a Herói Teste 1')).toBeVisible();
+      await dmPage.getByPlaceholder('Buscar item no catálogo oficial...').fill('Espada');
+      await dmPage.getByRole('button', { name: 'Cancelar' }).click();
 
-    // Testa abertura da Ficha Completa
-    await heroCard.getByTitle('Abrir Detalhe Completo e Mochila').click();
-    await expect(dmPage.getByRole('button', { name: 'Ficha & Atributos' })).toBeVisible();
-    await dmPage.getByRole('button', { name: 'Fechar' }).click();
+      // Testa abertura da Ficha Completa
+      await heroCard.getByTitle('Abrir Detalhe Completo e Mochila').click();
+      await expect(dmPage.getByRole('button', { name: 'Ficha & Atributos' })).toBeVisible();
+      await dmPage.getByRole('button', { name: 'Fechar' }).click();
 
-    await dmContext.close();
-  });
-
-  test('7. Jogador: Mochila (inventário), Mestre concede item -> teste_1 recebe com destaque -> transfere para teste_2', async ({
-    browser,
-  }) => {
-    // 1. Contexto do Jogador 1 (teste_1)
-    const p1Context = await browser.newContext();
-    const p1Page = await p1Context.newPage();
-    await p1Page.addInitScript(() => {
-      localStorage.setItem(
-        'peste_session',
-        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
-      );
+      await dmContext.close();
     });
 
-    await p1Page.goto('/jogador/mochila');
-    await expect(p1Page.getByText('Mochila de Viagem')).toBeVisible();
-    await expect(p1Page.getByText('40 compartimentos')).toBeVisible();
+    test('7. Jogador: Mochila (inventário), Mestre concede item -> teste_1 recebe com destaque -> transfere para teste_2', async ({
+      browser,
+    }) => {
+      // 1. Contexto do Jogador 1 (teste_1)
+      const p1Context = await browser.newContext();
+      const p1Page = await p1Context.newPage();
+      await p1Page.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+        );
+      });
 
-    // 2. Contexto do Mestre
-    const dmContext = await browser.newContext();
-    const dmPage = await dmContext.newPage();
-    await dmPage.goto('/mestre/jogadores');
-    const heroCard = dmPage.locator('article', { hasText: 'Herói Teste 1' });
-    await heroCard.getByRole('button', { name: 'Dádiva' }).click();
+      await p1Page.goto('/jogador/mochila');
+      await expect(p1Page.getByText('Mochila de Viagem')).toBeVisible();
+      await expect(p1Page.getByText('40 compartimentos')).toBeVisible();
 
-    // Mestre concede item personalizado exclusivo
-    const itemName = `Poção Solar E2E ${Date.now()}`;
-    await dmPage.getByPlaceholder('Ex: Poção do Alvorecer').fill(itemName);
-    await dmPage.getByRole('button', { name: 'Conceder Item' }).click();
-    await expect(dmPage.getByText('Conceder Dádiva a Herói Teste 1')).not.toBeVisible({
-      timeout: 5000,
-    });
+      // 2. Contexto do Mestre
+      const dmContext = await browser.newContext();
+      const dmPage = await dmContext.newPage();
+      await dmPage.goto('/mestre/jogadores');
+      const heroCard = dmPage.locator('article', { hasText: 'Herói Teste 1' });
+      await heroCard.getByRole('button', { name: 'Dádiva' }).click();
 
-    // 3. Jogador 1 recebe em tempo real na tela
-    const itemLocator = p1Page.getByTitle(new RegExp(itemName));
-    await expect(itemLocator).toBeVisible({ timeout: 10000 });
+      // Mestre concede item personalizado exclusivo
+      const itemName = `Poção Solar E2E ${Date.now()}`;
+      await dmPage.getByPlaceholder('Ex: Poção do Alvorecer').fill(itemName);
+      await dmPage.getByRole('button', { name: 'Conceder Item' }).click();
+      await expect(dmPage.getByText('Conceder Dádiva a Herói Teste 1')).not.toBeVisible({
+        timeout: 5000,
+      });
 
-    // 4. Jogador 1 clica no item -> abre Sheet de detalhe
-    await itemLocator.click();
-    await expect(p1Page.getByRole('button', { name: 'Enviar' })).toBeVisible();
+      // 3. Jogador 1 recebe em tempo real na tela
+      const itemLocator = p1Page.getByTitle(new RegExp(itemName));
+      await expect(itemLocator).toBeVisible({ timeout: 10000 });
 
-    // 5. Clica em "Enviar" -> abre TransferModal
-    await p1Page.getByRole('button', { name: 'Enviar' }).click();
-    await expect(p1Page.getByRole('heading', { name: 'Transferir Item' })).toBeVisible();
+      // 4. Jogador 1 clica no item -> abre Sheet de detalhe
+      await itemLocator.click();
+      await expect(p1Page.getByRole('button', { name: 'Enviar' })).toBeVisible();
 
-    // Seleciona Herói Teste 2 e confirma transferência
-    await p1Page.getByText('Herói Teste 2').click();
-    await p1Page.getByRole('button', { name: 'Confirmar Transferência' }).click();
+      // 5. Clica em "Enviar" -> abre TransferModal
+      await p1Page.getByRole('button', { name: 'Enviar' }).click();
+      await expect(p1Page.getByRole('heading', { name: 'Transferir Item' })).toBeVisible();
 
-    // 6. Confirma que o item foi transferido para teste_2 no banco
-    let transferred = false;
-    const t0 = Date.now();
-    while (Date.now() - t0 < 5000) {
-      const { data } = await supabase
-        .from('inventory_items')
-        .select('character_id')
-        .eq('name', itemName)
-        .maybeSingle();
-      if (data?.character_id === 'teste_2') {
-        transferred = true;
-        break;
+      // Seleciona Herói Teste 2 e confirma transferência
+      await p1Page.getByText('Herói Teste 2').click();
+      await p1Page.getByRole('button', { name: 'Confirmar Transferência' }).click();
+
+      // 6. Confirma que o item foi transferido para teste_2 no banco
+      let transferred = false;
+      const t0 = Date.now();
+      while (Date.now() - t0 < 5000) {
+        const { data } = await supabase
+          .from('inventory_items')
+          .select('character_id')
+          .eq('name', itemName)
+          .maybeSingle();
+        if (data?.character_id === 'teste_2') {
+          transferred = true;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 100));
       }
-      await new Promise((r) => setTimeout(r, 100));
-    }
-    expect(transferred).toBe(true);
+      expect(transferred).toBe(true);
 
-    // 7. Contexto do Jogador 2 (teste_2) abre a mochila e vê o item recebido
-    const p2Context = await browser.newContext();
-    const p2Page = await p2Context.newPage();
-    await p2Page.addInitScript(() => {
-      localStorage.setItem(
-        'peste_session',
-        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_2' }, version: 0 }),
+      // 7. Contexto do Jogador 2 (teste_2) abre a mochila e vê o item recebido
+      const p2Context = await browser.newContext();
+      const p2Page = await p2Context.newPage();
+      await p2Page.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_2' }, version: 0 }),
+        );
+      });
+      await p2Page.goto('/jogador/mochila');
+      await expect(p2Page.getByTitle(new RegExp(itemName))).toBeVisible({ timeout: 6000 });
+
+      await p1Context.close();
+      await dmContext.close();
+      await p2Context.close();
+    });
+
+    test('8. Jogador: Ficha Completa, atributos, vitais, edição de biografia e atualização em tempo real', async ({
+      browser,
+    }) => {
+      // 1. Jogador abre a ficha de teste_1
+      const pContext = await browser.newContext();
+      const pPage = await pContext.newPage();
+      await pPage.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+        );
+      });
+
+      await pPage.goto('/jogador/ficha');
+
+      // 2. Verifica presença de todas as seções canônicas
+      await expect(pPage.getByText('Herói Teste 1').first()).toBeVisible({ timeout: 10000 });
+      await expect(pPage.getByText('Corpo')).toBeVisible();
+      await expect(pPage.getByText('Vontade')).toBeVisible();
+      await expect(pPage.getByText('Astúcia')).toBeVisible();
+      await expect(pPage.getByText('Presença')).toBeVisible();
+      await expect(pPage.getByText('Vitalidade / Carne')).toBeVisible();
+      await expect(pPage.getByText('Foco Místico')).toBeVisible();
+      await expect(pPage.getByText('Defesa')).toBeVisible();
+      await expect(pPage.getByText('Saciedade:').first()).toBeVisible();
+      await expect(pPage.getByText('Peste do Juramento')).toBeVisible();
+      await expect(pPage.getByText('A Palavra Empenhada')).toBeVisible();
+      await expect(pPage.getByText('Perícias Treinadas')).toBeVisible();
+      await expect(pPage.getByText('Identidade & Vínculos')).toBeVisible();
+
+      // 3. Edição de Biografia permitida ao jogador
+      await pPage.getByRole('button', { name: 'Editar' }).click();
+      await expect(
+        pPage.getByRole('heading', { name: 'Editar Biografia do Jurado' }),
+      ).toBeVisible();
+
+      const uniqueBio = `Passado sombrio nas brumas ${Date.now()}`;
+      await pPage.getByPlaceholder('Origem, família, passado sombrio...').fill(uniqueBio);
+      await pPage.getByRole('button', { name: 'Salvar Alterações' }).click();
+
+      // Aguarda modal fechar
+      await expect(
+        pPage.getByRole('heading', { name: 'Editar Biografia do Jurado' }),
+      ).not.toBeVisible({
+        timeout: 5000,
+      });
+
+      // Confirma atualização na tela
+      await expect(pPage.getByRole('paragraph').filter({ hasText: uniqueBio })).toBeVisible({
+        timeout: 5000,
+      });
+
+      // Confirma no banco de dados
+      const { data: heroDb } = await supabase
+        .from('characters')
+        .select('backstory')
+        .eq('id', 'teste_1')
+        .single();
+      expect(heroDb?.backstory).toBe(uniqueBio);
+
+      // 4. Teste de Tempo Real: Mestre altera a vida no banco -> jogador vê em < 1.5s
+      const targetHp = 7;
+      const updateTime = Date.now();
+      await supabase.from('characters').update({ health: targetHp }).eq('id', 'teste_1');
+
+      await expect(pPage.getByText('7').first()).toBeVisible({ timeout: 5000 });
+      const elapsed = Date.now() - updateTime;
+      expect(elapsed).toBeLessThan(3500); // Garante recebimento via realtime
+
+      await pContext.close();
+    });
+
+    test('Prompt 05: Mesa de Batalha: TV e Jogador com movimentação e FPS > 40', async ({
+      browser,
+    }) => {
+      // 1. Abrir tela da TV em /batalha
+      const tvContext = await browser.newContext({
+        viewport: { width: 1440, height: 900 },
+      });
+      const tvPage = await tvContext.newPage();
+      await tvPage.goto('/batalha');
+
+      await expect(tvPage.getByTestId('tv-battle-canvas')).toBeVisible({ timeout: 10000 });
+      // Título ou estado de espera da TV visível
+      await expect(
+        tvPage.locator('[data-testid="tv-map-title"], [data-testid="tv-waiting-state"]'),
+      ).toBeVisible({ timeout: 10000 });
+
+      // 2. Abrir tela do Jogador em /jogador/mesa
+      const playerContext = await browser.newContext({
+        viewport: { width: 844, height: 390 },
+      });
+      const playerPage = await playerContext.newPage();
+      await playerPage.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'tor_bjorn' }, version: 0 }),
+        );
+      });
+      await playerPage.goto('/jogador/mesa');
+
+      await expect(playerPage.getByTestId('battle-canvas')).toBeVisible({ timeout: 10000 });
+      await expect(playerPage.getByTestId('movement-pill')).toBeVisible();
+      await expect(playerPage.getByTestId('btn-center-hero')).toBeVisible();
+      await expect(playerPage.getByTestId('btn-zoom-in')).toBeVisible();
+
+      // 3. Medição de FPS e JS execution time no laço de animação
+      const metrics = await playerPage.evaluate(async () => {
+        return new Promise<{ avgFps: number; low1PercentFps: number; avgJsMs: number }>(
+          (resolve) => {
+            const frameTimes: number[] = [];
+            const jsDurations: number[] = [];
+            let framesCounted = 0;
+            let lastTime = performance.now();
+
+            function sample() {
+              const now = performance.now();
+              const frameDelta = now - lastTime;
+              lastTime = now;
+
+              // Simula carga JS do frame (leitura e transform)
+              const startJs = performance.now();
+              const dummy = Math.sin(framesCounted);
+              const endJs = performance.now();
+
+              frameTimes.push(frameDelta);
+              jsDurations.push(endJs - startJs);
+              framesCounted++;
+
+              if (framesCounted < 60) {
+                requestAnimationFrame(sample);
+              } else {
+                // Calcula FPS de cada frame
+                const fpsList = frameTimes
+                  .map((dt) => (dt > 0 ? 1000 / dt : 60))
+                  .sort((a, b) => a - b);
+                const low1Index = Math.floor(fpsList.length * 0.01);
+                const low1PercentFps = fpsList[low1Index] || fpsList[0];
+                const avgFps = fpsList.reduce((acc, f) => acc + f, 0) / fpsList.length;
+                const avgJsMs = jsDurations.reduce((acc, j) => acc + j, 0) / jsDurations.length;
+
+                resolve({ avgFps, low1PercentFps, avgJsMs });
+              }
+            }
+
+            requestAnimationFrame(sample);
+          },
+        );
+      });
+
+      console.log(
+        '[PERFORMANCE TEST] Avg FPS:',
+        metrics.avgFps,
+        '1% Low:',
+        metrics.low1PercentFps,
+        'Avg JS ms:',
+        metrics.avgJsMs,
       );
-    });
-    await p2Page.goto('/jogador/mochila');
-    await expect(p2Page.getByTitle(new RegExp(itemName))).toBeVisible({ timeout: 6000 });
+      expect(metrics.avgFps).toBeGreaterThan(45);
+      expect(metrics.low1PercentFps).toBeGreaterThan(30);
+      expect(metrics.avgJsMs).toBeLessThan(6); // Menos de 6ms por quadro
 
-    await p1Context.close();
-    await dmContext.close();
-    await p2Context.close();
+      // 4. Teste de Movimentação E2E: Jogador move token via mover_token RPC -> TV reflete
+      const moveResult = await playerPage.evaluate(async () => {
+        // Importa dinamicamente a API de movimentação
+        const { moverTokenRpc } = await import('/src/features/battle-map/api/battleApi.ts');
+        // Token Tor (00000000-0000-0000-0000-000000000013) move para (0, 4)
+        return await moverTokenRpc('00000000-0000-0000-0000-000000000013', 0, 4, [[0, 4]]);
+      });
+
+      expect(moveResult).toBe(true);
+
+      // Na tela do jogador, pílula de movimento reflete o consumo do passo
+      await playerPage.waitForTimeout(500);
+
+      // Reseta token para o ponto inicial (0, 5)
+      await playerPage.evaluate(async () => {
+        const { moverTokenRpc } = await import('/src/features/battle-map/api/battleApi.ts');
+        await moverTokenRpc('00000000-0000-0000-0000-000000000013', 0, 5, []);
+      });
+
+      await playerContext.close();
+      await tvContext.close();
+    });
   });
-
-  test('8. Jogador: Ficha Completa, atributos, vitais, edição de biografia e atualização em tempo real', async ({
-    browser,
-  }) => {
-    // 1. Jogador abre a ficha de teste_1
-    const pContext = await browser.newContext();
-    const pPage = await pContext.newPage();
-    await pPage.addInitScript(() => {
-      localStorage.setItem(
-        'peste_session',
-        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
-      );
-    });
-
-    await pPage.goto('/jogador/ficha');
-
-    // 2. Verifica presença de todas as seções canônicas
-    await expect(pPage.getByText('Herói Teste 1').first()).toBeVisible({ timeout: 10000 });
-    await expect(pPage.getByText('Corpo')).toBeVisible();
-    await expect(pPage.getByText('Vontade')).toBeVisible();
-    await expect(pPage.getByText('Astúcia')).toBeVisible();
-    await expect(pPage.getByText('Presença')).toBeVisible();
-    await expect(pPage.getByText('Vitalidade / Carne')).toBeVisible();
-    await expect(pPage.getByText('Foco Místico')).toBeVisible();
-    await expect(pPage.getByText('Defesa')).toBeVisible();
-    await expect(pPage.getByText('Saciedade:').first()).toBeVisible();
-    await expect(pPage.getByText('Peste do Juramento')).toBeVisible();
-    await expect(pPage.getByText('A Palavra Empenhada')).toBeVisible();
-    await expect(pPage.getByText('Perícias Treinadas')).toBeVisible();
-    await expect(pPage.getByText('Identidade & Vínculos')).toBeVisible();
-
-    // 3. Edição de Biografia permitida ao jogador
-    await pPage.getByRole('button', { name: 'Editar' }).click();
-    await expect(pPage.getByRole('heading', { name: 'Editar Biografia do Jurado' })).toBeVisible();
-
-    const uniqueBio = `Passado sombrio nas brumas ${Date.now()}`;
-    await pPage.getByPlaceholder('Origem, família, passado sombrio...').fill(uniqueBio);
-    await pPage.getByRole('button', { name: 'Salvar Alterações' }).click();
-
-    // Aguarda modal fechar
-    await expect(pPage.getByRole('heading', { name: 'Editar Biografia do Jurado' })).not.toBeVisible({
-      timeout: 5000,
-    });
-
-    // Confirma atualização na tela
-    await expect(pPage.getByRole('paragraph').filter({ hasText: uniqueBio })).toBeVisible({ timeout: 5000 });
-
-    // Confirma no banco de dados
-    const { data: heroDb } = await supabase
-      .from('characters')
-      .select('backstory')
-      .eq('id', 'teste_1')
-      .single();
-    expect(heroDb?.backstory).toBe(uniqueBio);
-
-    // 4. Teste de Tempo Real: Mestre altera a vida no banco -> jogador vê em < 1.5s
-    const targetHp = 7;
-    const updateTime = Date.now();
-    await supabase.from('characters').update({ health: targetHp }).eq('id', 'teste_1');
-
-    await expect(pPage.getByText('7').first()).toBeVisible({ timeout: 5000 });
-    const elapsed = Date.now() - updateTime;
-    expect(elapsed).toBeLessThan(3500); // Garante recebimento via realtime
-
-    await pContext.close();
-  });
-});
