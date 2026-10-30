@@ -36,8 +36,24 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 );
 Card.displayName = 'Card';
 
+export type BadgeVariant =
+  | 'default'
+  | 'gold'
+  | 'danger'
+  | 'success'
+  | 'plague'
+  | 'blue'
+  | 'accent'
+  | 'comum'
+  | 'incomum'
+  | 'raro'
+  | 'lendario'
+  | 'artefato'
+  | 'neutral'
+  | 'warning';
+
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'gold' | 'danger' | 'success' | 'plague' | 'blue';
+  variant?: BadgeVariant;
   size?: 'sm' | 'md';
 }
 
@@ -53,22 +69,31 @@ export const Badge: React.FC<BadgeProps> = ({
     md: 'px-2 py-0.5 text-xs',
   }[size];
 
-  const variantClasses = {
+  const variantClasses: Record<string, string> = {
     default: 'bg-white/10 text-white/80 border border-white/10',
+    neutral: 'bg-white/5 text-white/60 border border-white/10',
     gold: 'bg-[#f5b65b]/20 text-[#ffd59a] border border-[#f5b65b]/40',
+    accent: 'bg-[#f5b65b]/20 text-[#ffd59a] border border-[#f5b65b]/40',
     danger: 'bg-[#ff453a]/20 text-[#ff6b62] border border-[#ff453a]/40',
+    warning: 'bg-[#ffb340]/20 text-[#ffb340] border border-[#ffb340]/40',
     success: 'bg-[#30d158]/20 text-[#30d158] border border-[#30d158]/40',
     plague: 'bg-[#ffb340]/20 text-[#ffb340] border border-[#ffb340]/40',
     blue: 'bg-[#0a84ff]/20 text-[#64d2ff] border border-[#0a84ff]/40',
-  }[variant];
+    comum: 'bg-stone-500/15 text-stone-300 border border-stone-500/30',
+    incomum: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30',
+    raro: 'bg-blue-500/15 text-blue-300 border border-blue-500/30',
+    lendario: 'bg-purple-500/15 text-purple-300 border border-purple-500/30',
+    artefato:
+      'bg-amber-500/20 text-[#ffd59a] border border-amber-500/50 shadow-sm shadow-amber-500/20',
+  };
 
   return (
     <span
       className={twMerge(
         clsx(
-          'inline-flex items-center font-medium rounded-full uppercase tracking-wider',
+          'inline-flex items-center font-serif font-medium rounded-full uppercase tracking-wider select-none',
           sizeClasses,
-          variantClasses,
+          variantClasses[variant] || variantClasses.default,
           className,
         ),
       )}

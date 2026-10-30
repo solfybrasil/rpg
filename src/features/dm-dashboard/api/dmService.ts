@@ -27,6 +27,15 @@ export async function searchItemCatalog(
   return data || [];
 }
 
+function normalizeRarity(r?: string | null): 'Comum' | 'Incomum' | 'Raro' | 'Lendário' | 'Artefato' {
+  const lower = (r || '').toLowerCase();
+  if (lower.includes('incom')) return 'Incomum';
+  if (lower.includes('rar')) return 'Raro';
+  if (lower.includes('lend')) return 'Lendário';
+  if (lower.includes('artef')) return 'Artefato';
+  return 'Comum';
+}
+
 /**
  * Concede um item diretamente para o inventário do herói (`inventory_items`)
  */
@@ -34,7 +43,7 @@ export async function giveItemToHero(
   heroId: string,
   itemData: Partial<InventoryRow>,
 ): Promise<InventoryRow | null> {
-  const payload: Partial<InventoryRow> = {
+  const payload = {
     session_code: 'MESA',
     character_id: heroId,
     player_id: heroId,
@@ -43,14 +52,11 @@ export async function giveItemToHero(
     quantity: itemData.quantity ?? 1,
     image_url: itemData.image_url || null,
     description: itemData.description || 'Dádiva concedida pelo Mestre da Mesa.',
-    rarity: itemData.rarity || 'comum',
+    rarity: normalizeRarity(itemData.rarity),
     wear_type: itemData.wear_type || 'unlimited',
     durability: itemData.durability ?? 1,
     max_durability: itemData.max_durability ?? 1,
-    grid_x: itemData.grid_x ?? 0,
-    grid_y: itemData.grid_y ?? 0,
-    equipped: false,
-    ...itemData,
+    slot_index: itemData.slot_index ?? null,
   };
 
   const { data, error } = await supabase

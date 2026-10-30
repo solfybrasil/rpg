@@ -61,32 +61,61 @@ export const Modal: React.FC<ModalProps> = ({
 export interface SheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title?: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  side?: 'bottom' | 'right';
 }
 
-export const Sheet: React.FC<SheetProps> = ({ open, onOpenChange, title, children, className }) => {
+export const Sheet: React.FC<SheetProps> = ({
+  open,
+  onOpenChange,
+  title,
+  description,
+  children,
+  className,
+  side = 'bottom',
+}) => {
+  const isBottom = side === 'bottom';
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-200" />
         <DialogPrimitive.Content
           className={twMerge(
             clsx(
-              'fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[85vh] flex-col rounded-t-3xl border-t border-white/10 bg-[#141417] p-6 shadow-2xl transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom duration-200',
+              'fixed z-50 bg-[#121215] border-white/10 shadow-2xl flex flex-col focus:outline-none duration-250 ease-out',
+              isBottom
+                ? 'inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl border-t border-x p-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom max-w-2xl mx-auto'
+                : 'inset-y-0 right-0 w-full sm:max-w-md h-full rounded-l-3xl border-l p-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
               className,
             ),
           )}
         >
-          <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/20" />
-          {title && (
-            <div className="mb-4">
-              <DialogPrimitive.Title className="text-lg font-serif font-semibold text-[#f5b65b]">
-                {title}
-              </DialogPrimitive.Title>
-            </div>
+          {isBottom && (
+            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4 shrink-0" />
           )}
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex flex-col space-y-1">
+              {title && (
+                <DialogPrimitive.Title className="text-lg font-serif font-bold text-[#f5b65b] tracking-wide">
+                  {title}
+                </DialogPrimitive.Title>
+              )}
+              {description && (
+                <DialogPrimitive.Description className="text-xs text-white/60 font-serif">
+                  {description}
+                </DialogPrimitive.Description>
+              )}
+            </div>
+
+            <DialogPrimitive.Close className="rounded-full p-1.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors shrink-0">
+              <X className="w-4 h-4" />
+              <span className="sr-only">Fechar</span>
+            </DialogPrimitive.Close>
+          </div>
           <div className="overflow-y-auto flex-1">{children}</div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

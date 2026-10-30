@@ -1,0 +1,15 @@
+feat(jogador-mochila): mochila com 40 slots, equipamento, dnd, empilhamento, transferencia e tempo real
+
+Comportamentos encontrados:
+- 40 slots com alocacao fixa slot_index (0 a 39)
+- Alocacao automatica de itens sem slot nos primeiros slots vagos
+- Slots de equipamento minimalista (cabeca, peito, maos, arma, escudo, aneis, amuleto)
+- Drag and drop @dnd-kit a 60 fps com elevacao e borda dourada
+- Empilhamento de ingredientes/itens compativeis (armas e armaduras nao empilham)
+- Detalhe em Sheet inferior com Cinzel, Badge de raridade, Newsreader e lista de efeitos
+- Enviar parcial ou total para outro jogador com modal e controle de quantidade
+- Descartar parcial ou total com confirmacao
+- Usar/beber/comer consumiveis (vida, foco, saciedade, alerta de peste, cargas)
+- Moedas em ouro/prata/bronze e contador de peso/capacidade no rodape
+- Destaque dourado de 600 ms e toast Sonner para novos itens recebidos
+- React.memo nos slots garantindo renderizacao restrita aos slots afetados
