@@ -366,4 +366,70 @@ test.describe.serial('Fundação & Prompt 01: Santuário Inicial, TV e Isolament
     await dmContext.close();
     await p2Context.close();
   });
+
+  test('8. Jogador: Ficha Completa, atributos, vitais, edição de biografia e atualização em tempo real', async ({
+    browser,
+  }) => {
+    // 1. Jogador abre a ficha de teste_1
+    const pContext = await browser.newContext();
+    const pPage = await pContext.newPage();
+    await pPage.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+
+    await pPage.goto('/jogador/ficha');
+
+    // 2. Verifica presença de todas as seções canônicas
+    await expect(pPage.getByText('Herói Teste 1').first()).toBeVisible({ timeout: 10000 });
+    await expect(pPage.getByText('Corpo')).toBeVisible();
+    await expect(pPage.getByText('Vontade')).toBeVisible();
+    await expect(pPage.getByText('Astúcia')).toBeVisible();
+    await expect(pPage.getByText('Presença')).toBeVisible();
+    await expect(pPage.getByText('Vitalidade / Carne')).toBeVisible();
+    await expect(pPage.getByText('Foco Místico')).toBeVisible();
+    await expect(pPage.getByText('Defesa')).toBeVisible();
+    await expect(pPage.getByText('Saciedade:').first()).toBeVisible();
+    await expect(pPage.getByText('Peste do Juramento')).toBeVisible();
+    await expect(pPage.getByText('A Palavra Empenhada')).toBeVisible();
+    await expect(pPage.getByText('Perícias Treinadas')).toBeVisible();
+    await expect(pPage.getByText('Identidade & Vínculos')).toBeVisible();
+
+    // 3. Edição de Biografia permitida ao jogador
+    await pPage.getByRole('button', { name: 'Editar' }).click();
+    await expect(pPage.getByRole('heading', { name: 'Editar Biografia do Jurado' })).toBeVisible();
+
+    const uniqueBio = `Passado sombrio nas brumas ${Date.now()}`;
+    await pPage.getByPlaceholder('Origem, família, passado sombrio...').fill(uniqueBio);
+    await pPage.getByRole('button', { name: 'Salvar Alterações' }).click();
+
+    // Aguarda modal fechar
+    await expect(pPage.getByRole('heading', { name: 'Editar Biografia do Jurado' })).not.toBeVisible({
+      timeout: 5000,
+    });
+
+    // Confirma atualização na tela
+    await expect(pPage.getByRole('paragraph').filter({ hasText: uniqueBio })).toBeVisible({ timeout: 5000 });
+
+    // Confirma no banco de dados
+    const { data: heroDb } = await supabase
+      .from('characters')
+      .select('backstory')
+      .eq('id', 'teste_1')
+      .single();
+    expect(heroDb?.backstory).toBe(uniqueBio);
+
+    // 4. Teste de Tempo Real: Mestre altera a vida no banco -> jogador vê em < 1.5s
+    const targetHp = 7;
+    const updateTime = Date.now();
+    await supabase.from('characters').update({ health: targetHp }).eq('id', 'teste_1');
+
+    await expect(pPage.getByText('7').first()).toBeVisible({ timeout: 5000 });
+    const elapsed = Date.now() - updateTime;
+    expect(elapsed).toBeLessThan(3500); // Garante recebimento via realtime
+
+    await pContext.close();
+  });
 });

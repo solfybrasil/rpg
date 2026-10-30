@@ -64,4 +64,5 @@ export function useHero(heroId: string | null | undefined) {
   });
 }
 
-// [peste-v2 fundacao] component placeholder
+export { PlayerSheetView } from './components/PlayerSheetView';
+

@@ -1,15 +1,13 @@
-feat(jogador-mochila): mochila com 40 slots, equipamento, dnd, empilhamento, transferencia e tempo real
+feat(jogador-ficha): ficha do jurado com atributos, pericias, vitais, peste e juramento
 
 Comportamentos encontrados:
-- 40 slots com alocacao fixa slot_index (0 a 39)
-- Alocacao automatica de itens sem slot nos primeiros slots vagos
-- Slots de equipamento minimalista (cabeca, peito, maos, arma, escudo, aneis, amuleto)
-- Drag and drop @dnd-kit a 60 fps com elevacao e borda dourada
-- Empilhamento de ingredientes/itens compativeis (armas e armaduras nao empilham)
-- Detalhe em Sheet inferior com Cinzel, Badge de raridade, Newsreader e lista de efeitos
-- Enviar parcial ou total para outro jogador com modal e controle de quantidade
-- Descartar parcial ou total com confirmacao
-- Usar/beber/comer consumiveis (vida, foco, saciedade, alerta de peste, cargas)
-- Moedas em ouro/prata/bronze e contador de peso/capacidade no rodape
-- Destaque dourado de 600 ms e toast Sonner para novos itens recebidos
-- React.memo nos slots garantindo renderizacao restrita aos slots afetados
+- Topo com retrato, nome em Cinzel, título, raça, caminho, nível, barra de XP e banner de jurado caído se HP=0
+- Botão e wizard de consagração de nível quando XP >= proximoXp (níveis 4, 8, 10 atributos; 5 especialização; 7 nova perícia)
+- 4 atributos em blocos grandes (número em Cinzel 32, nome em Inter)
+- Vitais: Vitalidade/Carne (com perigo <= 3 HP), Foco Místico, Defesa física (com detalhe do cálculo), Inspiração (0-2)
+- Saciedade e Fome: barra de 10 gomos, estágio (Saciado, Normal, Com fome, Faminto) e penalidades
+- Peste do Juramento: barra com 4 faixas (Limpo, Mancha, Corrupção, Transformação), 10 gomos e marcador
+- Juramento em destaque (frase em Newsreader itálico grande, poder e relíquia) e Dom do Voto com linha do tempo de 4 pontos
+- Perícias treinadas com nível em pontos (●●○) e bônus em tabular-nums
+- Biografia com Antecedente, Vínculo, Ideal e Defeito editáveis pelo jogador
+- Atualização em tempo real via TanStack Query e Supabase Realtime sem refetch

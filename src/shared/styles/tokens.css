@@ -111,6 +111,33 @@
   --space-12: 48px;
 }
 
+/* =========================================================
+   TEMA PERGAMINHO (PARCHMENT / SEPIA PALETTE)
+   ========================================================= */
+html.theme-parchment,
+body.theme-parchment,
+.theme-parchment {
+  --bg: #1a1612;
+  --bg-deep: #120e0b;
+  --surface: rgba(245, 230, 211, 0.05);
+  --surface-2: rgba(245, 230, 211, 0.08);
+  --surface-3: rgba(245, 230, 211, 0.12);
+  --surface-card: rgba(36, 29, 23, 0.7);
+  --solid: #241e18;
+  --solid-2: #2e261f;
+  --line: rgba(212, 175, 55, 0.22);
+  --line-strong: rgba(212, 175, 55, 0.4);
+  --hair: rgba(245, 230, 211, 0.08);
+  --hair-2: rgba(245, 230, 211, 0.14);
+  --text: #f5eedc;
+  --text-2: rgba(245, 238, 220, 0.75);
+  --text-3: rgba(245, 238, 220, 0.48);
+  --gold: #d4af37;
+  --gold-leaf: #e6ca65;
+  --gold-bright: #fff0b8;
+  --gold-dim: #a68124;
+}
+
 /* Escala Tipográfica Mobile */
 @media (max-width: 900px) {
   :root {
