@@ -35,7 +35,7 @@ export const JogadorLayout: React.FC = () => {
 
   const previousStatusRef = useRef<string | null | undefined>(undefined);
 
-  // Abre sozinha quando a mesa liga (transição para 'ao_vivo') e volta quando desliga
+  // Abre sozinha quando a mesa liga (transição para 'ao_vivo')
   useEffect(() => {
     const prev = previousStatusRef.current;
     const current = activeBattleMap?.status;
@@ -45,16 +45,9 @@ export const JogadorLayout: React.FC = () => {
       if (prev !== 'ao_vivo' && current === 'ao_vivo') {
         // Mesa acabou de ser iniciada pelo Mestre -> abre automaticamente
         navigate({ to: '/jogador/mesa' });
-      } else if (
-        prev === 'ao_vivo' &&
-        current !== 'ao_vivo' &&
-        currentPath.includes('/jogador/mesa')
-      ) {
-        // Mesa acabou de ser desligada enquanto o jogador estava nela -> volta para a ficha
-        navigate({ to: '/jogador/ficha' });
       }
     }
-  }, [activeBattleMap?.status, currentPath, navigate]);
+  }, [activeBattleMap?.status, navigate]);
 
   const mainTabs = [
     { label: 'Mochila', path: '/jogador/mochila', icon: Backpack },

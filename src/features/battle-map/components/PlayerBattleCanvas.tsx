@@ -105,7 +105,7 @@ export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
 
   // Atualiza tokens no motor e captura moves_left do herói
   useEffect(() => {
-    if (engineRef.current && tokens.length > 0) {
+    if (engineRef.current && tokens) {
       engineRef.current.setTokens(tokens);
 
       const myToken =

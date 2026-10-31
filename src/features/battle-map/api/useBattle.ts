@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { supabase as mainSupabase } from '../../../shared/supabase/client.ts';
 import type { BattleMap, BattleToken } from '../engine/types.ts';
 import {
   battleSupabase,
@@ -23,27 +24,40 @@ export function useActiveBattleMap() {
   useEffect(() => {
     // Escuta mudanças de status/rodada em battle_maps em tempo real
     const channelId = `realtime_battle_maps_${Math.random().toString(36).substring(2, 9)}`;
-    const channel = battleSupabase
+    const handleMapPayload = (payload: any) => {
+      if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+        const updated = payload.new as BattleMap;
+        queryClient.setQueryData(BATTLE_MAP_KEY, (prev: BattleMap | null) => {
+          if (!prev || prev.id === updated.id || updated.status === 'ao_vivo') {
+            return { ...prev, ...updated };
+          }
+          return prev;
+        });
+      }
+    };
+
+    const channelBattle = battleSupabase
       .channel(channelId)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'battle_maps' },
-        (payload) => {
-          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-            const updated = payload.new as BattleMap;
-            queryClient.setQueryData(BATTLE_MAP_KEY, (prev: BattleMap | null) => {
-              if (!prev || prev.id === updated.id) {
-                return { ...prev, ...updated };
-              }
-              return prev;
-            });
-          }
-        },
+        handleMapPayload,
+      )
+      .subscribe();
+
+    const channelMainId = `realtime_main_battle_maps_${Math.random().toString(36).substring(2, 9)}`;
+    const channelMain = mainSupabase
+      .channel(channelMainId)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'battle_maps' },
+        handleMapPayload,
       )
       .subscribe();
 
     return () => {
-      battleSupabase.removeChannel(channel);
+      battleSupabase.removeChannel(channelBattle);
+      mainSupabase.removeChannel(channelMain);
     };
   }, [queryClient]);
 
@@ -64,9 +78,37 @@ export function useBattleTokens(mapId: string | undefined) {
   useEffect(() => {
     if (!validMapId) return;
 
-    // Escuta movimentações e mudanças de tokens em tempo real
+    const handleTokenPayload = (payload: any) => {
+      const updatedToken = payload.new as BattleToken;
+      if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+        queryClient.setQueryData(
+          BATTLE_TOKENS_KEY(validMapId),
+          (prev: BattleToken[] | undefined) => {
+            if (!prev) return [updatedToken];
+            const index = prev.findIndex((t) => t.id === updatedToken.id);
+            if (index >= 0) {
+              const next = [...prev];
+              next[index] = { ...next[index], ...updatedToken };
+              return next;
+            }
+            return [...prev, updatedToken];
+          },
+        );
+      } else if (payload.eventType === 'DELETE') {
+        const deletedId = (payload.old as { id: string })?.id;
+        queryClient.setQueryData(
+          BATTLE_TOKENS_KEY(validMapId),
+          (prev: BattleToken[] | undefined) => {
+            if (!prev) return [];
+            return prev.filter((t) => t.id !== deletedId);
+          },
+        );
+      }
+    };
+
+    // Escuta movimentações e mudanças de tokens em tempo real em ambos os canais
     const channelId = `realtime_battle_tokens_${validMapId}_${Math.random().toString(36).substring(2, 9)}`;
-    const channel = battleSupabase
+    const channelBattle = battleSupabase
       .channel(channelId)
       .on(
         'postgres_changes',
@@ -76,38 +118,28 @@ export function useBattleTokens(mapId: string | undefined) {
           table: 'battle_tokens',
           filter: `map_id=eq.${validMapId}`,
         },
-        (payload) => {
-          const updatedToken = payload.new as BattleToken;
-          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-            queryClient.setQueryData(
-              BATTLE_TOKENS_KEY(validMapId),
-              (prev: BattleToken[] | undefined) => {
-                if (!prev) return [updatedToken];
-                const index = prev.findIndex((t) => t.id === updatedToken.id);
-                if (index >= 0) {
-                  const next = [...prev];
-                  next[index] = { ...next[index], ...updatedToken };
-                  return next;
-                }
-                return [...prev, updatedToken];
-              },
-            );
-          } else if (payload.eventType === 'DELETE') {
-            const deletedId = (payload.old as { id: string })?.id;
-            queryClient.setQueryData(
-              BATTLE_TOKENS_KEY(validMapId),
-              (prev: BattleToken[] | undefined) => {
-                if (!prev) return [];
-                return prev.filter((t) => t.id !== deletedId);
-              },
-            );
-          }
+        handleTokenPayload,
+      )
+      .subscribe();
+
+    const channelMainId = `realtime_main_tokens_${validMapId}_${Math.random().toString(36).substring(2, 9)}`;
+    const channelMain = mainSupabase
+      .channel(channelMainId)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'battle_tokens',
+          filter: `map_id=eq.${validMapId}`,
         },
+        handleTokenPayload,
       )
       .subscribe();
 
     return () => {
-      battleSupabase.removeChannel(channel);
+      battleSupabase.removeChannel(channelBattle);
+      mainSupabase.removeChannel(channelMain);
     };
   }, [validMapId, queryClient]);
 

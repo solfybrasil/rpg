@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   MousePointer,
@@ -29,6 +30,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { BATTLE_MAP_KEY, BATTLE_TOKENS_KEY } from '../api/useBattle.ts';
 import { BattleEngine } from '../engine/BattleEngine.ts';
 import type { BattleEditorTool, BattleMap, BattleToken } from '../engine/types.ts';
 import {
@@ -53,6 +55,7 @@ import {
 import { MediaBattleModal, type MediaBattleTarget } from './MediaBattleModal.tsx';
 
 export function DMBattleMapEditor() {
+  const queryClient = useQueryClient();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<BattleEngine | null>(null);
 
@@ -103,9 +106,10 @@ export function DMBattleMapEditor() {
       }
       if (target) {
         setCurrentMap(target);
+        queryClient.setQueryData(BATTLE_MAP_KEY, target);
       }
     } catch (_) {}
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     loadMaps();
@@ -117,11 +121,12 @@ export function DMBattleMapEditor() {
 
     fetchBattleTokens(currentMap.id).then((toks) => {
       setTokens(toks);
+      queryClient.setQueryData(BATTLE_TOKENS_KEY(currentMap.id), toks);
       if (toks.length > 0 && !selectedTokenId) {
         setSelectedTokenId(toks[0].id);
       }
     });
-  }, [currentMap?.id]);
+  }, [currentMap?.id, queryClient]);
 
   // ── 3. Inicializa Motor BattleEngine no Canvas ──
   useEffect(() => {
@@ -138,9 +143,13 @@ export function DMBattleMapEditor() {
         queueMapAutosave({ blocked });
       },
       onMoveTokenDirect: (tokenId, c, r) => {
-        setTokens((prev) =>
-          prev.map((t) => (t.id === tokenId ? { ...t, c, r } : t)),
-        );
+        setTokens((prev) => {
+          const next = prev.map((t) => (t.id === tokenId ? { ...t, c, r } : t));
+          if (currentMap?.id) {
+            queryClient.setQueryData(BATTLE_TOKENS_KEY(currentMap.id), next);
+          }
+          return next;
+        });
         updateBattleToken(tokenId, { c, r }).catch(() => {});
       },
       onFpsUpdate: (curFps) => setFps(curFps),
@@ -213,7 +222,9 @@ export function DMBattleMapEditor() {
   // ── 7. Autosave com Debounce ──
   const queueMapAutosave = (updates: Partial<BattleMap>) => {
     if (!currentMap) return;
-    setCurrentMap((prev) => (prev ? { ...prev, ...updates } : null));
+    const updated = { ...currentMap, ...updates };
+    setCurrentMap(updated);
+    queryClient.setQueryData(BATTLE_MAP_KEY, updated);
 
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     autosaveTimerRef.current = setTimeout(async () => {
@@ -227,9 +238,13 @@ export function DMBattleMapEditor() {
 
   const updateSelectedTokenLocally = (updates: Partial<BattleToken>) => {
     if (!selectedTokenId) return;
-    setTokens((prev) =>
-      prev.map((t) => (t.id === selectedTokenId ? { ...t, ...updates } : t)),
-    );
+    setTokens((prev) => {
+      const next = prev.map((t) => (t.id === selectedTokenId ? { ...t, ...updates } : t));
+      if (currentMap?.id) {
+        queryClient.setQueryData(BATTLE_TOKENS_KEY(currentMap.id), next);
+      }
+      return next;
+    });
 
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     autosaveTimerRef.current = setTimeout(async () => {
@@ -300,6 +315,7 @@ export function DMBattleMapEditor() {
     try {
       const updated = await setMapLiveStatus(currentMap.id, !isLive);
       setCurrentMap(updated);
+      queryClient.setQueryData(BATTLE_MAP_KEY, updated);
       setMaps((prev) =>
         prev.map((m) =>
           m.id === updated.id
@@ -718,7 +734,10 @@ export function DMBattleMapEditor() {
                     value={currentMap?.id || ''}
                     onChange={(e) => {
                       const sel = maps.find((m) => m.id === e.target.value);
-                      if (sel) setCurrentMap(sel);
+                      if (sel) {
+                        setCurrentMap(sel);
+                        queryClient.setQueryData(BATTLE_MAP_KEY, sel);
+                      }
                     }}
                     className="w-full bg-[#16161a] border border-[#26262a] rounded-xl px-3 py-2 text-xs text-[#ebe6d6] focus:border-[#f5b65b] focus:outline-none"
                   >

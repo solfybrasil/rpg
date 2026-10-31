@@ -804,13 +804,37 @@ export class BattleEngine {
       ctx.restore();
     }
 
-    // Nome discreto sobre a peça se for fera ou outro herói
-    if (this.options.mode !== 'tv') {
-      ctx.font = `600 ${Math.max(10, this.TH * 0.3)}px Inter, system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(245, 245, 247, 0.85)';
-      ctx.fillText(s.token.name, s.x, s.y - s.size * 0.95);
+    // Barra de Vida e Nome sobre a peça (idêntico no Mestre, TV e Jogador)
+    const hp = s.token.hp;
+    const maxHp = s.token.max_hp || hp;
+    if (hp !== undefined && maxHp && maxHp > 0) {
+      const bw = this.TW * 0.9;
+      const bh = Math.max(4, this.TH * 0.14);
+      const bx = s.x - bw / 2;
+      const by = s.y - s.size * 1.04;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(bx, by, bw, bh);
+
+      const pct = Math.max(0, Math.min(1, hp / maxHp));
+      ctx.fillStyle = s.kind === 'heroi' ? '#4a7c59' : '#c8423a';
+      ctx.fillRect(bx, by, bw * pct, bh);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 1 / this.scale;
+      ctx.strokeRect(bx, by, bw, bh);
     }
+
+    // Nome legível com contraste sobre a peça
+    const labelY =
+      hp !== undefined && maxHp ? s.y - s.size * 1.08 : s.y - s.size * 0.96;
+    ctx.font = `600 ${Math.max(10, this.TH * 0.32)}px Inter, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.lineWidth = 2.5 / this.scale;
+    ctx.strokeText(s.token.name, s.x, labelY);
+    ctx.fillStyle = '#f5f5f7';
+    ctx.fillText(s.token.name, s.x, labelY);
   }
 
   // ── Gestos de Câmera e Entrada do Jogador ──
