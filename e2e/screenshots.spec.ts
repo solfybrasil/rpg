@@ -400,4 +400,80 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     await pageOfPCParch.screenshot({ path: path.join(outDir, 'oficina_pc_parchment.png') });
     await ofPCParch.close();
   });
+
+  test('Captura Livro de Receitas Celular e PC Escuro e Pergaminho', async ({ browser }) => {
+    // 22. Receitas Celular Escuro (390x844)
+    const recMobDark = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pageRecMD = await recMobDark.newPage();
+    await pageRecMD.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageRecMD.goto('/jogador/receitas');
+    await expect(pageRecMD.getByText('Livro de Receitas')).toBeVisible();
+    await pageRecMD.waitForTimeout(500);
+    await pageRecMD.screenshot({ path: path.join(outDir, 'receitas_mobile_dark.png'), fullPage: true });
+    await recMobDark.close();
+
+    // 23. Receitas Celular Pergaminho (390x844)
+    const recMobParch = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pageRecMP = await recMobParch.newPage();
+    await pageRecMP.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageRecMP.goto('/jogador/receitas');
+    await pageRecMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pageRecMP.getByText('Livro de Receitas')).toBeVisible();
+    await pageRecMP.waitForTimeout(500);
+    await pageRecMP.screenshot({ path: path.join(outDir, 'receitas_mobile_parchment.png'), fullPage: true });
+    await recMobParch.close();
+
+    // 24. Receitas PC Escuro (1440x900)
+    const recPCDark = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pageRecPCDark = await recPCDark.newPage();
+    await pageRecPCDark.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageRecPCDark.goto('/jogador/receitas');
+    await expect(pageRecPCDark.getByText('Livro de Receitas')).toBeVisible();
+    await pageRecPCDark.waitForTimeout(500);
+    await pageRecPCDark.screenshot({ path: path.join(outDir, 'receitas_pc_dark.png') });
+    await recPCDark.close();
+
+    // 25. Receitas PC Pergaminho (1440x900)
+    const recPCParch = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pageRecPCParch = await recPCParch.newPage();
+    await pageRecPCParch.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageRecPCParch.goto('/jogador/receitas');
+    await pageRecPCParch.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pageRecPCParch.getByText('Livro de Receitas')).toBeVisible();
+    await pageRecPCParch.waitForTimeout(500);
+    await pageRecPCParch.screenshot({ path: path.join(outDir, 'receitas_pc_parchment.png') });
+    await recPCParch.close();
+  });
 });

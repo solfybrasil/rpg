@@ -299,3 +299,130 @@ export function deriveRecipeCategory(recipe: {
 
   return 'Manufatura Geral';
 }
+
+export interface IngredientRequirement {
+  id: string;
+  name: string;
+  needed: number;
+  owned: number;
+  isSatisfied: boolean;
+}
+
+export interface EnrichedRecipeResult extends GridRecipeRecord {
+  isKnown: boolean;
+  canCraftNow: boolean;
+  hasAnyIngredient: boolean;
+  progressPercent: number;
+  ingredientsStatus: IngredientRequirement[];
+}
+
+/**
+ * Enriquece uma receita com o status de posse dos ingredientes da mochila
+ */
+export function enrichRecipeWithInventory(
+  recipe: GridRecipeRecord,
+  backpackItems: InventoryItemRecord[],
+  isKnown = true,
+): EnrichedRecipeResult {
+  const countsByCatId: Record<string, number> = {};
+  for (const it of backpackItems) {
+    if (it.equip_slot) continue;
+    const catId = it.catalog_id || it.id;
+    if (catId) {
+      countsByCatId[catId] = (countsByCatId[catId] || 0) + Number(it.quantity || 1);
+    }
+  }
+
+  // Calcula requisitos a partir do grid ou da lista de ingredientes
+  const required: Record<string, { name: string; qty: number }> = {};
+
+  if (Array.isArray(recipe.grid)) {
+    recipe.grid.forEach((catId, idx) => {
+      if (!catId) return;
+      const slotName = recipe.grid_names?.[idx] || catId;
+      if (!required[catId]) {
+        required[catId] = { name: slotName, qty: 0 };
+      }
+      required[catId].qty += 1;
+    });
+  } else if (Array.isArray(recipe.ingredients)) {
+    for (const ing of recipe.ingredients) {
+      const id = ing.catalog_id || ing.id;
+      if (!id) continue;
+      required[id] = { name: ing.name || id, qty: ing.qty || 1 };
+    }
+  }
+
+  const reqEntries = Object.entries(required);
+  let totalNeeded = 0;
+  let totalOwned = 0;
+  let satisfiedTypes = 0;
+  let typesWithAny = 0;
+
+  const ingredientsStatus: IngredientRequirement[] = reqEntries.map(([catId, data]) => {
+    const owned = countsByCatId[catId] || 0;
+    const needed = data.qty;
+    totalNeeded += needed;
+    totalOwned += Math.min(owned, needed);
+
+    const isSatisfied = owned >= needed;
+    if (isSatisfied) satisfiedTypes += 1;
+    if (owned > 0) typesWithAny += 1;
+
+    return {
+      id: catId,
+      name: data.name,
+      needed,
+      owned,
+      isSatisfied,
+    };
+  });
+
+  const totalTypes = reqEntries.length;
+  const canCraftNow = totalTypes > 0 && satisfiedTypes === totalTypes;
+  const hasAnyIngredient = typesWithAny > 0;
+  const progressPercent = totalNeeded > 0 ? Math.round((totalOwned / totalNeeded) * 100) : 0;
+
+  return {
+    ...recipe,
+    isKnown,
+    canCraftNow,
+    hasAnyIngredient,
+    progressPercent,
+    ingredientsStatus,
+  };
+}
+
+/**
+ * Filtra a lista de receitas por busca, estação e se pode criar agora
+ */
+export function filterRecipeList(
+  recipes: EnrichedRecipeResult[],
+  filters: {
+    search?: string;
+    station?: string;
+    onlyCraftable?: boolean;
+  },
+): EnrichedRecipeResult[] {
+  let list = recipes;
+
+  if (filters.station && filters.station !== 'todas') {
+    list = list.filter((r) => r.station === filters.station);
+  }
+
+  if (filters.onlyCraftable) {
+    list = list.filter((r) => r.canCraftNow);
+  }
+
+  if (filters.search?.trim()) {
+    const q = filters.search.toLowerCase().trim();
+    list = list.filter((r) => {
+      const nameMatch = (r.result_name || '').toLowerCase().includes(q);
+      const catMatch = (r.category || '').toLowerCase().includes(q);
+      const ingMatch = r.ingredientsStatus.some((i) => i.name.toLowerCase().includes(q));
+      return nameMatch || catMatch || ingMatch;
+    });
+  }
+
+  return list;
+}

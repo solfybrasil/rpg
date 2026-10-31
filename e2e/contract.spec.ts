@@ -739,4 +739,68 @@ test.describe
 
       await ctx.close();
     });
+
+    test('Prompt 08: Livro de Receitas com Paginação, Filtros e Montagem', async ({ browser }) => {
+      const ctx = await browser.newContext({
+        viewport: { width: 1440, height: 900 },
+      });
+      const page = await ctx.newPage();
+
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+        );
+      });
+
+      await page.goto('/jogador/receitas');
+
+      // 1. Verifica título e compêndio
+      await expect(page.getByText('Livro de Receitas')).toBeVisible();
+
+      // 2. Filtros por Bancada
+      await expect(page.getByRole('button', { name: 'Forja', exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Forja', exact: true }).click();
+
+      await expect(page.getByRole('button', { name: 'Alquimia', exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Alquimia', exact: true }).click();
+
+      await expect(page.getByRole('button', { name: 'Cozinha', exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Cozinha', exact: true }).click();
+
+      await page.getByRole('button', { name: 'Todas', exact: true }).click();
+
+      // 3. Toggle "Posso fazer agora"
+      const craftableToggle = page.getByRole('button', { name: /Posso fazer/i });
+      await expect(craftableToggle).toBeVisible();
+      await craftableToggle.click();
+      await page.waitForTimeout(300);
+      await craftableToggle.click(); // desmarca
+
+      // 4. Busca por texto
+      const searchInput = page.getByPlaceholder('Buscar receita...');
+      await expect(searchInput).toBeVisible();
+      await searchInput.fill('Espada');
+      await page.waitForTimeout(300);
+      await searchInput.fill('');
+
+      // 5. Paginação
+      const nextBtn = page.getByRole('button', { name: /Próxima Página/i });
+      if (await nextBtn.isEnabled()) {
+        await nextBtn.click();
+        await page.waitForTimeout(300);
+        const prevBtn = page.getByRole('button', { name: /Página Anterior/i });
+        await prevBtn.click();
+      }
+
+      // 6. Botão Montar na Bancada navega para /jogador/oficina
+      const assembleBtn = page.getByRole('button', { name: /Montar na Bancada/i }).first();
+      if (await assembleBtn.isVisible()) {
+        await assembleBtn.click();
+        await page.waitForURL('**/jogador/oficina');
+        await expect(page.getByText('Oficina do Jurado')).toBeVisible();
+      }
+
+      await ctx.close();
+    });
   });
