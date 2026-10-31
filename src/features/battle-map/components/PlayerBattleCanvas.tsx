@@ -163,6 +163,7 @@ export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
       {/* Canvas Principal do Motor Tático */}
       <canvas
         ref={canvasRef}
+        style={{ willChange: 'transform' }}
         className="absolute inset-0 w-full h-full block cursor-crosshair touch-none"
         data-testid="battle-canvas"
       />

@@ -84,6 +84,12 @@ export class BattleEngine {
   private graph: { dist: Map<string, number>; prev: Map<string, string> } | null =
     null;
 
+  // Cache de Caminhos Prontos (Hardware-Accelerated Path2D)
+  private gridPath: Path2D | null = null;
+  private blockedPath: Path2D | null = null;
+  private reachPath: Path2D | null = null;
+  private lastVideoLimitsCheck = 0;
+
   // Render loop
   private rafId: number | null = null;
   private lastTime = performance.now();
@@ -112,9 +118,12 @@ export class BattleEngine {
 
   constructor(canvas: HTMLCanvasElement, options: BattleEngineOptions) {
     this.cv = canvas;
-    const context = canvas.getContext('2d', { alpha: false });
+    const context =
+      canvas.getContext('2d', { alpha: false, desynchronized: true }) ||
+      canvas.getContext('2d', { alpha: false });
     if (!context) throw new Error('Could not get 2D context from canvas');
     this.ctx = context;
+    this.ctx.imageSmoothingQuality = 'medium';
     this.options = options;
 
     this.pool = new VideoChromaPool();
@@ -189,6 +198,9 @@ export class BattleEngine {
       this.TW,
       this.TH,
     );
+
+    this.rebuildGridPath();
+    this.rebuildBlockedPath();
 
     const bgUrl = mapData.background_url || '/batalha/santuario.jpg';
     if (this.currentBgUrl !== bgUrl) {
@@ -377,6 +389,7 @@ export class BattleEngine {
     if (!hero || this.options.mode === 'tv') {
       this.reach.clear();
       this.graph = null;
+      this.reachPath = null;
       return;
     }
 
@@ -392,6 +405,52 @@ export class BattleEngine {
       this.graph.dist,
       hero.movesLeft ?? this.moveLimit,
     );
+    this.rebuildReachPath();
+  }
+
+  private rebuildGridPath(): void {
+    if (typeof Path2D === 'undefined') return;
+    const p = new Path2D();
+    for (const k of this.valid) {
+      const [sc, sr] = k.split(',').map(Number);
+      const pt = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
+      p.moveTo(pt.x, pt.y - this.TH / 2);
+      p.lineTo(pt.x + this.TW / 2, pt.y);
+      p.lineTo(pt.x, pt.y + this.TH / 2);
+      p.lineTo(pt.x - this.TW / 2, pt.y);
+      p.closePath();
+    }
+    this.gridPath = p;
+  }
+
+  private rebuildBlockedPath(): void {
+    if (typeof Path2D === 'undefined') return;
+    const p = new Path2D();
+    for (const k of this.blocked) {
+      const [sc, sr] = k.split(',').map(Number);
+      const pt = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
+      p.moveTo(pt.x, pt.y - this.TH / 2);
+      p.lineTo(pt.x + this.TW / 2, pt.y);
+      p.lineTo(pt.x, pt.y + this.TH / 2);
+      p.lineTo(pt.x - this.TW / 2, pt.y);
+      p.closePath();
+    }
+    this.blockedPath = p;
+  }
+
+  private rebuildReachPath(): void {
+    if (typeof Path2D === 'undefined') return;
+    const p = new Path2D();
+    for (const k of this.reach.keys()) {
+      const [sc, sr] = k.split(',').map(Number);
+      const pt = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
+      p.moveTo(pt.x, pt.y - this.TH / 2);
+      p.lineTo(pt.x + this.TW / 2, pt.y);
+      p.lineTo(pt.x, pt.y + this.TH / 2);
+      p.lineTo(pt.x - this.TW / 2, pt.y);
+      p.closePath();
+    }
+    this.reachPath = p;
   }
 
   private updateHover(coord: CellCoord | null): void {
@@ -478,18 +537,27 @@ export class BattleEngine {
       }
     }
 
-    // 2. Atualizar quadros de vídeo e aplicar culling
+    // 2. Atualizar quadros de vídeo e aplicar culling com desduplicação de mídia
     const visibleUrls = new Set<string>();
+    const processedUrls = new Set<string>();
     for (const state of this.tokenStates.values()) {
-      if (state.token.visible !== false) {
+      if (state.token.visible !== false && state.mediaUrl) {
         visibleUrls.add(state.mediaUrl);
-        const entry = this.pool.get(state.mediaUrl, state.chromaMode);
-        if (entry && this.pool.updateFrame(entry, now)) {
-          this.dirty = true;
+        if (!processedUrls.has(state.mediaUrl)) {
+          processedUrls.add(state.mediaUrl);
+          const entry = this.pool.get(state.mediaUrl, state.chromaMode);
+          if (entry && this.pool.updateFrame(entry, now)) {
+            this.dirty = true;
+          }
         }
       }
     }
-    this.pool.applyVideoLimits(visibleUrls);
+
+    // Só reavalia reprodução/pausa de vídeos a cada 1000ms para evitar overhead de chamadas play() por quadro
+    if (now - this.lastVideoLimitsCheck > 1000) {
+      this.lastVideoLimitsCheck = now;
+      this.pool.applyVideoLimits(visibleUrls);
+    }
 
     // 3. Renderizar Canvas se necessário
     if (this.dirty || anyMoving) {
@@ -528,44 +596,36 @@ export class BattleEngine {
     const isPlayer = this.options.mode === 'player';
     const hero = this.getMyHeroToken();
 
-    // 2. Grade e alcance tático
+    // 2. Grade e alcance tático (Desenho ultra-rápido acelerado por hardware)
     if (this.mapData?.show_grid !== false) {
       // Quadrados alcançáveis: preenchimento --gold com 18% opacidade
       if (isPlayer && hero && !hero.moving && this.reach.size > 0) {
-        ctx.beginPath();
-        for (const k of this.reach.keys()) {
-          const { c, r } = toCell(0, 0, 0, 0, 1, 1); // dummy
-          const [sc, sr] = k.split(',').map(Number);
-          const p = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
-          ctx.moveTo(p.x, p.y - this.TH / 2);
-          ctx.lineTo(p.x + this.TW / 2, p.y);
-          ctx.lineTo(p.x, p.y + this.TH / 2);
-          ctx.lineTo(p.x - this.TW / 2, p.y);
-          ctx.closePath();
-        }
         ctx.fillStyle = 'rgba(245, 182, 91, 0.18)'; // --gold com 18%
-        ctx.fill();
+        if (this.reachPath) {
+          ctx.fill(this.reachPath);
+        } else {
+          ctx.beginPath();
+          for (const k of this.reach.keys()) {
+            const [sc, sr] = k.split(',').map(Number);
+            const p = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
+            ctx.moveTo(p.x, p.y - this.TH / 2);
+            ctx.lineTo(p.x + this.TW / 2, p.y);
+            ctx.lineTo(p.x, p.y + this.TH / 2);
+            ctx.lineTo(p.x - this.TW / 2, p.y);
+            ctx.closePath();
+          }
+          ctx.fill();
+        }
       }
 
       // Linhas da grade isométrica
-      ctx.beginPath();
-      for (const k of this.valid) {
-        const [sc, sr] = k.split(',').map(Number);
-        const p = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
-        ctx.moveTo(p.x, p.y - this.TH / 2);
-        ctx.lineTo(p.x + this.TW / 2, p.y);
-        ctx.lineTo(p.x, p.y + this.TH / 2);
-        ctx.lineTo(p.x - this.TW / 2, p.y);
-        ctx.closePath();
-      }
       ctx.lineWidth = lw;
       ctx.strokeStyle = 'rgba(235, 230, 210, 0.16)';
-      ctx.stroke();
-
-      // Bloqueios de terreno em --blood suave
-      if (this.blocked.size > 0) {
+      if (this.gridPath) {
+        ctx.stroke(this.gridPath);
+      } else {
         ctx.beginPath();
-        for (const k of this.blocked) {
+        for (const k of this.valid) {
           const [sc, sr] = k.split(',').map(Number);
           const p = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
           ctx.moveTo(p.x, p.y - this.TH / 2);
@@ -574,8 +634,27 @@ export class BattleEngine {
           ctx.lineTo(p.x - this.TW / 2, p.y);
           ctx.closePath();
         }
+        ctx.stroke();
+      }
+
+      // Bloqueios de terreno em --blood suave
+      if (this.blocked.size > 0) {
         ctx.fillStyle = 'rgba(200, 66, 58, 0.35)'; // --blood
-        ctx.fill();
+        if (this.blockedPath) {
+          ctx.fill(this.blockedPath);
+        } else {
+          ctx.beginPath();
+          for (const k of this.blocked) {
+            const [sc, sr] = k.split(',').map(Number);
+            const p = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
+            ctx.moveTo(p.x, p.y - this.TH / 2);
+            ctx.lineTo(p.x + this.TW / 2, p.y);
+            ctx.lineTo(p.x, p.y + this.TH / 2);
+            ctx.lineTo(p.x - this.TW / 2, p.y);
+            ctx.closePath();
+          }
+          ctx.fill();
+        }
       }
     }
 
@@ -700,6 +779,16 @@ export class BattleEngine {
   }
 
   private drawToken(s: LocalTokenState, lw: number, now: number): void {
+    // Viewport Culling: ignora peças completamente fora do campo visual da câmera
+    const margin = Math.max(s.size, this.TW) * 1.5;
+    const minX = this.view.x - margin;
+    const maxX = this.view.x + this.cv.width / this.scale + margin;
+    const minY = this.view.y - margin;
+    const maxY = this.view.y + this.cv.height / this.scale + margin;
+    if (s.x < minX || s.x > maxX || s.y < minY || s.y > maxY) {
+      return;
+    }
+
     const ctx = this.ctx;
     const hero = this.getMyHeroToken();
     const isMyHero = s === hero;
@@ -954,6 +1043,7 @@ export class BattleEngine {
           if (cell) {
             const k = cellKey(cell.c, cell.r);
             this.blocked.add(k);
+            this.rebuildBlockedPath();
             this.options.onUpdateBlocked?.(Array.from(this.blocked));
             this.dirty = true;
           }
@@ -965,6 +1055,7 @@ export class BattleEngine {
           if (cell) {
             const k = cellKey(cell.c, cell.r);
             this.blocked.delete(k);
+            this.rebuildBlockedPath();
             this.options.onUpdateBlocked?.(Array.from(this.blocked));
             this.dirty = true;
           }
@@ -1044,12 +1135,13 @@ export class BattleEngine {
           this.imgW,
           this.imgH,
         );
-        if (
-          !this.hover ||
-          !cell ||
-          this.hover.c !== cell.c ||
-          this.hover.r !== cell.r
-        ) {
+        const cellChanged =
+          (!this.hover && cell !== null) ||
+          (this.hover !== null && cell === null) ||
+          (this.hover !== null &&
+            cell !== null &&
+            (this.hover.c !== cell.c || this.hover.r !== cell.r));
+        if (cellChanged) {
           this.updateHover(cell);
         }
       }
@@ -1079,6 +1171,7 @@ export class BattleEngine {
           const k = cellKey(cell.c, cell.r);
           if (!this.blocked.has(k)) {
             this.blocked.add(k);
+            this.rebuildBlockedPath();
             this.options.onUpdateBlocked?.(Array.from(this.blocked));
             this.dirty = true;
           }
@@ -1103,6 +1196,7 @@ export class BattleEngine {
           const k = cellKey(cell.c, cell.r);
           if (this.blocked.has(k)) {
             this.blocked.delete(k);
+            this.rebuildBlockedPath();
             this.options.onUpdateBlocked?.(Array.from(this.blocked));
             this.dirty = true;
           }

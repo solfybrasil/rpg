@@ -82,7 +82,8 @@ export const TVBattleCanvas: React.FC = () => {
       {/* Canvas da TV em Tela Cheia (literalmente idêntico ao do mestre) */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full block cursor-default"
+        style={{ willChange: 'transform' }}
+        className="absolute inset-0 w-full h-full block cursor-default touch-none"
         data-testid="tv-battle-canvas"
       />
 

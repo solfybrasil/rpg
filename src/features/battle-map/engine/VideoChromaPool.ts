@@ -247,8 +247,12 @@ export class VideoChromaPool {
         const keyer =
           chromaMode !== 'nenhum' ? makeWebGLKeyer(mode, maxDim) : null;
 
-        const off = document.createElement('canvas');
-        const octx = off.getContext('2d', { willReadFrequently: true });
+        let off: HTMLCanvasElement | undefined;
+        let octx: CanvasRenderingContext2D | null | undefined;
+        if (!keyer && chromaMode !== 'nenhum') {
+          off = document.createElement('canvas');
+          octx = off.getContext('2d', { willReadFrequently: true });
+        }
 
         entry = {
           type: 'video',

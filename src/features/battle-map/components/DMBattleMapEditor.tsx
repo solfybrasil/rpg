@@ -560,7 +560,8 @@ export function DMBattleMapEditor() {
         >
           <canvas
             ref={canvasRef}
-            className="w-full h-full block cursor-crosshair"
+            style={{ willChange: 'transform' }}
+            className="w-full h-full block cursor-crosshair touch-none"
           />
 
           {/* Barra de Ferramentas Flutuante em Cima do Mapa */}
