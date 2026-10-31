@@ -1046,5 +1046,70 @@ test.describe
 
       await ctx.close();
     });
+
+    test('Prompt 16: Catálogo de Itens do Mestre com Busca no Servidor, Preview ao Vivo e Concessão a Herói', async ({ browser }) => {
+      const ctx = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+      });
+      const page = await ctx.newPage();
+      page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
+      page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
+
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+        );
+      });
+
+      await page.goto('/mestre/itens');
+
+      // 1. Validar cabeçalho principal
+      await expect(
+        page.getByRole('heading', { name: /Catálogo de Artigos & Tesouros/i }),
+      ).toBeVisible();
+
+      // 2. Busca e filtros no servidor
+      const searchInput = page.getByTestId('item-search-input');
+      await expect(searchInput).toBeVisible();
+      await searchInput.fill('Espada');
+      await page.waitForTimeout(600);
+
+      // 3. Alternar para visualização em tabela virtualizada
+      await page.getByTestId('view-mode-table').click();
+      await expect(page.getByTestId('item-virtualized-table-container')).toBeVisible();
+
+      // Voltar para visualização em grade
+      await page.getByTestId('view-mode-grid').click();
+      await page.waitForTimeout(400);
+
+      // 4. Abrir formulário de criação com prévia ao vivo
+      await page.getByTestId('create-item-btn').click();
+      const nameInput = page.getByTestId('item-form-name');
+      await expect(nameInput).toBeVisible();
+      await nameInput.fill('Adaga Obscura E2E');
+
+      // Validar que a prévia ao vivo refletiu o nome digitado
+      await expect(page.getByRole('heading', { name: 'Adaga Obscura E2E' })).toBeVisible();
+
+      // Fechar Sheet
+      await page.getByRole('button', { name: /Cancelar/i }).click();
+      await page.waitForTimeout(400);
+
+      // 5. Abrir Seletor "Dar a..." para herói
+      const firstGiveBtn = page.locator('button[data-testid^="give-item-btn-"]').first();
+      await expect(firstGiveBtn).toBeVisible();
+      await firstGiveBtn.click();
+
+      // Verificar modal com os avatares dos heróis e botão de conceder
+      await expect(page.getByTestId('hero-target-kaelis_moonfire')).toBeVisible();
+      await expect(page.getByTestId('confirm-give-item-btn')).toBeVisible();
+      await page.getByRole('button', { name: /Cancelar/i }).click();
+
+      // 6. Testar botão de exportação CSV
+      await page.getByTestId('export-csv-btn').click();
+
+      await ctx.close();
+    });
   });
 
