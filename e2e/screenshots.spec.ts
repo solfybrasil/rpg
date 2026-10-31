@@ -1096,5 +1096,38 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     await pPP.screenshot({ path: path.join(outDir, 'sistema_mestre_pc_parchment.png') });
     await pcParch.close();
   });
+
+  test('Captura Mesa Compartilhada Celular e PC (Dark e Pergaminho)', async ({ browser }) => {
+    test.setTimeout(120000);
+
+    const page = await browser.newPage();
+    page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
+    page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
+
+    // 1. Mobile Dark (390x844)
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/mesa', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('mesa-tv-view')).toBeVisible();
+    await page.getByTestId('mesa-roll-test-btn').click();
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: path.join(outDir, 'mesa_mobile_dark.png'), fullPage: true });
+
+    // 2. Mobile Parchment (390x844)
+    await page.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: path.join(outDir, 'mesa_mobile_parchment.png'), fullPage: true });
+
+    // 3. PC Parchment (1440x900)
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: path.join(outDir, 'mesa_pc_parchment.png') });
+
+    // 4. PC Dark (1440x900)
+    await page.evaluate(() => document.documentElement.classList.remove('theme-parchment'));
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: path.join(outDir, 'mesa_pc_dark.png') });
+
+    await page.close();
+  });
 });
 

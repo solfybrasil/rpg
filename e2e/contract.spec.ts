@@ -1344,5 +1344,69 @@ test.describe
 
       await ctx.close();
     });
+
+    test('P21: TV: /mesa (dados 3D e timer)', async ({ browser }) => {
+      test.setTimeout(120000);
+      const ctx = await browser.newContext({
+        viewport: { width: 1440, height: 900 },
+      });
+      const page = await ctx.newPage();
+      page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
+      page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
+
+      await page.goto('/mesa');
+
+      // 1. Validar cabeçalho da TV
+      await expect(page.getByText('Sessão ao Vivo · Mesa Sagrada')).toBeVisible();
+
+      // 2. Timer de Cena Isolado (anel fino dourado)
+      await expect(page.getByTestId('scene-timer-container')).toBeVisible();
+      const timerDisplay = page.getByTestId('scene-timer-display');
+      await expect(timerDisplay).toBeVisible();
+      await expect(timerDisplay).toHaveText('01:00');
+
+      // Alternar presets e controles
+      const preset30Btn = page.getByTestId('scene-timer-preset-30');
+      await expect(preset30Btn).toBeVisible();
+      await preset30Btn.click();
+      await expect(timerDisplay).toHaveText('00:30');
+
+      const toggleTimerBtn = page.getByTestId('scene-timer-toggle-btn');
+      await toggleTimerBtn.click();
+      await page.waitForTimeout(1100);
+
+      const resetTimerBtn = page.getByTestId('scene-timer-reset-btn');
+      await resetTimerBtn.click();
+      await expect(timerDisplay).toHaveText('00:30');
+
+      // 3. Canvas 3D dos Dados
+      await expect(page.getByTestId('dice-3d-canvas-container')).toBeVisible();
+
+      // 4. Estado de Espera Inicial
+      await expect(page.getByTestId('mesa-empty-state')).toBeVisible();
+
+      // 5. Broadcast de Rolagem 2d6
+      const rollTestBtn = page.getByTestId('mesa-roll-test-btn');
+      await expect(rollTestBtn).toBeVisible();
+      await rollTestBtn.click();
+      await page.waitForTimeout(500);
+
+      // 6. Resultado Gigante em Cinzel 96 e dados de quem rolou
+      await expect(page.getByTestId('mesa-active-roll-container')).toBeVisible();
+      await expect(page.getByTestId('mesa-roller-name')).toHaveText('Tor Björn');
+      await expect(page.getByTestId('mesa-giant-result-number')).toBeVisible();
+      await expect(page.getByTestId('mesa-roll-formula')).toBeVisible();
+      await expect(page.getByTestId('mesa-outcome-badge')).toBeVisible();
+
+      // 7. Limpar Mesa
+      const clearBtn = page.getByTestId('mesa-clear-table-btn');
+      await expect(clearBtn).toBeVisible();
+      await clearBtn.click();
+      await page.waitForTimeout(300);
+
+      await expect(page.getByTestId('mesa-empty-state')).toBeVisible();
+
+      await ctx.close();
+    });
   });
 
