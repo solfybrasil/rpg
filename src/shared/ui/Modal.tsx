@@ -26,29 +26,29 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
           className={twMerge(
             clsx(
-              'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-white/10 bg-[#141417] p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-2xl',
+              'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-[var(--iron)] bg-[var(--stone)] p-6 shadow-2xl duration-200 slab rounded-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
               className,
             ),
           )}
         >
-          <div className="flex flex-col space-y-1.5 text-center sm:text-left">
+          <div className="flex flex-col space-y-1.5 text-center sm:text-left border-b border-[var(--iron)] pb-3">
             {title && (
-              <DialogPrimitive.Title className="text-lg font-semibold leading-none tracking-tight font-serif text-[#f5b65b]">
+              <DialogPrimitive.Title className="text-lg font-bold leading-none tracking-wider font-['Cinzel',serif] text-[var(--gold-hi)] uppercase">
                 {title}
               </DialogPrimitive.Title>
             )}
             {description && (
-              <DialogPrimitive.Description className="text-sm text-white/60">
+              <DialogPrimitive.Description className="text-sm text-[var(--muted)] font-['EB_Garamond',serif] italic">
                 {description}
               </DialogPrimitive.Description>
             )}
           </div>
           {children}
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none p-1 bg-white/5 hover:bg-white/10 text-white">
+          <DialogPrimitive.Close className="absolute right-4 top-4 opacity-70 transition-opacity hover:opacity-100 focus:outline-none p-1.5 text-[var(--muted)] hover:text-white bg-black/40 border border-[var(--iron)] cursor-pointer">
             <X className="h-4 w-4" />
             <span className="sr-only">Fechar</span>
           </DialogPrimitive.Close>
@@ -82,41 +82,37 @@ export const Sheet: React.FC<SheetProps> = ({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-200" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
           className={twMerge(
             clsx(
-              'fixed z-50 bg-[#121215] border-white/10 shadow-2xl flex flex-col focus:outline-none duration-250 ease-out',
+              'fixed z-50 bg-[var(--stone)] border-[var(--iron)] p-6 shadow-2xl slab rounded-none transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out duration-200',
               isBottom
-                ? 'inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl border-t border-x p-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom max-w-2xl mx-auto'
-                : 'inset-y-0 right-0 w-full sm:max-w-md h-full rounded-l-3xl border-l p-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
+                ? 'inset-x-0 bottom-0 border-t max-h-[85vh] overflow-y-auto data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom'
+                : 'inset-y-0 right-0 h-full w-3/4 border-l max-w-md overflow-y-auto data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
               className,
             ),
           )}
         >
-          {isBottom && (
-            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4 shrink-0" />
-          )}
-          <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex items-center justify-between border-b border-[var(--iron)] pb-3 mb-4">
             <div className="flex flex-col space-y-1">
               {title && (
-                <DialogPrimitive.Title className="text-lg font-serif font-bold text-[#f5b65b] tracking-wide">
+                <DialogPrimitive.Title className="text-base font-bold font-['Cinzel',serif] text-[var(--gold-hi)] tracking-wider uppercase">
                   {title}
                 </DialogPrimitive.Title>
               )}
               {description && (
-                <DialogPrimitive.Description className="text-xs text-white/60 font-serif">
+                <DialogPrimitive.Description className="text-xs text-[var(--muted)] font-['EB_Garamond',serif] italic">
                   {description}
                 </DialogPrimitive.Description>
               )}
             </div>
-
-            <DialogPrimitive.Close className="rounded-full p-1.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors shrink-0">
-              <X className="w-4 h-4" />
+            <DialogPrimitive.Close className="p-1.5 text-[var(--muted)] hover:text-white bg-black/40 border border-[var(--iron)] transition-colors cursor-pointer">
+              <X className="h-4 w-4" />
               <span className="sr-only">Fechar</span>
             </DialogPrimitive.Close>
           </div>
-          <div className="overflow-y-auto flex-1">{children}</div>
+          {children}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
@@ -132,7 +128,7 @@ export const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={twMerge(
-      'inline-flex h-10 items-center justify-center rounded-xl bg-white/[0.04] p-1 border border-white/[0.08] text-white/60',
+      'inline-flex h-10 items-center justify-center p-1 bg-black/40 border border-[var(--iron)] gap-1 w-full',
       className,
     )}
     {...props}
@@ -147,7 +143,7 @@ export const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={twMerge(
-      'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-[#f5b65b] data-[state=active]:text-[#1d1305] data-[state=active]:shadow-sm',
+      "inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-xs font-['Cinzel',serif] font-bold tracking-[0.12em] uppercase text-[var(--muted)] transition-all cursor-pointer hover:text-[var(--text)] data-[state=active]:slab data-[state=active]:on data-[state=active]:text-[var(--gold-hi)] disabled:pointer-events-none disabled:opacity-50",
       className,
     )}
     {...props}
@@ -161,16 +157,17 @@ export const TabsContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
-    className={twMerge('mt-2 focus-visible:outline-none', className)}
+    className={twMerge(
+      'mt-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--gold)]',
+      className,
+    )}
     {...props}
   />
 ));
 TabsContent.displayName = TabsPrimitive.Content.displayName;
 
 export const TooltipProvider = TooltipPrimitive.Provider;
-
 export const Tooltip = TooltipPrimitive.Root;
-
 export const TooltipTrigger = TooltipPrimitive.Trigger;
 
 export const TooltipContent = React.forwardRef<
@@ -181,7 +178,7 @@ export const TooltipContent = React.forwardRef<
     ref={ref}
     sideOffset={sideOffset}
     className={twMerge(
-      'z-50 overflow-hidden rounded-lg border border-white/10 bg-[#1c1c20] px-3 py-1.5 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95',
+      "z-50 overflow-hidden border border-[var(--iron)] parch px-3 py-1.5 text-xs text-[var(--ink)] shadow-xl animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 font-['EB_Garamond',serif]",
       className,
     )}
     {...props}

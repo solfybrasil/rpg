@@ -9,23 +9,19 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', children, ...props }, ref) => {
     const variantClasses = {
-      default: 'bg-white/[0.04] border border-white/[0.08] shadow-sm',
-      sunken: 'bg-black/30 border border-white/[0.04]',
-      elevated: 'bg-[#141417] border border-white/[0.12] shadow-lg shadow-black/40',
-      gold: 'bg-gradient-to-b from-[#f5b65b]/10 to-transparent border border-[#f5b65b]/30 shadow-sm shadow-[#f5b65b]/10',
+      default: 'slab',
+      sunken: 'recess',
+      elevated: 'slab border-[var(--iron)] shadow-[0_12px_28px_rgba(0,0,0,0.85)]',
+      gold: 'slab on',
       interactive:
-        'bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] hover:border-white/[0.15] active:scale-[0.99] transition-all cursor-pointer',
+        'slab hover:border-[var(--gold-lo)] active:scale-[0.99] transition-all cursor-pointer',
     }[variant];
 
     return (
       <div
         ref={ref}
         className={twMerge(
-          clsx(
-            'rounded-2xl p-4 transition-colors relative overflow-hidden',
-            variantClasses,
-            className,
-          ),
+          clsx('p-4 transition-colors relative rounded-none', variantClasses, className),
         )}
         {...props}
       >
@@ -70,28 +66,28 @@ export const Badge: React.FC<BadgeProps> = ({
   }[size];
 
   const variantClasses: Record<string, string> = {
-    default: 'bg-white/10 text-white/80 border border-white/10',
-    neutral: 'bg-white/5 text-white/60 border border-white/10',
-    gold: 'bg-[#f5b65b]/20 text-[#ffd59a] border border-[#f5b65b]/40',
-    accent: 'bg-[#f5b65b]/20 text-[#ffd59a] border border-[#f5b65b]/40',
-    danger: 'bg-[#ff453a]/20 text-[#ff6b62] border border-[#ff453a]/40',
-    warning: 'bg-[#ffb340]/20 text-[#ffb340] border border-[#ffb340]/40',
-    success: 'bg-[#30d158]/20 text-[#30d158] border border-[#30d158]/40',
-    plague: 'bg-[#ffb340]/20 text-[#ffb340] border border-[#ffb340]/40',
-    blue: 'bg-[#0a84ff]/20 text-[#64d2ff] border border-[#0a84ff]/40',
-    comum: 'bg-stone-500/15 text-stone-300 border border-stone-500/30',
-    incomum: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30',
-    raro: 'bg-blue-500/15 text-blue-300 border border-blue-500/30',
-    lendario: 'bg-purple-500/15 text-purple-300 border border-purple-500/30',
+    default: 'bg-black/40 text-[var(--text)] border border-[var(--iron)]',
+    neutral: 'bg-black/30 text-[var(--muted)] border border-[var(--iron)]',
+    gold: 'bg-[var(--gold-lo)]/20 text-[var(--gold-hi)] border border-[var(--gold-lo)]',
+    accent: 'bg-[var(--gold-lo)]/25 text-[var(--gold-hi)] border border-[var(--gold)]',
+    danger: 'bg-[var(--blood)]/20 text-red-300 border border-[var(--blood)]',
+    warning: 'bg-[#e08a3c]/20 text-[#ecd395] border border-[#e08a3c]',
+    success: 'bg-[var(--moss)]/20 text-[var(--moss)] border border-[var(--moss)]',
+    plague: 'bg-[var(--plague)]/20 text-[var(--plague)] border border-[var(--plague)]',
+    blue: 'bg-[var(--mana)]/20 text-[#7fa6cf] border border-[var(--mana)]',
+    comum: 'r-com border',
+    incomum: 'r-unc border',
+    raro: 'r-rare border',
+    lendario: 'r-leg border',
     artefato:
-      'bg-amber-500/20 text-[#ffd59a] border border-amber-500/50 shadow-sm shadow-amber-500/20',
+      'bg-[var(--gold-lo)]/30 text-[var(--gold-hi)] border border-[var(--gold)] shadow-[0_0_8px_rgba(201,164,92,0.3)]',
   };
 
   return (
     <span
       className={twMerge(
         clsx(
-          'inline-flex items-center font-serif font-medium rounded-full uppercase tracking-wider select-none',
+          "inline-flex items-center font-['Cinzel',serif] font-bold uppercase tracking-wider select-none rounded-none",
           sizeClasses,
           variantClasses[variant] || variantClasses.default,
           className,
@@ -124,17 +120,19 @@ export const Bar: React.FC<BarProps> = ({
   const pct = Math.max(0, Math.min(100, max > 0 ? (value / max) * 100 : 0));
 
   const barColors = {
-    vida: 'bg-gradient-to-r from-[#ff453a] to-[#ff6b62]',
-    foco: 'bg-gradient-to-r from-[#0a84ff] to-[#64d2ff]',
-    xp: 'bg-gradient-to-r from-[#bf5af2] to-[#da8aff]',
-    peste: 'bg-gradient-to-r from-[#ffb340] to-[#ffd60a]',
+    vida: 'bg-gradient-to-r from-[#e8584a] via-[#a3291f] to-[#4a0d08]',
+    foco: 'bg-gradient-to-r from-[#6d9ae6] via-[#2c5fb8] to-[#0d1f45]',
+    xp: 'bg-gradient-to-r from-[#8c6a22] to-[#c9a45c]',
+    peste: 'bg-gradient-to-r from-[#5a5f66] to-[#8a8f96]',
   }[type];
 
   return (
     <div className={twMerge('w-full flex flex-col gap-1', className)}>
       {(label || showNumbers) && (
-        <div className="flex justify-between items-center text-xs text-white/70 font-mono">
-          {label && <span className="font-sans font-medium text-white/90">{label}</span>}
+        <div className="flex justify-between items-center text-xs font-['Cinzel',serif] text-[var(--muted)] tabular-nums">
+          {label && (
+            <span className="font-bold text-[var(--text)] uppercase tracking-wider">{label}</span>
+          )}
           {showNumbers && (
             <span>
               {value} / {max}
@@ -142,9 +140,9 @@ export const Bar: React.FC<BarProps> = ({
           )}
         </div>
       )}
-      <div className="w-full h-2.5 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/10">
+      <div className="w-full h-2.5 bg-[#0a0908] border border-[var(--iron)] p-0.5 rounded-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.8)]">
         <div
-          className={twMerge('h-full rounded-full transition-all duration-300', barColors)}
+          className={twMerge('h-full transition-all duration-300 rounded-none', barColors)}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -169,11 +167,11 @@ export const Slot: React.FC<SlotProps> = ({
     <div
       className={twMerge(
         clsx(
-          'w-14 h-14 rounded-xl border flex items-center justify-center relative transition-all select-none',
+          'w-14 h-14 border flex items-center justify-center relative transition-all select-none rounded-none',
           empty
-            ? 'bg-black/20 border-white/[0.08] hover:border-white/20'
-            : 'bg-white/[0.05] border-white/[0.15] shadow-sm',
-          active && 'ring-2 ring-[#f5b65b] border-[#f5b65b]',
+            ? 'recess hover:border-[var(--iron)]'
+            : 'slab hover:border-[var(--gold-lo)] shadow-sm',
+          active && 'border-[var(--gold)] shadow-[0_0_8px_rgba(201,164,92,0.4)]',
           className,
         ),
       )}
@@ -198,7 +196,7 @@ export const Spinner: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: string }
     <div className={twMerge('flex items-center justify-center', className)}>
       <div
         className={twMerge(
-          'border-2 border-white/20 border-t-[#f5b65b] rounded-full animate-spin',
+          'border-2 border-[var(--iron)] border-t-[var(--gold)] rounded-full animate-spin',
           sizeClass,
         )}
       />
@@ -213,10 +211,16 @@ export const Empty: React.FC<{
   action?: React.ReactNode;
 }> = ({ title, description, icon, action }) => {
   return (
-    <div className="flex flex-col items-center justify-center text-center p-8 rounded-2xl border border-dashed border-white/10 bg-white/[0.02]">
-      {icon && <div className="text-white/30 mb-3 text-3xl">{icon}</div>}
-      <h4 className="text-sm font-semibold text-white/80 font-serif">{title}</h4>
-      {description && <p className="text-xs text-white/50 mt-1 max-w-sm">{description}</p>}
+    <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-[var(--iron)] bg-black/40 rounded-none slab">
+      {icon && <div className="text-[var(--gold-lo)] mb-3 text-3xl">{icon}</div>}
+      <h4 className="text-sm font-bold text-[var(--gold-hi)] font-['Cinzel',serif] uppercase tracking-wider">
+        {title}
+      </h4>
+      {description && (
+        <p className="text-xs text-[var(--muted)] font-['EB_Garamond',serif] italic mt-1 max-w-sm">
+          {description}
+        </p>
+      )}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );

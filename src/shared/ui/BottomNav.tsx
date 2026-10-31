@@ -13,10 +13,10 @@ import {
   Sparkles,
   Store,
   User,
-  X,
 } from 'lucide-react';
+import { m } from 'motion/react';
 import React, { useState } from 'react';
-import { StonePanel } from './StonePanel';
+import { MoreSheet } from './MoreSheet';
 
 export interface BottomNavProps {
   activeTab?: string;
@@ -53,7 +53,14 @@ export const BottomNav: React.FC<BottomNavProps> = () => {
         {mainTabs.map((tab) => {
           const isActive = pathname.startsWith(tab.to);
           return (
-            <Link key={tab.to} to={tab.to} className={isActive ? 'on' : ''}>
+            <Link key={tab.to} to={tab.to} className={`relative ${isActive ? 'on' : ''}`}>
+              {isActive && (
+                <m.div
+                  layoutId="bottom-nav-diamond"
+                  className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-[7px] h-[7px] bg-[var(--gold)] rotate-45 shadow-[0_0_8px_rgba(236,211,149,0.8)]"
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                />
+              )}
               {tab.icon}
               <span>{tab.label}</span>
             </Link>
@@ -64,57 +71,22 @@ export const BottomNav: React.FC<BottomNavProps> = () => {
         <button
           type="button"
           onClick={() => setMoreOpen(true)}
-          className={`cursor-pointer ${isMoreActive || moreOpen ? 'on' : ''}`}
+          className={`cursor-pointer relative ${isMoreActive || moreOpen ? 'on' : ''}`}
         >
+          {(isMoreActive || moreOpen) && (
+            <m.div
+              layoutId="bottom-nav-diamond"
+              className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-[7px] h-[7px] bg-[var(--gold)] rotate-45 shadow-[0_0_8px_rgba(236,211,149,0.8)]"
+              transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+            />
+          )}
           <Menu size={20} />
           <span>Mais</span>
         </button>
       </nav>
 
-      {/* Sheet de Pedra para 'Mais' */}
-      {moreOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end p-4 animate-in fade-in duration-200">
-          <StonePanel className="w-full max-w-md mx-auto p-5 border border-[var(--gold-lo)] shadow-2xl relative">
-            {/* Header com botão fechar */}
-            <div className="flex items-center justify-between border-b border-[var(--iron)] pb-3 mb-4">
-              <span className="font-['Cinzel',serif] text-sm font-bold tracking-[0.16em] uppercase text-[var(--gold-hi)]">
-                Grimórios, Oficinas & Santuários
-              </span>
-              <button
-                type="button"
-                onClick={() => setMoreOpen(false)}
-                className="text-[var(--muted)] hover:text-white p-1 cursor-pointer"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Grade de 4 colunas com ícones */}
-            <div className="grid grid-cols-4 gap-3 py-2">
-              {moreItems.map((item) => {
-                const isSelected = pathname.startsWith(item.to);
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={() => setMoreOpen(false)}
-                    className={`flex flex-col items-center justify-center p-3 border transition-all ${
-                      isSelected
-                        ? 'border-[var(--gold)] bg-[var(--gold-lo)]/20 text-[var(--gold-hi)]'
-                        : 'border-[var(--iron)] bg-black/40 text-[var(--text)] hover:border-[var(--gold-lo)]'
-                    }`}
-                  >
-                    <div className="text-[var(--gold)] mb-1.5">{item.icon}</div>
-                    <span className="font-['Cinzel',serif] text-[10px] tracking-[0.1em] uppercase text-center">
-                      {item.label}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </StonePanel>
-        </div>
-      )}
+      {/* Sheet de Pedra para 'Mais' com ícones em cascata */}
+      <MoreSheet isOpen={moreOpen} onClose={() => setMoreOpen(false)} items={moreItems} />
     </>
   );
 };

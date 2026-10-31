@@ -32,19 +32,19 @@ export const MestreLayout: React.FC = () => {
   ];
 
   return (
-    <div className="flex-1 flex h-full w-full bg-[#08080a] text-[#f5f5f7] overflow-hidden">
-      {/* Sidebar Lateral do Mestre */}
+    <div className="flex-1 flex h-full w-full bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none">
+      {/* Sidebar Lateral de Pedra do Mestre */}
       <aside
-        className={`border-r border-white/[0.08] bg-[#0c0c0e] flex flex-col transition-all duration-200 shrink-0 ${
+        className={`border-r border-[var(--iron)] bg-[var(--stone)] flex flex-col transition-all duration-200 shrink-0 ${
           collapsed ? 'w-16' : 'w-64'
         }`}
       >
         {/* Topo do Mestre */}
-        <div className="h-14 border-b border-white/[0.08] px-4 flex items-center justify-between">
+        <div className="h-14 border-b border-[var(--iron)] bg-[var(--stone-2)] px-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <Shield className="w-5 h-5 text-[#f5b65b] shrink-0" />
+            <Shield className="w-5 h-5 text-[var(--gold)] shrink-0" />
             {!collapsed && (
-              <span className="font-serif font-bold text-sm tracking-wide text-white truncate">
+              <span className="font-['Cinzel',serif] font-bold text-sm tracking-[0.16em] uppercase text-[var(--gold-hi)] truncate">
                 CONFESSÓRIO
               </span>
             )}
@@ -52,14 +52,14 @@ export const MestreLayout: React.FC = () => {
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1 rounded-lg hover:bg-white/5 text-white/50 hover:text-white"
+            className="p-1 rounded-none hover:bg-black/40 text-[var(--muted)] hover:text-white cursor-pointer"
           >
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Links de navegação */}
-        <nav className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
+        {/* Links de navegação em Pedra */}
+        <nav className="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5">
           {dmSections.map((s) => {
             const Icon = s.icon;
             const active = currentPath.startsWith(s.path);
@@ -67,14 +67,14 @@ export const MestreLayout: React.FC = () => {
               <Link
                 key={s.path}
                 to={s.path}
-                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                className={`flex items-center gap-3 px-3 py-2 text-xs font-['Cinzel',serif] tracking-[0.08em] uppercase transition-all rounded-none ${
                   active
-                    ? 'bg-[#f5b65b]/15 text-[#ffd59a] border border-[#f5b65b]/30'
-                    : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+                    ? 'slab on text-[var(--gold-hi)] border-[var(--gold-lo)]'
+                    : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-black/30'
                 }`}
                 title={collapsed ? s.label : undefined}
               >
-                <Icon className="w-4 h-4 shrink-0 text-[#f5b65b]" />
+                <Icon className="w-4 h-4 shrink-0 text-[var(--gold)]" />
                 {!collapsed && <span className="truncate">{s.label}</span>}
               </Link>
             );
@@ -83,7 +83,7 @@ export const MestreLayout: React.FC = () => {
       </aside>
 
       {/* Conteúdo Central do Mestre */}
-      <main className="flex-1 overflow-y-auto flex flex-col relative bg-[#08080a]">
+      <main className="flex-1 overflow-y-auto flex flex-col relative bg-[var(--abyss)]">
         <Outlet />
       </main>
     </div>

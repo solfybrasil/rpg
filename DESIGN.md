@@ -6,7 +6,7 @@
 > - **Fontes:** EB Garamond em vez de Inter e Newsreader; Cinzel em títulos e números.
 > - **Tema:** Um tema único, escuro e atmosférico. Sem modo claro e sem toggle de tema.
 > - **Contêineres:** `StonePanel` (.slab / .recess) para pedra negra ou `Parchment` (.parch com borda rasgada) para áreas de leitura. Nunca "card" genérico arredondado com cantos redondos de 16px/24px.
-> - **Cantos:** Cantos retos ou bisotados/subtis de no máximo 2 px.
+> - **Cantos:** Cantos retos ou bisotados/subtis de no máximo 2 px (exceto orbes, selos de cera e badges circulares).
 
 ---
 
@@ -15,8 +15,8 @@
 Inspirado em inventários de ARPG sombrio clássico (estilo Diablo / Grim Dawn / Elden Ring medieval):
 - **Pedra negra (`--stone`, `--stone-2`):** A moldura estrutural — barras, abas, botões, placas e fundos de slots. Nunca leva texto longo.
 - **Pergaminho (`--parch`):** Superfície de papel com manchas, grão, sombra interna e borda rasgada procedural (`useTornEdge`), onde se lê: ficha do herói, descrições de itens, feitiços do grimório, diário e registros.
-- **Ouro velho (`--gold`, `--gold-hi`, `--gold-lo`):** Acentos, destaques ativos, números primários e filetes ornamentais com losangos de 45 graus.
-- **Orbes de vidro (`--blood`, `--mana`):** Esferas físicas de vidro na base da tela para Vida (vermelho carmim) e Foco (azul safira) com líquido volumétrico.
+- **Ouro velho (`--gold`, `--gold-hi`, `--gold-lo`):** Acentos, destaques ativos, números primários e filetes ornamentais com losangos de 45 graus. No máximo 1 botão de ouro maciço por tela.
+- **Orbes de vidro (`--blood`, `--mana`):** Esferas físicas de vidro na base da tela para Vida (vermelho carmim) e Foco (azul safira) com líquido volumétrico animado via `spring.soft`.
 - **Cinto de Poções (`--belt`):** Faixa de pedra entre os orbes com até 4 consumíveis rápidos.
 
 ---
@@ -46,37 +46,48 @@ Inspirado em inventários de ARPG sombrio clássico (estilo Diablo / Grim Dawn /
 | `--text` | `#E7DCC6` | Texto legível claro sobre pedra |
 | `--muted` | `#958A78` | Rótulos e texto secundário sobre pedra |
 
-### Texturas Procedurais SVG (Data-URIs sem assets pesados)
-- `--noise`: SVG `feTurbulence` fractalNoise (grão fino de pedra e pergaminho)
-- `--mottle`: SVG `feTurbulence` fractalNoise amplo (manchas orgânicas da pedra)
-
-### Raridades de Itens
-- **Comum:** Borda `#3D3833`, fundo linear escuro
-- **Incomum:** Borda `--moss`, brilho sutil
-- **Raro:** Borda `#2F5D8F`, brilho radial azul `--mist`
-- **Épico:** Borda `#5D4589`, brilho radial violeta `--violet`
-- **Lendário:** Borda `--gold`, brilho radial dourado com box-shadow `--gold`
-
----
-
-## 3. Tipografia
-
-- **Cinzel (500 / 700 / 900):** Títulos, nomes, números de vitais, atributos, moedas e rótulos curtos em caixa alta com espaçamento largo (`tracking-[0.14em]`). Nunca em parágrafos longos.
-- **EB Garamond (400 / 600 / Itálico):** Todo o texto corrido (descrições, lore, diálogos, regras, botões descritivos e anotações). Números em coluna utilizam `tabular-nums`.
+### Tokens de Movimento (`src/shared/styles/motion.ts` e CSS)
+- `--t-instant`: `90ms` (toque, pressão)
+- `--t-fast`: `160ms` (hover, troca de estado)
+- `--t-base`: `240ms` (trocar aba, abrir lista)
+- `--t-slow`: `420ms` (modal, pergaminho desenrolando)
+- `--t-epic`: `900ms` (subir de nível, crítico, missão concluída)
+- `--ease-out`: `cubic-bezier(.22, 1, .36, 1)`
+- `--ease-in`: `cubic-bezier(.55, 0, 1, .45)`
+- `--ease-heavy`: `cubic-bezier(.3, 1.4, .5, 1)`
+- `spring.soft`: `{ stiffness: 260, damping: 26 }` (orbes, barras)
+- `spring.snap`: `{ stiffness: 520, damping: 32 }` (arrastar e soltar item)
 
 ---
 
-## 4. Componentes Chave (`src/shared/ui`)
+## 3. Auditoria de Rotas e Status do Design (Seção 9)
 
-1. **`StonePanel` (`.slab`):** Placa de pedra com grão e bisel interno. Variantes `active` (com losango dourado no topo) e `recess` (afundada para slots).
-2. **`Parchment` (`.parch`):** Papel envelhecido com manchas e borda rasgada procedural calculada via hook `useTornEdge(ref, seed)`.
-3. **`StatusBar` (`.status`):** Barra superior (52px) com mini-retrato circular, nome, nível e moedas com ícone.
-4. **`Orb` (`.orb`):** Esferas físicas de vidro nos cantos inferiores com anéis de ferro/ouro e líquido dinâmico animado (`hp` vermelho e `focus` azul).
-5. **`Belt` (`.belt`):** Cinto de consumíveis rápidos entre os orbes.
-6. **`BottomNav` (`.nav`):** Navegação inferior em pedra com 5 destinos canônicos (Ficha, Mochila, Grimório, Diário, Mais).
-7. **`InventoryGrid` (`.grid8`):** Grade de 8 colunas afundadas de 36px com drag and drop e suporte a itens multi-célula.
-8. **`EquipDoll` (`.doll`):** Silhueta de slots corporais de armadura, armas, anéis e amuletos.
-9. **`DiceResult` (`.dice`):** Visual de resolução com fórmulas e selo de resultado (Desastre `--blood`, Sucesso `--moss`, Brilhante `--gold`, Crítico `--ember`).
-10. **`GoldButton` (`.end-turn`):** Botão único dourado de destaque máximo por tela.
-11. **`StoneButton` (`.act`):** Botões táteis de ação em pedra com ícone dourado e subtítulo em Garamond itálico.
-12. **`Divider` (`.rule`):** Filete com losango central rotacionado a 45 graus.
+| Rota | Tela | Papel | Lote | Status do Design |
+|---|---|---|---|---|
+| `/design` | Vitrine de Componentes & Animações | Dev / Showcase | Lote 1 | Em Execução (Lote 1) |
+| `/` | Entrada / Santuário / Escolha de Herói | Geral | Lote 1 / 2 | Pedra e Pergaminho Base |
+| `/jogador/ficha` | Ficha do Jurado (Atributos, Bio, Peste, Dom) | Jogador | Lote 2 | Aguardando Lote 2 |
+| `/jogador/mochila` | Mochila & Inventário (Grade 8 colunas, Boneco) | Jogador | Lote 2 | Aguardando Lote 2 |
+| `/jogador/grimorio` | Grimório (Feitiços, Círculos, Sigilos) | Jogador | Lote 2 | Aguardando Lote 2 |
+| `/jogador/diario` | Diário de Quests & Anotações | Jogador | Lote 2 | Aguardando Lote 2 |
+| `/jogador/combate` | Combate por Turnos (Iniciativa, Ações, Fila) | Jogador | Lote 2 | Aguardando Lote 2 |
+| `/jogador/oficina` | Oficina & Bancada de Alquimia/Forja | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
+| `/jogador/receitas` | Catálogo de Receitas Conhecidas | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
+| `/jogador/loja` | Mercador / Empório de Artigos | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
+| `/jogador/mapa` | Mapa do Mundo & Regiões | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
+| `/jogador/arvore` | Árvore de Juramento & Bênçãos | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
+| `/jogador/missivas` | Missivas e Cartas Seladas | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
+| `/jogador/dados` | Rolador de Dados 3D Peste | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
+| `/jogador/mesa` | Mesa Tática do Jogador | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
+| `/mestre` | Painel Geral do Mestre (Dashboard) | Mestre | Lote 3 | Aguardando Lote 3 |
+| `/mestre/jogadores` | Fichas & Monitoramento de Heróis | Mestre | Lote 3 | Aguardando Lote 3 |
+| `/mestre/campanha` | Crônicas, Linha do Tempo e Clima | Mestre | Lote 3 | Aguardando Lote 3 |
+| `/mestre/bestiario` | Bestiário de Monstros e Feromônios | Mestre | Lote 3 | Aguardando Lote 3 |
+| `/mestre/itens` | Catálogo e Editor de Itens | Mestre | Lote 3 | Aguardando Lote 3 |
+| `/mestre/oficina` | Editor de Receitas e Alquimia | Mestre | Lote 3 | Aguardando Lote 3 |
+| `/mestre/grimorio` | Grimório do Mestre & Árvores | Mestre | Lote 3 | Aguardando Lote 3 |
+| `/mestre/sistema` | Configurações, Áudio e Backups | Mestre | Lote 3 | Aguardando Lote 3 |
+| `/mestre/mesa` | Mesa de Batalha do Mestre | Mestre | Lote 3 | Aguardando Lote 3 |
+| `/tv` | Transmissão de Mesa na TV | TV / Espectador | Lote 4 | Aguardando Lote 4 |
+| `/batalha` | Arena de Combate e Estandarte | TV / Espectador | Lote 4 | Aguardando Lote 4 |
+| `/mesa` | Mesa de Combate e Rolagens | Geral | Lote 4 | Aguardando Lote 4 |

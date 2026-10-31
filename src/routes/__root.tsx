@@ -1,4 +1,5 @@
 import { Outlet, createRootRoute } from '@tanstack/react-router';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { Toaster } from 'sonner';
 
 export const Route = createRootRoute({
@@ -7,9 +8,19 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#08080a] text-[#f5f5f7] overflow-hidden select-none">
-      <Outlet />
-      <Toaster theme="dark" position="top-right" richColors />
-    </div>
+    <LazyMotion features={domAnimation}>
+      <div className="h-screen w-screen flex flex-col bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none font-sans">
+        <Outlet />
+        <Toaster
+          theme="dark"
+          position="top-right"
+          richColors
+          toastOptions={{
+            className:
+              'slab !bg-[var(--stone)] !border-[var(--iron)] !text-[var(--text)] !rounded-none font-serif',
+          }}
+        />
+      </div>
+    </LazyMotion>
   );
 }

@@ -1,14 +1,35 @@
+import { type HTMLMotionProps, m } from 'motion/react';
 import React from 'react';
 import { twMerge } from 'tailwind-merge';
+import { motionTokens } from '../styles/motion';
 
-export interface WaxSealProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface WaxSealProps extends HTMLMotionProps<'div'> {
   children?: React.ReactNode;
+  isStamping?: boolean;
 }
 
-export const WaxSeal: React.FC<WaxSealProps> = ({ className, children, ...props }) => {
+/**
+ * Selo de Cera Vermelho (SKILL.md Seção 5 e 6)
+ * Efeito de carimbo físico: escala 1.4 -> 1 com --ease-heavy.
+ */
+export const WaxSeal: React.FC<WaxSealProps> = ({
+  className,
+  children,
+  isStamping = false,
+  ...props
+}) => {
   return (
-    <div className={twMerge('wax shrink-0', className)} {...props}>
+    <m.div
+      initial={isStamping ? { scale: 1.4, opacity: 0 } : false}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{
+        duration: motionTokens.tSlow,
+        ease: motionTokens.easeHeavy,
+      }}
+      className={twMerge('wax shrink-0 select-none font-bold', className)}
+      {...props}
+    >
       {children}
-    </div>
+    </m.div>
   );
 };

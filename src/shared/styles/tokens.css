@@ -46,6 +46,16 @@
   --life: #a3291f;
   --focus-blue: #2c5fb8;
 
+  /* Motion Tokens (SKILL.md Seção 3.4) */
+  --t-instant: 90ms;
+  --t-fast: 160ms;
+  --t-base: 240ms;
+  --t-slow: 420ms;
+  --t-epic: 900ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-heavy: cubic-bezier(0.3, 1.4, 0.5, 1);
+
   /* Tipografia oficial: Cinzel + EB Garamond */
   --display: "Cinzel", Georgia, serif;
   --body: "EB Garamond", Garamond, Georgia, serif;
@@ -305,6 +315,8 @@ body {
 .end-turn,
 .btn-gold-macico {
   height: 44px;
+  position: relative;
+  overflow: hidden;
   display: grid;
   place-items: center;
   font-family: var(--display);
@@ -318,6 +330,31 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 0 1px #000, 0 4px 12px
     rgba(201, 164, 92, 0.25);
   cursor: pointer;
+  transition: transform var(--t-instant), filter var(--t-fast);
+}
+
+.end-turn::before,
+.btn-gold-macico::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: translateX(-150%) skewX(-25deg);
+  animation: goldShimmer 6s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes goldShimmer {
+  0%,
+  80% {
+    transform: translateX(-150%) skewX(-25deg);
+  }
+  100% {
+    transform: translateX(350%) skewX(-25deg);
+  }
 }
 
 .end-turn:hover,
@@ -327,7 +364,7 @@ body {
 
 .end-turn:active,
 .btn-gold-macico:active {
-  transform: scale(0.99);
+  transform: translateY(1px);
 }
 
 /* Botão de pedra de ação */
@@ -343,6 +380,29 @@ body {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--t-instant), background var(--t-fast);
+}
+
+.act::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-hi), transparent);
+  opacity: 0;
+  transition: opacity var(--t-fast);
+}
+
+.act:hover::before {
+  opacity: 1;
+}
+
+.act:active {
+  transform: translateY(1px);
 }
 
 .act svg {
@@ -403,4 +463,73 @@ body {
   color: var(--gold-hi);
   background: radial-gradient(circle, rgba(201, 164, 92, 0.35), #18140c 75%);
   box-shadow: 0 0 10px rgba(201, 164, 92, 0.35);
+  animation: legendaryGlow 3s infinite ease-in-out;
+}
+
+@keyframes legendaryGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(201, 164, 92, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(236, 211, 149, 0.75);
+  }
+}
+
+/* Esqueleto de Pergaminho (SKILL.md Seção 5 - sem spinner genérico) */
+.skeleton-parch {
+  background: var(--parch-2);
+  position: relative;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+.skeleton-parch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: parchShimmer 1.6s infinite;
+}
+
+@keyframes parchShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Vinheta de Dano na Tela (SKILL.md Seção 5) */
+.damage-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  box-shadow: inset 0 0 80px 25px rgba(163, 41, 31, 0.7);
+  animation: vignettePulse 300ms ease-out forwards;
+}
+
+@keyframes vignettePulse {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Filtro Herói Caído (SKILL.md Seção 5) */
+.hero-fallen-filter {
+  filter: grayscale(90%) contrast(1.1);
+  transition: filter var(--t-slow);
+}
+
+/* Enforçamento de cantos retos para o Design System */
+.rounded-xl,
+.rounded-2xl,
+.rounded-3xl {
+  border-radius: 0px !important;
 }

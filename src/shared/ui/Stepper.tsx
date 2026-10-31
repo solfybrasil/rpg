@@ -34,24 +34,24 @@ export const Stepper: React.FC<StepperProps> = ({
   };
 
   return (
-    <div className={clsx('inline-flex flex-col gap-1 items-center', className)}>
+    <div className={clsx('inline-flex flex-col gap-1 items-center select-none', className)}>
       {label && (
-        <span className="text-[11px] font-serif uppercase tracking-wider text-[#a8947c]">
+        <span className="text-[10px] font-['Cinzel',serif] uppercase tracking-[0.14em] text-[var(--muted)]">
           {label}
         </span>
       )}
-      <div className="inline-flex items-center rounded-lg bg-black/40 border border-white/10 p-0.5">
+      <div className="inline-flex items-center slab border border-[var(--iron)] p-0.5 rounded-none">
         <button
           type="button"
           onClick={handleDecrement}
           disabled={disabled || value <= min}
-          className="w-8 h-8 flex items-center justify-center rounded text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-8 h-8 flex items-center justify-center text-[var(--muted)] hover:text-white hover:bg-black/40 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
           title="Diminuir"
         >
           <Minus className="w-3.5 h-3.5" />
         </button>
 
-        <span className="w-10 text-center font-mono font-semibold text-sm text-[#f5f5f7]">
+        <span className="w-10 text-center font-['Cinzel',serif] font-bold text-sm text-[var(--gold-hi)] tabular-nums">
           {value > 0 ? `+${value}` : value}
         </span>
 
@@ -59,7 +59,7 @@ export const Stepper: React.FC<StepperProps> = ({
           type="button"
           onClick={handleIncrement}
           disabled={disabled || value >= max}
-          className="w-8 h-8 flex items-center justify-center rounded text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-8 h-8 flex items-center justify-center text-[var(--muted)] hover:text-white hover:bg-black/40 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
           title="Aumentar"
         >
           <Plus className="w-3.5 h-3.5" />
