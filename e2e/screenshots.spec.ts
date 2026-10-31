@@ -865,5 +865,81 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     await pPP.screenshot({ path: path.join(outDir, 'itens_pc_parchment.png') });
     await pcParch.close();
   });
+
+  test('Captura Mestre Oficina, Receitas e Loja: Mobile e PC em Dark e Parchment (Prompt 17)', async ({ browser }) => {
+    // 1. Mobile Dark (390x844)
+    const mobDark = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pMD = await mobDark.newPage();
+    await pMD.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+      );
+    });
+    await pMD.goto('/mestre/oficina');
+    await expect(pMD.getByRole('heading', { name: /Oficina, Receitas & Mercado/i })).toBeVisible();
+    await pMD.waitForTimeout(800);
+    await pMD.screenshot({ path: path.join(outDir, 'oficina_mestre_mobile_dark.png'), fullPage: true });
+    await mobDark.close();
+
+    // 2. Mobile Parchment (390x844)
+    const mobParch = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pMP = await mobParch.newPage();
+    await pMP.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+      );
+    });
+    await pMP.goto('/mestre/oficina');
+    await pMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pMP.getByRole('heading', { name: /Oficina, Receitas & Mercado/i })).toBeVisible();
+    await pMP.waitForTimeout(800);
+    await pMP.screenshot({ path: path.join(outDir, 'oficina_mestre_mobile_parchment.png'), fullPage: true });
+    await mobParch.close();
+
+    // 3. PC Dark (1440x900)
+    const pcDark = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pPD = await pcDark.newPage();
+    await pPD.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+      );
+    });
+    await pPD.goto('/mestre/oficina');
+    await expect(pPD.getByRole('heading', { name: /Oficina, Receitas & Mercado/i })).toBeVisible();
+    await pPD.waitForTimeout(800);
+    await pPD.screenshot({ path: path.join(outDir, 'oficina_mestre_pc_dark.png') });
+    await pcDark.close();
+
+    // 4. PC Parchment (1440x900)
+    const pcParch = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pPP = await pcParch.newPage();
+    await pPP.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+      );
+    });
+    await pPP.goto('/mestre/oficina');
+    await pPP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pPP.getByRole('heading', { name: /Oficina, Receitas & Mercado/i })).toBeVisible();
+    await pPP.waitForTimeout(800);
+    await pPP.screenshot({ path: path.join(outDir, 'oficina_mestre_pc_parchment.png') });
+    await pcParch.close();
+  });
 });
 

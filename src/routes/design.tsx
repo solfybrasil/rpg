@@ -12,6 +12,7 @@ import {
   Modal,
   Sheet,
   Stepper,
+  Switch,
 } from '../shared/ui';
 
 export const Route = createFileRoute('/design')({
@@ -22,6 +23,8 @@ function DesignSystemShowcase() {
   const [modalOpen, setModalOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [stepperVal, setStepperVal] = useState(2);
+  const [switchForge, setSwitchForge] = useState(true);
+  const [switchAlchemy, setSwitchAlchemy] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#08080a] text-[#f5f5f7] p-8 max-w-5xl mx-auto space-y-10">
@@ -79,6 +82,35 @@ function DesignSystemShowcase() {
               min={-5}
               max={10}
               label="Modificador de Teste"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Switch Toggles Section (Prompt 17) */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-serif font-bold text-white/80 uppercase tracking-widest">
+          Alternadores & Chaves de Estado (Switch)
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-2xl p-4 bg-white/[0.04] border border-white/[0.08]">
+            <Switch
+              size="lg"
+              variant="gold"
+              checked={switchForge}
+              onCheckedChange={setSwitchForge}
+              label="Forja Aberta (Mestre)"
+              description="Controle de acesso da bancada de forja para os jurados"
+            />
+          </div>
+          <div className="rounded-2xl p-4 bg-white/[0.04] border border-white/[0.08]">
+            <Switch
+              size="lg"
+              variant="emerald"
+              checked={switchAlchemy}
+              onCheckedChange={setSwitchAlchemy}
+              label="Alquimia Aberta (Mestre)"
+              description="Controle de acesso ao caldeirão e mesa de destilação"
             />
           </div>
         </div>

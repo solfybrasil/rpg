@@ -75,6 +75,7 @@ export const PlayerWorkshopView: React.FC = () => {
   const breakOathMutation = useCraftBreakOathMutation();
 
   const forgeAvailable = Boolean(gameState?.forge_available);
+  const alchemyAvailable = gameState?.descanso_evento !== 'alchemy_closed';
 
   // Itens não equipados na mochila
   const backpackItems = useMemo(() => {
@@ -94,8 +95,8 @@ export const PlayerWorkshopView: React.FC = () => {
 
   // Checa requisitos da estação (ferramentas e forja acesa)
   const prerequisites = useMemo(() => {
-    return checkStationPrerequisites(activeStation, forgeAvailable, backpackItems);
-  }, [activeStation, forgeAvailable, backpackItems]);
+    return checkStationPrerequisites(activeStation, forgeAvailable, backpackItems, alchemyAvailable);
+  }, [activeStation, forgeAvailable, backpackItems, alchemyAvailable]);
 
   // Reconhecimento da receita 3x3
   const matchResult = useMemo(() => {

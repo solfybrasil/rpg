@@ -1111,5 +1111,70 @@ test.describe
 
       await ctx.close();
     });
+
+    test('Prompt 17: Mestre - Controle de Oficina, Receitas 3x3 e Balcão da Loja com Preço Inline', async ({ browser }) => {
+      const ctx = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+      });
+      const page = await ctx.newPage();
+
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+        );
+      });
+
+      await page.goto('/mestre/oficina');
+
+      // 1. Validar cabeçalho da oficina
+      await expect(
+        page.getByRole('heading', { name: /Oficina, Receitas & Mercado/i }),
+      ).toBeVisible();
+
+      // 2. Tab 1: Bancadas & Controle (Switches de Forja e Alquimia)
+      const forgeSwitch = page.getByTestId('toggle-forge-switch');
+      await expect(forgeSwitch).toBeVisible();
+      await forgeSwitch.click();
+      await page.waitForTimeout(400);
+
+      const alchemySwitch = page.getByTestId('toggle-alchemy-switch');
+      await expect(alchemySwitch).toBeVisible();
+      await alchemySwitch.click();
+      await page.waitForTimeout(400);
+
+      // 3. Tab 2: Receitas de Bancada 3x3
+      await page.getByTestId('tab-receitas').click();
+      await page.waitForTimeout(400);
+
+      const searchInput = page.getByTestId('recipe-search-input');
+      await expect(searchInput).toBeVisible();
+      await searchInput.fill('Lâmina');
+      await page.waitForTimeout(400);
+
+      // Abrir editor de receitas 3x3
+      await page.getByTestId('create-recipe-btn').click();
+      await expect(page.getByTestId('recipe-editor-slot-0')).toBeVisible();
+      await expect(page.getByTestId('recipe-editor-product-slot')).toBeVisible();
+      await page.getByRole('button', { name: /Cancelar/i }).click();
+      await page.waitForTimeout(400);
+
+      // 4. Tab 3: Mercado & Loja
+      await page.getByTestId('tab-loja').click();
+      await page.waitForTimeout(400);
+
+      // Switch de abertura da loja
+      const shopSwitch = page.getByTestId('toggle-shop-switch');
+      await expect(shopSwitch).toBeVisible();
+      await shopSwitch.click();
+      await page.waitForTimeout(400);
+
+      // Tabela de artigos e edição inline de preço
+      const firstPriceInput = page.locator('input[data-testid^="inline-price-input-"]').first();
+      await expect(firstPriceInput).toBeVisible();
+      await firstPriceInput.fill('75');
+
+      await ctx.close();
+    });
   });
 

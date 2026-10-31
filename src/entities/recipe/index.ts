@@ -191,6 +191,7 @@ export function checkStationPrerequisites(
   station: WorkshopStation | string,
   forgeAvailable: boolean,
   backpackItems: InventoryItemRecord[],
+  alchemyAvailable = true,
 ): StationPrerequisites {
   const missingReasons: string[] = [];
   let hasTools = true;
@@ -216,6 +217,10 @@ export function checkStationPrerequisites(
       missingReasons.push('Falta "Ferramentas de ferreiro" na mochila.');
     }
   } else if (station === 'alquimia') {
+    if (!alchemyAvailable) {
+      forgeReady = false;
+      missingReasons.push('O laboratório de alquimia está trancado (controle do Mestre).');
+    }
     const hasKit = hasItemWithText('kit de alquimia', 'kit-de-alquimia');
     if (!hasKit) {
       hasTools = false;

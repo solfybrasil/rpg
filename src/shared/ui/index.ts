@@ -6,3 +6,4 @@ export * from './Modal.tsx';
 export * from './PlaceholderView.tsx';
 export * from './RouteErrorBoundary.tsx';
 export * from './Stepper.tsx';
+export * from './Switch.tsx';
