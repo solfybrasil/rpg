@@ -1,10 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { type Tables, queryKeys, supabase } from '../../shared/supabase';
+import { type Tables, queryKeys } from '../../shared/supabase';
+import { getGrimorioMotor, normalizeSpell } from './api';
 
 export type SpellRow = Tables<'magias'>;
-
-const SPELL_COLUMNS =
-  'id, nome, circulo, escola, custo_foco, peso, alcance, area, duracao, tipo_acao, descricao, efeito_sucesso, efeito_brilhante, efeito_falha, blocos, tags, em_combate, icone';
 
 export async function fetchSpells(params?: {
   search?: string;
@@ -13,28 +11,27 @@ export async function fetchSpells(params?: {
   page?: number;
   pageSize?: number;
 }): Promise<SpellRow[]> {
+  const motor = await getGrimorioMotor();
+  let list = (motor.magias || []).map(normalizeSpell) as unknown as SpellRow[];
+
+  if (params?.search?.trim()) {
+    const q = params.search.trim().toLowerCase();
+    list = list.filter((m) => m.nome?.toLowerCase().includes(q));
+  }
+  if (typeof params?.circle === 'number') {
+    list = list.filter((m) => Number(m.circulo) === params.circle);
+  }
+  if (params?.affinity) {
+    list = list.filter(
+      (m) =>
+        m.escola === params.affinity || (m as any).fonte === params.affinity,
+    );
+  }
+
   const page = params?.page ?? 0;
   const pageSize = params?.pageSize ?? 50;
   const from = page * pageSize;
-  const to = from + pageSize - 1;
-
-  let query = supabase.from('magias').select(SPELL_COLUMNS).range(from, to);
-
-  if (params?.search?.trim()) {
-    query = query.ilike('nome', `%${params.search.trim()}%`);
-  }
-  if (typeof params?.circle === 'number') {
-    query = query.eq('circulo', params.circle);
-  }
-  if (params?.affinity) {
-    query = query.eq('escola', params.affinity);
-  }
-
-  const { data, error } = await query
-    .order('circulo', { ascending: true })
-    .order('nome', { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as SpellRow[];
+  return list.slice(from, from + pageSize);
 }
 
 export function useSpells(params?: {

@@ -6,10 +6,29 @@ export interface GrimorioSpell {
   nome: string;
   circulo: number;
   escola?: string;
+  fonte?: string;
   custo_foco?: number;
+  custo_inspiracao?: number;
+  nivel_min?: number;
   peso?: number;
+  alcance?: string;
+  area?: string;
+  duracao?: string;
+  tipo_acao?: string;
+  descricao?: string;
+  resumo?: string;
+  efeito_sucesso?: string;
+  efeito_brilhante?: string;
+  efeito_falha?: string;
+  ampliar?: string;
+  raridade?: string;
   em_combate?: boolean;
-  blocos?: unknown[];
+  icone?: string;
+  risco?: {
+    peste?: boolean;
+    texto?: string;
+    [key: string]: unknown;
+  } | null;
   [key: string]: unknown;
 }
 
@@ -20,6 +39,65 @@ export interface GrimorioMotorData {
 
 let cachedGrimorio: GrimorioMotorData | null = null;
 let grimorioPromise: Promise<GrimorioMotorData> | null = null;
+
+export function normalizeSpell(m: Record<string, any>): GrimorioSpell {
+  const circulo = Number(m.circulo ?? 0);
+  const custoFoco = Number(m.custo?.foco ?? m.custo_foco ?? circulo);
+  const nivelMin = Number(m.nivel_minimo ?? m.nivel_min ?? 1);
+  const custoInsp = Number(m.custo_inspiracao ?? 1);
+
+  let duracaoStr = 'Instantânea';
+  if (typeof m.duracao === 'string') {
+    duracaoStr = m.duracao;
+  } else if (m.duracao && typeof m.duracao === 'object') {
+    const val = m.duracao.valor ?? '';
+    const unit = m.duracao.unidade ?? m.duracao.tipo ?? '';
+    duracaoStr = `${val} ${unit}`.trim() || 'Instantânea';
+  }
+
+  let alvoStr = '1 Alvo';
+  if (m.area && typeof m.area === 'string') {
+    alvoStr = m.area;
+  } else if (m.alvo && typeof m.alvo === 'object') {
+    if (m.alvo.tipo === 'eu') alvoStr = 'Pessoal (Você mesmo)';
+    else if (m.alvo.tipo === 'eu_ou_aliado') alvoStr = 'Você ou 1 aliado';
+    else if (m.alvo.tipo === 'todos_aliados') alvoStr = 'Todos os aliados';
+    else alvoStr = String(m.alvo.tipo || '1 Alvo');
+  }
+
+  let ampliarStr = '';
+  if (typeof m.ampliar === 'string') {
+    ampliarStr = m.ampliar;
+  } else if (Array.isArray(m.ampliar)) {
+    ampliarStr = m.ampliar
+      .map(
+        (a: any) =>
+          a.descricao || a.texto || `+${a.foco || 1} Foco: ${a.efeito || ''}`,
+      )
+      .join('; ');
+  }
+
+  return {
+    ...m,
+    id: m.id,
+    nome: m.nome,
+    circulo,
+    escola: m.escola || 'Geral',
+    fonte: m.fonte || 'Arcana',
+    custo_foco: custoFoco,
+    custo_inspiracao: custoInsp,
+    nivel_min: nivelMin,
+    duracao: duracaoStr,
+    area: alvoStr,
+    alcance: m.alcance || 'Toque',
+    ampliar: ampliarStr,
+    resumo: m.resumo || m.descricao || '',
+    descricao: m.descricao || m.resumo || '',
+    raridade: m.raridade || 'Comum',
+    em_combate: m.em_combate ?? true,
+    risco: m.risco || null,
+  };
+}
 
 /**
  * Carrega /data/grimorio_motor.json sob demanda (fora do bundle JS).
@@ -39,15 +117,7 @@ export async function getGrimorioMotor(): Promise<GrimorioMotorData> {
       return parsed;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha ao carregar grimório';
-      toast.error(`Erro ao carregar catálogo de magias: ${msg}`, {
-        action: {
-          label: 'Tentar de novo',
-          onClick: () => {
-            cachedGrimorio = null;
-            void getGrimorioMotor();
-          },
-        },
-      });
+      console.warn(`[Grimorio] Aviso ao carregar catálogo de magias: ${msg}`);
       return { magias: [], condicoes: {} };
     } finally {
       grimorioPromise = null;
@@ -57,34 +127,24 @@ export async function getGrimorioMotor(): Promise<GrimorioMotorData> {
   return grimorioPromise;
 }
 
-const MAGIAS_SELECT =
-  'id, nome, escola, circulo, tipo_acao, alcance, area, duracao, custo_foco, peso, atributo_chave, pericia, descricao, efeito_sucesso, efeito_brilhante, efeito_falha, blocos, tags, em_combate, icone';
-
 export async function fetchMagiasCatalogo(): Promise<GrimorioSpell[]> {
-  const { data, error } = await supabase
-    .from('magias')
-    .select(MAGIAS_SELECT)
-    .order('circulo', { ascending: true })
-    .order('nome', { ascending: true });
-
-  if (!error && data && data.length > 0) {
-    return data as unknown as GrimorioSpell[];
-  }
   const grimorio = await getGrimorioMotor();
-  return grimorio.magias || [];
+  return (grimorio.magias || []).map(normalizeSpell);
 }
 
 export async function fetchMagiasAfinidade() {
-  const { data, error } = await supabase
-    .from('magias_afinidade')
-    .select('character_id, escola, nivel_afinidade, magias_conjuradas');
-  if (error) {
-    toast.error(`Erro ao buscar afinidades mágicas: ${error.message}`, {
-      action: { label: 'Tentar de novo', onClick: () => void fetchMagiasAfinidade() },
-    });
-    throw error;
+  try {
+    const { data, error } = await supabase
+      .from('magias_afinidade')
+      .select('caminho, fonte');
+
+    if (!error && data && data.length > 0) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('[Grimorio] Exceção ao buscar afinidades:', err);
   }
-  return data || [];
+  return [];
 }
 
 export async function salvarMagiaEditada(
@@ -95,7 +155,7 @@ export async function salvarMagiaEditada(
     .from('magias')
     .update(dadosAtualizados)
     .eq('id', Number(magiaId))
-    .select(MAGIAS_SELECT);
+    .select();
 
   if (error) {
     toast.error(`Erro ao salvar magia: ${error.message}`, {
@@ -110,47 +170,64 @@ export async function salvarMagiaEditada(
 }
 
 export async function fetchHeroiMagias(characterId: string) {
-  const { data, error } = await supabase
-    .from('personagem_magias')
-    .select(`character_id, magia_id, aprendida, equipada, vezes_usada, magias(${MAGIAS_SELECT})`)
-    .eq('character_id', characterId);
+  try {
+    const grimorio = await getGrimorioMotor();
+    const spells = (grimorio.magias || []).map(normalizeSpell);
+    const spellsMap = new Map(spells.map((m) => [m.id, m]));
 
-  if (!error && data && data.length > 0) return data;
+    const { data, error } = await supabase
+      .from('heroi_magias')
+      .select('character_id, magia_id, marcas, aprendida, liberada_pelo_mestre, gratis, usos')
+      .eq('character_id', characterId);
 
-  const { data: hmData, error: hmErr } = await supabase
-    .from('heroi_magias')
-    .select(
-      `character_id, magia_id, estado, custo_xp_pago, desbloqueada_em, magias(${MAGIAS_SELECT})`,
-    )
-    .eq('character_id', characterId);
+    if (!error && data && data.length > 0) {
+      return data.map((row) => ({
+        ...row,
+        magias: spellsMap.get(row.magia_id as number),
+      }));
+    }
 
-  if (!hmErr && hmData && hmData.length > 0) return hmData;
+    // Default spells when character has no records yet
+    const defaults = spells
+      .filter((m) => Number(m.circulo) === 0 || (Number(m.circulo) === 1 && m.em_combate))
+      .slice(0, 6);
 
-  const grimorio = await getGrimorioMotor();
-  const defaults = (grimorio.magias || [])
-    .filter((m) => Number(m.circulo) <= 1 && m.em_combate)
-    .slice(0, 8);
-  return defaults.map((m) => ({
-    character_id: characterId,
-    magia_id: m.id,
-    aprendida: true,
-    magias: m,
-  }));
+    return defaults.map((m) => ({
+      character_id: characterId,
+      magia_id: m.id,
+      aprendida: true,
+      marcas: 1,
+      liberada_pelo_mestre: true,
+      gratis: true,
+      usos: 0,
+      magias: m,
+    }));
+  } catch (err) {
+    console.warn('[Grimorio] Exceção ao buscar magias do herói:', err);
+    return [];
+  }
 }
 
 export async function fetchAllHeroiMagias() {
-  const { data, error } = await supabase
-    .from('heroi_magias')
-    .select(
-      `character_id, magia_id, estado, custo_xp_pago, desbloqueada_em, magias(${MAGIAS_SELECT})`,
-    );
-  if (error) {
-    toast.error(`Erro ao carregar magias dos heróis: ${error.message}`, {
-      action: { label: 'Tentar de novo', onClick: () => void fetchAllHeroiMagias() },
-    });
-    throw error;
+  try {
+    const grimorio = await getGrimorioMotor();
+    const spells = (grimorio.magias || []).map(normalizeSpell);
+    const spellsMap = new Map(spells.map((m) => [m.id, m]));
+
+    const { data, error } = await supabase
+      .from('heroi_magias')
+      .select('character_id, magia_id, marcas, aprendida, liberada_pelo_mestre, gratis, usos');
+
+    if (!error && data) {
+      return data.map((row) => ({
+        ...row,
+        magias: spellsMap.get(row.magia_id as number),
+      }));
+    }
+  } catch (err) {
+    console.warn('[Grimorio] Erro ao carregar todas as magias:', err);
   }
-  return data || [];
+  return [];
 }
 
 export async function magiaInvestirRPC(characterId: string, magiaId: string) {
