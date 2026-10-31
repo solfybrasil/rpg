@@ -1176,5 +1176,67 @@ test.describe
 
       await ctx.close();
     });
+
+    test('Prompt 18: Mestre - Grimórios dos Heróis, Catálogo Virtualizado (~1.000), Provações e Árvores', async ({ browser }) => {
+      const ctx = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+      });
+      const page = await ctx.newPage();
+      page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
+      page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
+
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+        );
+      });
+
+      await page.goto('/mestre/grimorio');
+
+      // 1. Validar cabeçalho principal
+      await expect(
+        page.getByRole('heading', { name: /Grimórios, Provações & Árvores/i }),
+      ).toBeVisible();
+
+      // 2. Tab 1: Grimório dos Heróis
+      await expect(page.getByTestId('dm-tab-grimorio')).toBeVisible();
+      const kaelisBtn = page.getByTestId('dm-hero-btn-kaelis_moonfire');
+      await expect(kaelisBtn).toBeVisible();
+      await kaelisBtn.click();
+      await page.waitForTimeout(300);
+
+      // 3. Tab 2: Catálogo Motor (~1.000)
+      await page.getByTestId('dm-tab-catalogo').click();
+      await page.waitForTimeout(300);
+
+      const searchInput = page.getByTestId('dm-spell-search-input');
+      await expect(searchInput).toBeVisible();
+      await searchInput.fill('Chama');
+      await page.waitForTimeout(300);
+
+      const virtualContainer = page.getByTestId('dm-spells-virtual-container');
+      await expect(virtualContainer).toBeVisible();
+
+      // 4. Tab 3: Provações & Arbitragem
+      await page.getByTestId('dm-tab-provacoes').click();
+      await page.waitForTimeout(300);
+
+      await expect(page.getByTestId('dm-arbitration-filter-all')).toBeVisible();
+      await expect(page.getByTestId('dm-arbitration-filter-flag')).toBeVisible();
+      await expect(page.getByTestId('dm-arbitration-filter-narrative')).toBeVisible();
+      await page.getByTestId('dm-arbitration-filter-flag').click();
+      await page.waitForTimeout(300);
+
+      // 5. Tab 4: Árvores do Juramento
+      await page.getByTestId('dm-tab-arvores').click();
+      await page.waitForTimeout(300);
+
+      await expect(page.getByTestId('dm-oath-tree-canvas-container')).toBeVisible();
+      await expect(page.getByTestId('dm-increase-insp-btn')).toBeVisible();
+      await expect(page.getByTestId('dm-decrease-insp-btn')).toBeVisible();
+
+      await ctx.close();
+    });
   });
 
