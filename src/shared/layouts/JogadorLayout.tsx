@@ -121,7 +121,11 @@ export const JogadorLayout: React.FC = () => {
       )}
 
       {/* Área Central / Conteúdo da Aba */}
-      <main className="flex-1 overflow-y-auto flex flex-col relative">
+      <main
+        className={`flex-1 flex flex-col relative min-h-0 ${
+          currentPath.includes('/jogador/mesa') ? 'overflow-hidden' : 'overflow-y-auto'
+        }`}
+      >
         <Outlet />
       </main>
 

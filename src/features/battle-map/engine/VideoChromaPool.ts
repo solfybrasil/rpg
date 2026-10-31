@@ -188,6 +188,7 @@ export interface MediaEntry {
 export class VideoChromaPool {
   private cache = new Map<string, MediaEntry>();
   private autoplayUnlocked = false;
+  public onDirty?: () => void;
 
   constructor() {
     this.setupAutoplayUnlock();
@@ -292,8 +293,19 @@ export class VideoChromaPool {
           if (entry) {
             entry.ready = true;
             entry.src = img;
+            if (this.onDirty) this.onDirty();
           }
         };
+        img.onerror = () => {
+          if (img.crossOrigin) {
+            img.crossOrigin = null;
+            img.src = url;
+          }
+        };
+        if (img.complete && img.naturalWidth) {
+          entry.ready = true;
+          entry.src = img;
+        }
       }
       this.cache.set(url, entry);
     } else {
@@ -332,7 +344,13 @@ export class VideoChromaPool {
    */
   public updateFrame(entry: MediaEntry, now: number): boolean {
     if (!entry || !entry.ready) return false;
-    if (entry.type === 'image') return false;
+    if (entry.type === 'image') {
+      if (entry.lastT !== 1) {
+        entry.lastT = 1;
+        return true;
+      }
+      return false;
+    }
 
     const v = entry.el as HTMLVideoElement;
     if (v.readyState < 2 || !v.videoWidth) return false;

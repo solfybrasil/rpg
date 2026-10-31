@@ -68,6 +68,7 @@ export class BattleEngine {
 
   // Imagem de fundo e mídias
   private bgImg: HTMLImageElement;
+  private currentBgUrl = '';
   private bgLoaded = false;
   private pool: VideoChromaPool;
 
@@ -117,6 +118,9 @@ export class BattleEngine {
     this.options = options;
 
     this.pool = new VideoChromaPool();
+    this.pool.onDirty = () => {
+      this.dirty = true;
+    };
     this.bgImg = new Image();
     this.bgImg.crossOrigin = 'anonymous';
 
@@ -187,16 +191,26 @@ export class BattleEngine {
     );
 
     const bgUrl = mapData.background_url || '/batalha/santuario.jpg';
-    if (this.bgImg.src !== bgUrl) {
+    if (this.currentBgUrl !== bgUrl) {
+      this.currentBgUrl = bgUrl;
       this.bgLoaded = false;
       this.bgImg.onload = () => {
         this.bgLoaded = true;
         this.dirty = true;
       };
+      this.bgImg.onerror = () => {
+        console.warn('[BattleEngine] Falha ao carregar background_url:', bgUrl);
+        if (this.bgImg.crossOrigin) {
+          this.bgImg.crossOrigin = null;
+          this.bgImg.src = bgUrl;
+        }
+      };
       this.bgImg.src = bgUrl;
       if (this.bgImg.complete && this.bgImg.naturalWidth) {
         this.bgLoaded = true;
       }
+    } else if (this.bgImg.complete && this.bgImg.naturalWidth) {
+      this.bgLoaded = true;
     }
 
     this.recomputeReach();
@@ -588,8 +602,8 @@ export class BattleEngine {
       });
     }
 
-    // 4. Cursor de hover
-    if (this.hover && isPlayer) {
+    // 4. Cursor de hover com mira / cruz central
+    if (this.hover && (isPlayer || this.options.mode === 'dm')) {
       const p = center(
         this.hover.c,
         this.hover.r,
@@ -599,20 +613,80 @@ export class BattleEngine {
         this.TH,
       );
       const k = cellKey(this.hover.c, this.hover.r);
-      const isBad =
-        this.blocked.has(k) ||
-        !this.prevPath ||
-        this.prevPath.length > (hero?.movesLeft ?? this.moveLimit);
+      const isDm = this.options.mode === 'dm';
+      const dmTool = this.options.tool || 'select';
 
+      let isBad = false;
+      let strokeColor = '#f5b65b';
+      let fillColor = 'rgba(245, 182, 91, 0.28)';
+
+      if (isDm) {
+        if (dmTool === 'paint_block') {
+          strokeColor = '#c8423a';
+          fillColor = 'rgba(200, 66, 58, 0.4)';
+        } else if (dmTool === 'erase_block') {
+          strokeColor = '#e2e8f0';
+          fillColor = 'rgba(226, 232, 240, 0.3)';
+        } else {
+          strokeColor = '#f5b65b';
+          fillColor = 'rgba(245, 182, 91, 0.22)';
+        }
+      } else {
+        isBad =
+          this.blocked.has(k) ||
+          !this.prevPath ||
+          this.prevPath.length > (hero?.movesLeft ?? this.moveLimit);
+        strokeColor = isBad ? '#c8423a' : '#f5b65b';
+        fillColor = isBad
+          ? 'rgba(200, 66, 58, 0.28)'
+          : 'rgba(245, 182, 91, 0.28)';
+      }
+
+      // Losango isométrico
       diamond(ctx, p.x, p.y, this.TW, this.TH);
-      ctx.fillStyle = isBad
-        ? 'rgba(200, 66, 58, 0.28)' // --blood
-        : 'rgba(245, 182, 91, 0.28)'; // --gold
+      ctx.fillStyle = fillColor;
       ctx.fill();
 
       ctx.lineWidth = lw * 2;
-      ctx.strokeStyle = isBad ? '#c8423a' : '#f5b65b';
+      ctx.strokeStyle = strokeColor;
       ctx.stroke();
+
+      // Cruz central tática no centro exato do quadrado (a cruz é o centro)
+      ctx.beginPath();
+      ctx.moveTo(p.x - this.TW * 0.16, p.y);
+      ctx.lineTo(p.x + this.TW * 0.16, p.y);
+      ctx.moveTo(p.x, p.y - this.TH * 0.28);
+      ctx.lineTo(p.x, p.y + this.TH * 0.28);
+      ctx.lineWidth = lw * 1.5;
+      ctx.strokeStyle = strokeColor;
+      ctx.stroke();
+
+      // Ponto de mira no centro exato
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2 / this.scale, 0, Math.PI * 2);
+      ctx.fillStyle = strokeColor;
+      ctx.fill();
+    }
+
+    // Marcação da Origem da Grade (0, 0) com cruz no modo DM
+    if (this.options.mode === 'dm') {
+      const op = center(0, 0, this.OX, this.OY, this.TW, this.TH);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(op.x, op.y, 4 / this.scale, 0, Math.PI * 2);
+      ctx.strokeStyle = '#f5b65b';
+      ctx.lineWidth = 1.5 / this.scale;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(op.x - this.TW * 0.18, op.y);
+      ctx.lineTo(op.x + this.TW * 0.18, op.y);
+      ctx.moveTo(op.x, op.y - this.TH * 0.3);
+      ctx.lineTo(op.x, op.y + this.TH * 0.3);
+      ctx.strokeStyle = '#f5b65b';
+      ctx.lineWidth = 1.5 / this.scale;
+      ctx.stroke();
+      ctx.restore();
     }
 
     // 5. Renderização das Peças Ordenadas por `y` (Depth Sorting)
@@ -662,18 +736,20 @@ export class BattleEngine {
     ctx.stroke();
 
     if (isSelected) {
+      // Cruz central no meio da base da peça selecionada
       ctx.beginPath();
-      ctx.ellipse(
-        s.x,
-        s.y + this.TH * 0.14,
-        (this.TW / 2) * 0.9,
-        (this.TH / 2) * 0.9,
-        0,
-        0,
-        Math.PI * 2,
-      );
+      ctx.moveTo(s.x - this.TW * 0.2, s.y);
+      ctx.lineTo(s.x + this.TW * 0.2, s.y);
+      ctx.moveTo(s.x, s.y - this.TH * 0.35);
+      ctx.lineTo(s.x, s.y + this.TH * 0.35);
       ctx.strokeStyle = '#f5b65b';
-      ctx.lineWidth = 1.2 / this.scale;
+      ctx.lineWidth = 1.4 / this.scale;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, (this.TW / 2) * 0.9, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(245, 182, 91, 0.5)';
+      ctx.lineWidth = 1.0 / this.scale;
       ctx.stroke();
     }
 
@@ -681,6 +757,7 @@ export class BattleEngine {
     const entry = this.pool.get(s.mediaUrl, s.chromaMode);
     const source = entry?.src || (entry?.ready ? entry.el : null);
 
+    let drawn = false;
     if (source) {
       const sw =
         (source as HTMLVideoElement).videoWidth ||
@@ -703,7 +780,28 @@ export class BattleEngine {
         ctx.scale(s.facing, 1);
         ctx.drawImage(source, -W * s.anchorX, -H * s.anchorY, W, H);
         ctx.restore();
+        drawn = true;
       }
+    }
+
+    if (!drawn) {
+      // Fallback elegante com insígnia enquanto a mídia carrega ou se falhar
+      ctx.save();
+      ctx.translate(s.x, s.y - s.size * 0.3);
+      ctx.beginPath();
+      ctx.arc(0, 0, s.size * 0.22, 0, Math.PI * 2);
+      ctx.fillStyle = isMyHero ? '#f5b65b' : s.kind === 'heroi' ? '#4a7c59' : '#c8423a';
+      ctx.fill();
+      ctx.lineWidth = 1.5 / this.scale;
+      ctx.strokeStyle = '#ebe6d6';
+      ctx.stroke();
+
+      ctx.font = `bold ${Math.round(s.size * 0.16)}px Cinzel, serif`;
+      ctx.fillStyle = '#08080a';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText((s.token.name || '?').substring(0, 2).toUpperCase(), 0, 1);
+      ctx.restore();
     }
 
     // Nome discreto sobre a peça se for fera ou outro herói
@@ -716,26 +814,34 @@ export class BattleEngine {
   }
 
   // ── Gestos de Câmera e Entrada do Jogador ──
+  private getCssScale(): number {
+    const rc = this.cv.getBoundingClientRect();
+    if (!rc.width) return 1;
+    return (rc.width / (this.imgW || 1376)) * this.view.z;
+  }
+
   private toImg(clientX: number, clientY: number): Point {
     const rc = this.cv.getBoundingClientRect();
+    const cssScale = this.getCssScale();
     return {
-      x:
-        this.view.x +
-        ((clientX - rc.left) / rc.width) * (this.imgW / this.view.z),
-      y:
-        this.view.y +
-        ((clientY - rc.top) / rc.height) * (this.imgH / this.view.z),
+      x: this.view.x + (clientX - rc.left) / cssScale,
+      y: this.view.y + (clientY - rc.top) / cssScale,
     };
   }
 
   public clampView(): void {
+    const rc = this.cv.getBoundingClientRect();
+    const cssScale = this.getCssScale();
+    const visibleW = rc.width > 0 ? rc.width / cssScale : this.imgW / this.view.z;
+    const visibleH = rc.height > 0 ? rc.height / cssScale : this.imgH / this.view.z;
+
     this.view.z = Math.min(this.ZMAX, Math.max(this.ZMIN, this.view.z));
     this.view.x = Math.min(
-      this.imgW - this.imgW / this.view.z,
+      Math.max(0, this.imgW - visibleW),
       Math.max(0, this.view.x),
     );
     this.view.y = Math.min(
-      this.imgH - this.imgH / this.view.z,
+      Math.max(0, this.imgH - visibleH),
       Math.max(0, this.view.y),
     );
     this.dirty = true;
@@ -766,8 +872,13 @@ export class BattleEngine {
     if (!hero) return;
 
     this.view.z = Math.max(1.5, this.view.z);
-    this.view.x = hero.x - this.imgW / (2 * this.view.z);
-    this.view.y = hero.y - this.imgH / (2 * this.view.z);
+    const rc = this.cv.getBoundingClientRect();
+    const cssScale = this.getCssScale();
+    const visibleW = rc.width > 0 ? rc.width / cssScale : this.imgW / this.view.z;
+    const visibleH = rc.height > 0 ? rc.height / cssScale : this.imgH / this.view.z;
+
+    this.view.x = hero.x - visibleW / 2;
+    this.view.y = hero.y - visibleH / 2;
     this.clampView();
   }
 
@@ -777,8 +888,11 @@ export class BattleEngine {
     const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
     const nz = Math.min(this.ZMAX, Math.max(this.ZMIN, this.view.z * factor));
 
-    this.view.x = pt.x - (e.clientX - this.cv.getBoundingClientRect().left) / this.cv.clientWidth * (this.imgW / nz);
-    this.view.y = pt.y - (e.clientY - this.cv.getBoundingClientRect().top) / this.cv.clientHeight * (this.imgH / nz);
+    const rc = this.cv.getBoundingClientRect();
+    const newCssScale = (rc.width / (this.imgW || 1376)) * nz;
+
+    this.view.x = pt.x - (e.clientX - rc.left) / newCssScale;
+    this.view.y = pt.y - (e.clientY - rc.top) / newCssScale;
     this.view.z = nz;
     this.clampView();
   }
@@ -836,12 +950,30 @@ export class BattleEngine {
 
         if (tool === 'select') {
           let clickedToken: LocalTokenState | null = null;
-          for (const s of this.tokenStates.values()) {
+          // Ordenado da frente para trás (maior y desenhado por cima tem prioridade)
+          const sortedTokens = [...this.tokenStates.values()]
+            .filter((s) => s.token.visible !== false)
+            .sort((a, b) => b.y - a.y);
+
+          for (const s of sortedTokens) {
+            // 1. Célula exata
             if (cell && s.c === cell.c && s.r === cell.r) {
               clickedToken = s;
               break;
             }
-            if (Math.hypot(pt.x - s.x, pt.y - s.y) < this.TW * 0.6) {
+            // 2. Base da peça (anel/losango)
+            if (Math.hypot(pt.x - s.x, pt.y - s.y) < this.TW * 0.55) {
+              clickedToken = s;
+              break;
+            }
+            // 3. Corpo e cabeça da peça
+            const halfW = (s.size * 0.45) / 2;
+            if (
+              pt.x >= s.x - halfW &&
+              pt.x <= s.x + halfW &&
+              pt.y >= s.y - s.size &&
+              pt.y <= s.y
+            ) {
               clickedToken = s;
               break;
             }
@@ -999,11 +1131,9 @@ export class BattleEngine {
       }
 
       if (this.isDragging) {
-        const rc = this.cv.getBoundingClientRect();
-        this.view.x =
-          this.panView0.x - (dx / rc.width) * (this.imgW / this.view.z);
-        this.view.y =
-          this.panView0.y - (dy / rc.height) * (this.imgH / this.view.z);
+        const cssScale = this.getCssScale();
+        this.view.x = this.panView0.x - dx / cssScale;
+        this.view.y = this.panView0.y - dy / cssScale;
         this.clampView();
       }
     } else if (this.pts.size === 2) {

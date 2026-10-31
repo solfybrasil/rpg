@@ -32,6 +32,7 @@ export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
   const { tokens, moveToken } = useBattleTokens(map?.id);
 
   const [isPortrait, setIsPortrait] = useState(false);
+  const [dismissPortrait, setDismissPortrait] = useState(false);
   const [fps, setFps] = useState(60);
   const [movesLeft, setMovesLeft] = useState(6);
   const [moveLimit, setMoveLimit] = useState(6);
@@ -77,6 +78,14 @@ export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
         setFps(currentFps);
       },
     });
+
+    if (map) {
+      engine.setMap(map);
+      setMoveLimit(map.move_limit ?? 6);
+    }
+    if (tokens && tokens.length > 0) {
+      engine.setTokens(tokens);
+    }
 
     engineRef.current = engine;
 
@@ -136,16 +145,23 @@ export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
       data-testid="player-battle-canvas-container"
     >
       {/* Aviso de Modo Retrato em Celular */}
-      {isPortrait && (
+      {isPortrait && !dismissPortrait && (
         <div className="absolute inset-0 z-50 bg-[#08080a]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
           <Smartphone className="w-16 h-16 text-[#f5b65b] animate-bounce mb-4 rotate-90" />
           <h2 className="font-title text-xl font-bold tracking-wider text-[#f5eedc] mb-2">
             Gire o celular
           </h2>
-          <p className="font-serif italic text-sm text-[#f5eedc]/70 max-w-xs">
-            A Mesa de Batalha tática requer a tela na horizontal para visualização
+          <p className="font-serif italic text-sm text-[#f5eedc]/70 max-w-xs mb-4">
+            A Mesa de Batalha tática recomenda a tela na horizontal para visualização
             ótima do terreno e controle tático do seu herói.
           </p>
+          <button
+            type="button"
+            onClick={() => setDismissPortrait(true)}
+            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-sans text-white/90 transition-colors pointer-events-auto"
+          >
+            Continuar mesmo em pé
+          </button>
         </div>
       )}
 

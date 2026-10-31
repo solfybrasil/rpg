@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8">
+<title>Oficina — Cozinha</title>
+<script src="c48de42e-d351-4a95-b76e-b81195695b7b"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("ea5f4692-89f5-40bf-98b3-505ee4badfb7") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("52011141-faf3-4508-9825-1ce38ff7676e") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("f8902e9d-bec0-4d8f-97ec-35aa306bdcc1") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("14c033ac-6e76-4dcc-b786-5a8ebd62d851") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("d974d76c-9975-4118-a3bb-16ca4ca41945") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("cf876a94-d983-431a-b4e2-ce6798042ada") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("c48d51b9-a1aa-4505-8217-8ce29e3c0939") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("3d08c1c7-8e98-4a6e-bf80-0a4c48515c0e") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("6263c65a-4ea5-4b85-a375-45fa09d93b31") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("90ec70cc-e199-4b72-9294-6794a2a315ca") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("49a1fdaf-dd5b-4fee-9dc7-72fe2a438f43") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("36553c71-54a9-4d96-81cd-aeadd1c9f396") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("a41d04a9-f383-4fb9-815f-ac1487bb380f") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("83eeffaa-a394-4a63-b169-1451f8d94bb6") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("7185633f-86ca-48dc-9d28-263cc3b14fe5") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("792faefa-ae46-48c1-a18f-07e1c44eb1c1") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("50f6cbbb-4ec5-46ac-83f3-60f5c99ec86e") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("dca9064d-9c7c-4226-8c35-2273a0b97acb") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("d71879aa-753e-43b9-84c8-2b88d8cf3dee") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("79554398-d104-4538-ab96-27182939b54a") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("e17a3b07-4378-4ee9-960d-0a42248d96d1") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("72c4ef40-75a2-41aa-bb05-376f94bada56") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("f75271a7-63c7-477f-8d4f-be9b0a6b2018") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("72c4ef40-75a2-41aa-bb05-376f94bada56") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("f75271a7-63c7-477f-8d4f-be9b0a6b2018") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("72c4ef40-75a2-41aa-bb05-376f94bada56") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("f75271a7-63c7-477f-8d4f-be9b0a6b2018") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+body{margin:0;background:#0e0906}
+a{color:#f0b860}a:hover{color:#ffe2a0}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; min-height: 820px; overflow: hidden; background: #0e0906; color: #f3e6cc; font-family: 'Alegreya Sans', sans-serif">
+  <img src="{{ fundo }}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%">
+  <div style="position: absolute; inset: 0; background: rgba(10,6,3,.45)"></div>
+
+  <div style="position: relative; max-width: 1200px; margin: 0 auto; padding: 18px 20px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+
+    <div style="display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: center; align-items: center">
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center">
+        <button style="min-height: 46px; padding: 0 18px; border-radius: 6px; border: 1px solid #6b5236; background: rgba(30,20,12,.85); color: #b9a47e; font-family: Cinzel, serif; font-weight: 700; font-size: 15px">Forja</button>
+        <button style="min-height: 46px; padding: 0 18px; border-radius: 6px; border: 1px solid #6b5236; background: rgba(30,20,12,.85); color: #b9a47e; font-family: Cinzel, serif; font-weight: 700; font-size: 15px">Alquimia</button>
+        <button style="min-height: 46px; padding: 0 18px; border-radius: 6px; border: 2px solid #e8a33a; background: #4a2a0c; color: #ffe7b0; font-family: Cinzel, serif; font-weight: 800; font-size: 15px; box-shadow: 0 0 18px rgba(255,170,60,.35)">Cozinha</button>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center">
+        <span style="min-height: 46px; padding: 0 14px; border-radius: 6px; border: 1px solid {{ fogoBorda }}; background: rgba(20,12,6,.85); color: {{ fogoCor }}; font-weight: 700; font-size: 14px; display: flex; gap: 8px; align-items: center">
+          <svg width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 Q18 9 17 15 A5 5 0 0 1 7 15 Q6 11 10 8 Q10 12 12 12 Q11 7 12 3 Z"></path></svg>
+          {{ fogoTexto }}
+        </span>
+        <button aria-label="Livro de Receitas" style="min-height: 46px; padding: 0 14px; border-radius: 6px; border: 1px solid #9a6a2a; background: rgba(26,16,8,.85); color: #f5d99a; font-weight: 700; font-size: 14px; display: flex; gap: 8px; align-items: center">
+          <svg width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 5 Q4 3 6 3 L19 3 L19 19 L6 19 Q4 19 4 21 Z"></path><path d="M4 21 Q4 19 6 19"></path><path d="M15 3 L15 10 L13 8.5 L11 10 L11 3"></path></svg>
+          Receitas
+        </button>
+        <span style="min-height: 46px; padding: 0 14px; border-radius: 6px; border: 1px solid #4f7a3a; background: rgba(20,30,14,.85); color: #b6dc96; font-weight: 700; font-size: 14px; display: flex; gap: 8px; align-items: center">
+          <svg width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3 L15 3"></path><path d="M10 3 L10 9 L5 18 Q4 21 7 21 L17 21 Q20 21 19 18 L14 9 L14 3"></path></svg>
+          Panela e espeto OK
+        </span>
+      </div>
+    </div>
+
+    <sc-if value="{{ apagada }}" hint-placeholder-val="{{ false }}">
+      <div style="align-self: center; max-width: 560px; text-align: center; background: rgba(8,12,14,.9); border: 1px solid #5d6f86; border-radius: 8px; padding: 14px 20px; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-family: Cinzel, serif; font-weight: 800; font-size: 20px; color: #c9d6e6">Fogo apagado</span>
+        <span style="font-size: 15px; color: #a9b4c2">Acenda uma fogueira ou ache uma cozinha para cozinhar. Você ainda pode montar a receita e ver o prato.</span>
+      </div>
+    </sc-if>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: center; justify-content: center; max-width: 1040px; width: 100%; align-self: center">
+
+      <div style="flex: 1 1 420px; min-width: 0; display: flex; justify-content: center">
+        <div style="position: relative; width: min(440px, 100%); aspect-ratio: 440 / 560">
+          <img src="8d6d041f-f47f-4c1c-b678-4403dac7a054" alt="" style="position: absolute; left: 0; bottom: 0; width: 100%; filter: {{ filtroCaldeirao }}">
+          <div style="position: absolute; left: 20%; top: 0; width: 60%; aspect-ratio: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3%; filter: drop-shadow(0 10px 14px rgba(0,0,0,.75))">
+            <sc-for list="{{ grade }}" as="s" hint-placeholder-count="9">
+              <div style="position: relative; aspect-ratio: 1">
+                <img src="{{ s.img }}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain">
+                <sc-if value="{{ s.tem }}" hint-placeholder-val="{{ false }}">
+                  <div style="position: absolute; inset: 20%">
+                    <dc-import name="Icone" tipo="{{ s.tipo }}" cor="{{ s.cor }}" hint-size="100%,100%"></dc-import>
+                  </div>
+                  <span style="position: absolute; right: 14%; bottom: 10%; font-size: 12px; font-weight: 700; color: {{ s.cor }}">{{ s.qtd }}</span>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+        <span style="font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 999px; border: 1px solid #e8a33a; background: rgba(44,26,8,.85); color: #ffe2a0; display: flex; gap: 6px; align-items: center">
+          <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12 L10 17 L19 7"></path></svg>
+          Receita do Livro encontrada
+        </span>
+        <div style="position: relative; width: 204px; height: 219px">
+          <div style="position: absolute; left: 21%; right: 21.5%; top: 24.2%; bottom: 22.2%; border-radius: 50%; background: radial-gradient(circle at 50% 45%, {{ corPocao }} 0%, #2a1606 75%); box-shadow: inset 0 0 22px rgba(0,0,0,.6)">
+            <div style="position: absolute; inset: 14%">
+              <dc-import name="Icone" tipo="carne" cor="#fff6e0" hint-size="100%,100%"></dc-import>
+            </div>
+          </div>
+          <img src="127152af-b954-4990-b3a3-c5e01ad08cdc" alt="" style="position: absolute; inset: 0; width: 204px; height: 219px">
+        </div>
+        <span style="font-family: Cinzel, serif; font-weight: 800; font-size: 22px; color: #fff0cc">Ensopado de Javali-Brasa</span>
+        <span style="font-size: 15px; color: #efdcb8"><b>+1 em Corpo</b> até o próximo descanso e <b>resistência a Queimando</b></span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: center">
+          <span style="font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid #9a6a2a; background: rgba(20,12,6,.82)">Peso 9</span>
+          <span style="font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid #9a6a2a; background: rgba(20,12,6,.82)">Astúcia + Culinária</span>
+          <span style="font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid #9a6a2a; background: rgba(20,12,6,.82)">30 minutos</span>
+          <span style="font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid #c9a24a; background: rgba(30,22,8,.82); color: #f3d58a">Refeição · 4 porções</span>
+        </div>
+        <span style="font-size: 13px; color: #f0c070">Sucesso Brilhante (Peso 12): +1 porção e o bônus dura 2 descansos</span>
+        <button sc-camel-on-click="{{ preparar }}" disabled="{{ apagada }}" aria-label="{{ textoBotao }}" style="position: relative; width: min(400px, 100%); aspect-ratio: 1292 / 230; padding: 0; border: none; background: transparent; cursor: pointer; margin-top: 6px">
+          <img src="{{ imgBotao }}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%">
+          <span style="position: absolute; left: 25%; right: 5%; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left">
+            <span style="font-family: Cinzel, serif; font-weight: 800; font-size: 18px; letter-spacing: 1px; color: {{ corBotao }}">{{ textoBotao }}</span>
+            <span style="font-size: 13px; color: {{ corSubBotao }}">{{ subBotao }}</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div style="background: rgba(14,9,6,.86); border: 1px solid #6b4a28; border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; max-width: 1040px; width: 100%; box-sizing: border-box; align-self: center">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center">
+        <span style="font-family: Cinzel, serif; font-weight: 700; font-size: 15px; color: #f5d99a">Mochila · ingredientes</span>
+        <span style="font-size: 13px; color: #b09a78">Arraste para a fogueira, ou toque numa receita do Livro para preencher sozinho</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center">
+        <sc-for list="{{ mochila }}" as="m" hint-placeholder-count="8">
+          <div style="width: 92px; display: flex; flex-direction: column; align-items: center; gap: 4px">
+            <div style="position: relative; width: 72px; height: 72px">
+              <img src="8f8f1f0e-5eba-4a32-aa53-c91db58e7e0c" alt="" style="position: absolute; inset: 0; width: 72px; height: 72px; object-fit: contain">
+              <div style="position: absolute; inset: 15px">
+                <dc-import name="Icone" tipo="{{ m.tipo }}" cor="#f3dfae" hint-size="100%,100%"></dc-import>
+              </div>
+              <span style="position: absolute; right: 7px; bottom: 4px; font-size: 12px; font-weight: 700; color: #f3dfae">{{ m.qtd }}</span>
+            </div>
+            <span style="font-size: 12px; line-height: 1.2; text-align: center; color: #e3d3b0">{{ m.nome }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;estado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;acesa&quot;,&quot;apagada&quot;],&quot;default&quot;:&quot;acesa&quot;},&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:820}}">
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { apertado: false }; }
+  renderVals() {
+    const apagada = (this.props.estado ?? 'acesa') === 'apagada';
+    const V = '/_blob/6ea1cec329ee6c5ae3e0ead56f6bed31';
+    const C = '/_blob/e4dd74e728dfadc57c0538eb31e8d019';
+    const B = '/_blob/e420b237174664f7518cc376e057b5eb';
+    const g = [null, ['tempero', 1], null, ['carne', 1], ['agua', 1], ['carne', 1], null, ['erva', 1], null];
+    return {
+      apagada, acesa: !apagada,
+      fundo: apagada ? '/_blob/a1434492bde64e33837b4cd8a59c8810' : '/_blob/52fa11a62bb993f1dda8a18a4093c13a',
+      fogoTexto: apagada ? 'Fogo apagado' : 'Fogo alto',
+      fogoCor: apagada ? '#9fb0c4' : '#ffb36b',
+      fogoBorda: apagada ? '#5d6f86' : '#a8642a',
+      filtroCaldeirao: apagada ? 'saturate(.35) brightness(.7)' : 'drop-shadow(0 0 28px rgba(255,140,40,.35))',
+      corPocao: apagada ? '#3b4a50' : '#f2a63a',
+      grade: g.map((c) => c ? { tem: true, tipo: c[0], qtd: c[1], img: apagada ? C : B, cor: apagada ? '#f3dfae' : '#fff3d6' } : { tem: false, tipo: 'carne', qtd: '', img: V, cor: '#f3dfae' }),
+      imgBotao: apagada ? '/_blob/94cbe150ad4663973075cf71995b9633' : (this.state.apertado ? '/_blob/a0f51603c3f63c540eea1aa5824df6dd' : '/_blob/dff7d104de46610c419c6a2d9b759a50'),
+      textoBotao: apagada ? 'FOGO APAGADO' : 'COZINHAR',
+      subBotao: apagada ? 'Precisa de fogo aceso' : 'Começa o minigame do ponto da carne',
+      corBotao: apagada ? '#9aa1a8' : '#fff0cc',
+      corSubBotao: apagada ? '#7d848b' : '#f0b860',
+      preparar: () => { if (!apagada) this.setState({ apertado: !this.state.apertado }); },
+      mochila: [
+        { nome: 'Carne de javali-brasa', tipo: 'carne', qtd: 3 },
+        { nome: 'Pimenta-de-dragão', tipo: 'tempero', qtd: 2 },
+        { nome: 'Água', tipo: 'agua', qtd: 2 },
+        { nome: 'Erva-doce do vale', tipo: 'erva', qtd: 3 },
+        { nome: 'Cogumelo-lanterna', tipo: 'cogumelo', qtd: 2 },
+        { nome: 'Peixe-lanterna', tipo: 'peixe', qtd: 2 },
+        { nome: 'Pão de viagem', tipo: 'pao', qtd: 4 },
+        { nome: 'Osso de lobo', tipo: 'osso', qtd: 1 }
+      ]
+    };
+  }
+}
+</script>
+
+
+</body></html>
