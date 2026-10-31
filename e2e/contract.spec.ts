@@ -803,4 +803,88 @@ test.describe
 
       await ctx.close();
     });
+
+    test('Prompt 11: Grimório de Magias e Árvore do Juramento com Inspiração', async ({ browser }) => {
+      const ctx = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+      });
+      const page = await ctx.newPage();
+
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+        );
+      });
+
+      // ─── 1. GRIMÓRIO DE MAGIAS ───
+      await page.goto('/jogador/grimorio');
+      await expect(page.getByText(/Grimório de/i)).toBeVisible();
+      await expect(page.getByText('FOCO ARCANO')).toBeVisible();
+      await expect(page.getByText(/INSPIRAÇÃO/i)).toBeVisible();
+
+      // Inspecionar magia se houver cartas
+      const inspectButtons = page.getByRole('button', { name: 'Detalhes' });
+      if ((await inspectButtons.count()) > 0) {
+        await inspectButtons.first().click();
+        await expect(page.getByText(/Descrição do Feitiço/i)).toBeVisible();
+        await page.getByRole('button', { name: 'Fechar' }).click();
+      }
+
+      // Abrir modal de conjuração
+      const castButtons = page.getByRole('button', { name: 'Conjurar' });
+      if ((await castButtons.count()) > 0) {
+        await castButtons.first().click();
+        await expect(page.getByText(/Manifestar/i)).toBeVisible();
+        await expect(page.getByText(/Teste de Conjuração/i)).toBeVisible();
+
+        // Rolar dados
+        const rollBtn = page.getByRole('button', { name: 'Rolar Dados' });
+        await expect(rollBtn).toBeVisible();
+        await rollBtn.click();
+        await page.waitForTimeout(300);
+
+        // Fechar modal
+        const closeBtn = page.locator('button:has(svg.lucide-x)').first();
+        if (await closeBtn.isVisible()) {
+          await closeBtn.click();
+        }
+      }
+
+      // Alternar para aba Aprender
+      await page.getByRole('button', { name: /Aprender Novas Magias/i }).click();
+      await expect(page.getByPlaceholder('Pesquisar catálogo arcano...')).toBeVisible();
+
+      // ─── 2. ÁRVORE DO JURAMENTO ───
+      await page.goto('/jogador/arvore');
+      await expect(page.getByText(/Árvore do Juramento de/i)).toBeVisible();
+      await expect(page.getByText(/200 Nós Primordiais/i)).toBeVisible();
+
+      // Zoom controls
+      await expect(page.getByTitle('Aumentar Zoom')).toBeVisible();
+      await expect(page.getByTitle('Diminuir Zoom')).toBeVisible();
+      await expect(page.getByTitle('Centralizar Árvore')).toBeVisible();
+
+      // Abrir Livro de Perícias
+      const skillsBtn = page.getByRole('button', { name: /Livro de Perícias/i });
+      await expect(skillsBtn).toBeVisible();
+      await skillsBtn.click();
+      await expect(page.getByText('Livro das 13 Perícias')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Atletismo' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Forja' })).toBeVisible();
+
+      // Fechar gaveta
+      const closeDrawerBtn = page.locator('button:has(svg.lucide-x)').first();
+      await closeDrawerBtn.click();
+
+      // Alternar Modo Pergaminho
+      const parchToggle = page.getByRole('button', { name: /Modo Pergaminho/i });
+      await expect(parchToggle).toBeVisible();
+      await parchToggle.click();
+      await page.waitForTimeout(300);
+      await parchToggle.click(); // desmarca
+
+      await ctx.close();
+    });
   });
+

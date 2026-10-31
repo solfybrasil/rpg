@@ -51,5 +51,9 @@ export function useSpells(params?: {
 }
 
 export * from './api';
-// [peste-v2 fundacao] component placeholder
-// [peste-v2 fundacao] component placeholder
+export * from './types';
+export * from './components/PlayerGrimoireView';
+export * from './components/SpellCard';
+export * from './components/SpellInspectModal';
+export * from './components/SpellCastModal';
+

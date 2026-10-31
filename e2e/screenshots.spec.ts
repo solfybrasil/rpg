@@ -476,4 +476,157 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     await pageRecPCParch.screenshot({ path: path.join(outDir, 'receitas_pc_parchment.png') });
     await recPCParch.close();
   });
+
+  test('Captura Grimório e Árvore: Celular e PC, Escuro e Pergaminho', async ({ browser }) => {
+    // 26. Grimório Mobile Escuro (390x844)
+    const grimMobDark = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pageGrimMD = await grimMobDark.newPage();
+    await pageGrimMD.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageGrimMD.goto('/jogador/grimorio');
+    await expect(pageGrimMD.getByText(/Grimório de/i)).toBeVisible();
+    await pageGrimMD.waitForTimeout(500);
+    await pageGrimMD.screenshot({ path: path.join(outDir, 'grimorio_mobile_dark.png'), fullPage: true });
+    await grimMobDark.close();
+
+    // 27. Grimório Mobile Pergaminho (390x844)
+    const grimMobParch = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pageGrimMP = await grimMobParch.newPage();
+    await pageGrimMP.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageGrimMP.goto('/jogador/grimorio');
+    await pageGrimMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pageGrimMP.getByText(/Grimório de/i)).toBeVisible();
+    await pageGrimMP.waitForTimeout(500);
+    await pageGrimMP.screenshot({ path: path.join(outDir, 'grimorio_mobile_parchment.png'), fullPage: true });
+    await grimMobParch.close();
+
+    // 28. Grimório PC Escuro (1440x900)
+    const grimPCDark = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pageGrimPD = await grimPCDark.newPage();
+    await pageGrimPD.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageGrimPD.goto('/jogador/grimorio');
+    await expect(pageGrimPD.getByText(/Grimório de/i)).toBeVisible();
+    await pageGrimPD.waitForTimeout(500);
+    await pageGrimPD.screenshot({ path: path.join(outDir, 'grimorio_pc_dark.png') });
+    await grimPCDark.close();
+
+    // 29. Grimório PC Pergaminho (1440x900)
+    const grimPCParch = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pageGrimPP = await grimPCParch.newPage();
+    await pageGrimPP.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageGrimPP.goto('/jogador/grimorio');
+    await pageGrimPP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pageGrimPP.getByText(/Grimório de/i)).toBeVisible();
+    await pageGrimPP.waitForTimeout(500);
+    await pageGrimPP.screenshot({ path: path.join(outDir, 'grimorio_pc_parchment.png') });
+    await grimPCParch.close();
+
+    // 30. Árvore Mobile Escuro (390x844)
+    const arvMobDark = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pageArvMD = await arvMobDark.newPage();
+    await pageArvMD.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageArvMD.goto('/jogador/arvore');
+    await expect(pageArvMD.getByText(/Árvore do Juramento/i)).toBeVisible();
+    await pageArvMD.waitForTimeout(500);
+    await pageArvMD.screenshot({ path: path.join(outDir, 'arvore_mobile_dark.png'), fullPage: true });
+    await arvMobDark.close();
+
+    // 31. Árvore Mobile Pergaminho (390x844)
+    const arvMobParch = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pageArvMP = await arvMobParch.newPage();
+    await pageArvMP.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+      localStorage.setItem('peste_oath_parchment_mode', 'true');
+    });
+    await pageArvMP.goto('/jogador/arvore');
+    await pageArvMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pageArvMP.getByText(/Árvore do Juramento/i)).toBeVisible();
+    await pageArvMP.waitForTimeout(500);
+    await pageArvMP.screenshot({ path: path.join(outDir, 'arvore_mobile_parchment.png'), fullPage: true });
+    await arvMobParch.close();
+
+    // 32. Árvore PC Escuro (1440x900)
+    const arvPCDark = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pageArvPD = await arvPCDark.newPage();
+    await pageArvPD.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageArvPD.goto('/jogador/arvore');
+    await expect(pageArvPD.getByText(/Árvore do Juramento/i)).toBeVisible();
+    await pageArvPD.waitForTimeout(500);
+    await pageArvPD.screenshot({ path: path.join(outDir, 'arvore_pc_dark.png') });
+    await arvPCDark.close();
+
+    // 33. Árvore PC Pergaminho (1440x900)
+    const arvPCParch = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pageArvPP = await arvPCParch.newPage();
+    await pageArvPP.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+      localStorage.setItem('peste_oath_parchment_mode', 'true');
+    });
+    await pageArvPP.goto('/jogador/arvore');
+    await pageArvPP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pageArvPP.getByText(/Árvore do Juramento/i)).toBeVisible();
+    await pageArvPP.waitForTimeout(500);
+    await pageArvPP.screenshot({ path: path.join(outDir, 'arvore_pc_parchment.png') });
+    await arvPCParch.close();
+  });
 });
+
