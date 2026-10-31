@@ -628,5 +628,90 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     await pageArvPP.screenshot({ path: path.join(outDir, 'arvore_pc_parchment.png') });
     await arvPCParch.close();
   });
+
+  test('Captura Prompt 12: Diário, Missivas, Loja e Dados (Mobile & PC / Dark & Parchment)', async ({ browser }) => {
+    const views = [
+      { path: '/jogador/diario', name: 'diario', text: 'Diário de Bordo' },
+      { path: '/jogador/missivas', name: 'missivas', text: 'Missivas do Confessor' },
+      { path: '/jogador/loja', name: 'loja', text: 'Módulo de Comércio' },
+      { path: '/jogador/dados', name: 'dados', text: 'Dados Rúnicos do Jurado' },
+    ];
+
+    for (const v of views) {
+      // 1. Mobile Dark (390x844)
+      const mobDark = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+      });
+      const pMD = await mobDark.newPage();
+      await pMD.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+        );
+      });
+      await pMD.goto(v.path);
+      await expect(pMD.getByText(v.text).first()).toBeVisible();
+      await pMD.waitForTimeout(400);
+      await pMD.screenshot({ path: path.join(outDir, `${v.name}_mobile_dark.png`), fullPage: true });
+      await mobDark.close();
+
+      // 2. Mobile Parchment (390x844)
+      const mobParch = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+      });
+      const pMP = await mobParch.newPage();
+      await pMP.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+        );
+      });
+      await pMP.goto(v.path);
+      await pMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+      await expect(pMP.getByText(v.text).first()).toBeVisible();
+      await pMP.waitForTimeout(400);
+      await pMP.screenshot({ path: path.join(outDir, `${v.name}_mobile_parchment.png`), fullPage: true });
+      await mobParch.close();
+
+      // 3. PC Dark (1440x900)
+      const pcDark = await browser.newContext({
+        viewport: { width: 1440, height: 900 },
+        deviceScaleFactor: 1,
+      });
+      const pPD = await pcDark.newPage();
+      await pPD.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+        );
+      });
+      await pPD.goto(v.path);
+      await expect(pPD.getByText(v.text).first()).toBeVisible();
+      await pPD.waitForTimeout(400);
+      await pPD.screenshot({ path: path.join(outDir, `${v.name}_pc_dark.png`) });
+      await pcDark.close();
+
+      // 4. PC Parchment (1440x900)
+      const pcParch = await browser.newContext({
+        viewport: { width: 1440, height: 900 },
+        deviceScaleFactor: 1,
+      });
+      const pPP = await pcParch.newPage();
+      await pPP.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+        );
+      });
+      await pPP.goto(v.path);
+      await pPP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+      await expect(pPP.getByText(v.text).first()).toBeVisible();
+      await pPP.waitForTimeout(400);
+      await pPP.screenshot({ path: path.join(outDir, `${v.name}_pc_parchment.png`) });
+      await pcParch.close();
+    }
+  });
 });
 

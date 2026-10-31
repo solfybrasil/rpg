@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Store } from 'lucide-react';
 import React, { useState } from 'react';
 import { formatCoinsString } from '../entities/item';
-import { Badge, Button, Card, Modal, Sheet } from '../shared/ui';
+import { Badge, Button, Card, CoinsBadge, DiceResult, Empty, Modal, Stepper } from '../shared/ui';
 
 export const Route = createFileRoute('/design')({
   component: DesignSystemShowcase,
@@ -10,7 +10,7 @@ export const Route = createFileRoute('/design')({
 
 function DesignSystemShowcase() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [stepperVal, setStepperVal] = useState(2);
 
   return (
     <div className="min-h-screen bg-[#08080a] text-[#f5f5f7] p-8 max-w-5xl mx-auto space-y-10">
@@ -41,6 +41,91 @@ function DesignSystemShowcase() {
         </div>
       </section>
 
+      {/* Moedas & Stepper Section */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-serif font-bold text-white/80 uppercase tracking-widest">
+          Economia & Controles Numéricos
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-2xl p-4 bg-white/[0.04] border border-white/[0.08] space-y-3">
+            <h3 className="text-xs font-serif uppercase tracking-wider text-[#a8947c]">
+              CoinsBadge (2.500b = 50p = 1o)
+            </h3>
+            <div className="flex flex-wrap gap-4 items-center">
+              <CoinsBadge coinsBronze={125} size="sm" />
+              <CoinsBadge coinsBronze={2650} size="md" />
+              <CoinsBadge coinsBronze={15230} size="lg" />
+            </div>
+          </div>
+
+          <div className="rounded-2xl p-4 bg-white/[0.04] border border-white/[0.08] flex flex-col items-center justify-center space-y-2">
+            <h3 className="text-xs font-serif uppercase tracking-wider text-[#a8947c]">
+              Stepper Interativo
+            </h3>
+            <Stepper
+              value={stepperVal}
+              onChange={setStepperVal}
+              min={-5}
+              max={10}
+              label="Modificador de Teste"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* DiceResult Section */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-serif font-bold text-white/80 uppercase tracking-widest">
+          Resultados de Dados (DiceResult)
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <DiceResult
+            tone="critico"
+            total={15}
+            peso={8}
+            label="Crítico! (+1 Inspiração)"
+            keptDice={[6, 6]}
+            modifier={3}
+          />
+          <DiceResult
+            tone="sucesso"
+            total={11}
+            peso={8}
+            label="Sucesso"
+            keptDice={[4, 5]}
+            modifier={2}
+          />
+          <DiceResult
+            tone="falha"
+            total={6}
+            peso={8}
+            label="Falha"
+            keptDice={[2, 3]}
+            modifier={1}
+          />
+          <DiceResult
+            tone="desastre"
+            total={2}
+            peso={8}
+            label="Desastre Rúnico!"
+            keptDice={[1, 1]}
+            modifier={0}
+          />
+        </div>
+      </section>
+
+      {/* Empty State Section */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-serif font-bold text-white/80 uppercase tracking-widest">
+          Estados Vazios (Empty)
+        </h2>
+        <Empty
+          icon={<Store className="w-8 h-8 text-[#ff453a]" />}
+          title="As portas estão trancadas."
+          description="Exemplo de estado de mercado fechado pelo Confessor da Mesa."
+        />
+      </section>
+
       {/* Buttons Section */}
       <section className="space-y-4">
         <h2 className="text-sm font-serif font-bold text-white/80 uppercase tracking-widest">
@@ -63,21 +148,20 @@ function DesignSystemShowcase() {
           Cards e Superfícies
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card title="Card Padrão" subtitle="Superfície 1">
-            <p className="text-xs text-white/70 font-serif leading-relaxed">
+          <Card>
+            <h3 className="font-serif font-bold text-sm text-[#f5b65b]">Card Padrão</h3>
+            <p className="text-xs text-white/70 font-serif leading-relaxed mt-1">
               Superfície escura com borda sutil, usada para módulos secundários e listagens.
             </p>
             <div className="mt-3 text-xs text-[#f5b65b] font-mono">
               Saldo: {formatCoinsString(12500)}
             </div>
           </Card>
-          <Card title="Interações Modais" subtitle="Radix Dialog & Sheet">
+          <Card>
+            <h3 className="font-serif font-bold text-sm text-[#f5b65b]">Interações Modais</h3>
             <div className="flex gap-2 mt-2">
               <Button size="sm" variant="outline" onClick={() => setModalOpen(true)}>
                 Abrir Modal
-              </Button>
-              <Button size="sm" variant="primary" onClick={() => setSheetOpen(true)}>
-                Abrir Sheet
               </Button>
             </div>
           </Card>
@@ -100,21 +184,6 @@ function DesignSystemShowcase() {
           </Button>
         </div>
       </Modal>
-
-      <Sheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        title="Sheet do Design System"
-        description="Gaveta inferior para celular e painel lateral para tablet/desktop."
-      >
-        <div className="space-y-4 py-2">
-          <Badge variant="artefato">Item Sagrado</Badge>
-          <p className="text-sm text-white/80 font-serif leading-relaxed">
-            Gaveta expansível para inspecionar itens, ler histórico e executar ações rápidas sem
-            perder o contexto da grade.
-          </p>
-        </div>
-      </Sheet>
     </div>
   );
 }

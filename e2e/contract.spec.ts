@@ -886,5 +886,92 @@ test.describe
 
       await ctx.close();
     });
+
+    test('Prompt 12: Diário, Missivas, Loja e Dados do Jogador', async ({ browser }) => {
+      const ctx = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+      });
+      const page = await ctx.newPage();
+
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+        );
+      });
+
+      // ─── 1. DIÁRIO COM AUTOSAVE ───
+      await page.goto('/jogador/diario');
+      await expect(page.getByRole('heading', { name: 'Diário de Bordo' })).toBeVisible();
+      await expect(page.getByTestId('autosave-status')).toBeVisible();
+
+      // Digita no editor de texto
+      const titleInput = page.getByPlaceholder('Título da folha...');
+      await titleInput.fill('Crônicas de Cinzas');
+
+      const bodyInput = page.getByPlaceholder(/Escreva aqui suas impressões/i);
+      await bodyInput.fill('Encontramos uma cripta lacrada por votos de prata.');
+
+      // Aguarda o autosave debounce de 800ms
+      await page.waitForTimeout(1200);
+      await expect(page.getByTestId('autosave-status')).toContainText('Salvo');
+
+      // Cria nova folha
+      await page.getByRole('button', { name: /Nova Folha/i }).click();
+      await page.waitForTimeout(300);
+      await expect(page.getByPlaceholder('Título da folha...')).toHaveValue('Nova Anotação');
+
+      // ─── 2. MISSIVAS ───
+      await page.goto('/jogador/missivas');
+      await expect(page.getByRole('heading', { name: 'Missivas do Confessor' })).toBeVisible();
+
+      // Envia uma missiva ao Confessor
+      const missiveInput = page.getByPlaceholder('Envie uma palavra ao Confessor...');
+      await missiveInput.fill('Confessor, os sinos dobraram na torre ocidental.');
+      await page.getByRole('button', { name: /Enviar/i }).click();
+
+      await page.waitForTimeout(600);
+      await expect(
+        page.getByText(/Confessor, os sinos dobraram na torre ocidental/i).first(),
+      ).toBeVisible();
+
+      // ─── 3. LOJA (MERCADO & CÂMBIO) ───
+      await page.goto('/jogador/loja');
+      await expect(page.getByText(/Módulo de Comércio/i)).toBeVisible();
+      await expect(page.getByText('◆')).toBeVisible();
+
+      // Alterna entre abas Comprar e Vender
+      await expect(page.getByRole('button', { name: /Comprar/i })).toBeVisible();
+      const sellTab = page.getByRole('button', { name: /Vender Pertences/i });
+      await expect(sellTab).toBeVisible();
+      await sellTab.click();
+      await page.waitForTimeout(200);
+
+      // Volta para Comprar
+      await page.getByRole('button', { name: /Comprar/i }).click();
+      await page.waitForTimeout(200);
+
+      // ─── 4. DADOS & BROADCAST ───
+      await page.goto('/jogador/dados');
+      await expect(page.getByRole('heading', { name: 'Dados Rúnicos do Jurado' })).toBeVisible();
+      await expect(page.getByTestId('dice-face-0')).toBeVisible();
+      await expect(page.getByTestId('dice-face-1')).toBeVisible();
+
+      // Modifica valor no Stepper
+      const increaseBtn = page.getByTitle('Aumentar');
+      await increaseBtn.click();
+      await page.waitForTimeout(100);
+
+      // Clica no botão Rolar Dados
+      const rollBtn = page.getByTestId('roll-dice-button');
+      await expect(rollBtn).toBeVisible();
+      await rollBtn.click();
+
+      // Aguarda resolução da rolagem
+      await expect(page.getByTestId('dice-result-card')).toBeVisible({ timeout: 10000 });
+      await expect(page.getByTestId('dice-result-card').getByText('Total')).toBeVisible();
+
+      await ctx.close();
+    });
   });
 
