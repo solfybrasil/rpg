@@ -87,7 +87,7 @@ export function DMBattleMapEditor() {
   const fileInputBgRef = useRef<HTMLInputElement | null>(null);
 
   // Métricas
-  const [fps, setFps] = useState(60);
+  const fpsRef = useRef<HTMLSpanElement | null>(null);
 
   // Debounce autosave ref
   const autosaveTimerRef = useRef<any>(null);
@@ -152,7 +152,11 @@ export function DMBattleMapEditor() {
         });
         updateBattleToken(tokenId, { c, r }).catch(() => {});
       },
-      onFpsUpdate: (curFps) => setFps(curFps),
+      onFpsUpdate: (curFps) => {
+        if (fpsRef.current) {
+          fpsRef.current.textContent = `${curFps} FPS`;
+        }
+      },
     });
 
     engineRef.current = engine;
@@ -641,7 +645,9 @@ export function DMBattleMapEditor() {
             >
               <Maximize2 className="w-4 h-4" />
             </button>
-            <span className="text-[10px] text-[#8a8a93] px-1 font-mono">{fps} FPS</span>
+            <span ref={fpsRef} className="text-[10px] text-[#8a8a93] px-1 font-mono">
+              60 FPS
+            </span>
           </div>
         </div>
 

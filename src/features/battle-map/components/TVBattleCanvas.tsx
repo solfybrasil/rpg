@@ -7,10 +7,11 @@ import { BattleEngine } from '../engine/BattleEngine.ts';
 export const TVBattleCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<BattleEngine | null>(null);
+  const fpsRef = useRef<HTMLDivElement | null>(null);
+  const prevMapIdRef = useRef<string | null>(null);
 
   const { data: map, isLoading: mapLoading } = useActiveBattleMap();
   const { tokens } = useBattleTokens(map?.id);
-  const [fps, setFps] = useState(60);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const isLive = map?.status === 'ao_vivo';
@@ -22,13 +23,16 @@ export const TVBattleCanvas: React.FC = () => {
     const engine = new BattleEngine(canvasRef.current, {
       mode: 'tv',
       onFpsUpdate: (currentFps) => {
-        setFps(currentFps);
+        if (fpsRef.current) {
+          fpsRef.current.textContent = `${currentFps} fps`;
+        }
       },
     });
 
     if (map) {
       engine.setMap(map);
       engine.zoomFit();
+      prevMapIdRef.current = map.id;
     }
     if (tokens) {
       engine.setTokens(tokens);
@@ -46,7 +50,10 @@ export const TVBattleCanvas: React.FC = () => {
   useEffect(() => {
     if (engineRef.current && map) {
       engineRef.current.setMap(map);
-      engineRef.current.zoomFit();
+      if (prevMapIdRef.current !== map.id) {
+        prevMapIdRef.current = map.id;
+        engineRef.current.zoomFit();
+      }
     }
   }, [map]);
 
@@ -145,7 +152,9 @@ export const TVBattleCanvas: React.FC = () => {
           }`}
         />
         <span>{isLive ? 'TV AO VIVO' : 'TV CONECTADA'}</span>
-        <span className="text-white/20">({fps} fps)</span>
+        <span ref={fpsRef} className="text-white/20">
+          (60 fps)
+        </span>
       </div>
     </div>
   );

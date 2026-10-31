@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { supabase as mainSupabase } from '../../../shared/supabase/client.ts';
 import type { BattleMap, BattleToken } from '../engine/types.ts';
 import {
@@ -143,34 +143,37 @@ export function useBattleTokens(mapId: string | undefined) {
     };
   }, [validMapId, queryClient]);
 
-  const moveToken = async (
-    tokenId: string,
-    c: number,
-    r: number,
-    path: Array<[number, number]>,
-  ) => {
-    // 1. Atualização Otimista no Cache TanStack Query
-    queryClient.setQueryData(
-      BATTLE_TOKENS_KEY(validMapId),
-      (prev: BattleToken[] | undefined) => {
-        if (!prev) return prev;
-        return prev.map((t) =>
-          t.id === tokenId
-            ? {
-                ...t,
-                c,
-                r,
-                path,
-                moves_left: Math.max(0, (t.moves_left ?? 6) - path.length),
-              }
-            : t,
-        );
-      },
-    );
+  const moveToken = useCallback(
+    async (
+      tokenId: string,
+      c: number,
+      r: number,
+      path: Array<[number, number]>,
+    ) => {
+      // 1. Atualização Otimista no Cache TanStack Query
+      queryClient.setQueryData(
+        BATTLE_TOKENS_KEY(validMapId),
+        (prev: BattleToken[] | undefined) => {
+          if (!prev) return prev;
+          return prev.map((t) =>
+            t.id === tokenId
+              ? {
+                  ...t,
+                  c,
+                  r,
+                  path,
+                  moves_left: Math.max(0, (t.moves_left ?? 6) - path.length),
+                }
+              : t,
+          );
+        },
+      );
 
-    // 2. Executa a RPC
-    return await moverTokenRpc(tokenId, c, r, path);
-  };
+      // 2. Executa a RPC
+      return await moverTokenRpc(tokenId, c, r, path);
+    },
+    [validMapId, queryClient],
+  );
 
   return {
     ...query,

@@ -23,17 +23,22 @@ export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
 }) => {
   const sessionHeroId = useSessionStore((s) => s.heroId);
   const heroId = propHeroId || sessionHeroId || 'tor_bjorn';
+  const heroIdRef = useRef(heroId);
+  heroIdRef.current = heroId;
+
   const navigate = useNavigate();
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<BattleEngine | null>(null);
+  const fpsRef = useRef<HTMLDivElement | null>(null);
 
   const { data: map, isLoading: mapLoading } = useActiveBattleMap();
   const { tokens, moveToken } = useBattleTokens(map?.id);
+  const moveTokenRef = useRef(moveToken);
+  moveTokenRef.current = moveToken;
 
   const [isPortrait, setIsPortrait] = useState(false);
   const [dismissPortrait, setDismissPortrait] = useState(false);
-  const [fps, setFps] = useState(60);
   const [movesLeft, setMovesLeft] = useState(6);
   const [moveLimit, setMoveLimit] = useState(6);
 
@@ -55,37 +60,22 @@ export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
     };
   }, []);
 
-  // Inicialização do Battle Engine
+  // Inicialização Única do Battle Engine
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Encontra o token do jogador
-    const myToken =
-      tokens.find(
-        (t) =>
-          (t.hero_id && t.hero_id === heroId) ||
-          (t.name && t.name.toLowerCase().includes(heroId.split('_')[0])),
-      ) || tokens.find((t) => t.kind === 'heroi');
-
     const engine = new BattleEngine(canvasRef.current, {
       mode: 'player',
-      myHeroTokenId: myToken?.id || null,
-      myHeroId: heroId,
+      myHeroId: heroIdRef.current,
       onMoveToken: async (tokenId, c, r, path) => {
-        await moveToken(tokenId, c, r, path);
+        await moveTokenRef.current(tokenId, c, r, path);
       },
       onFpsUpdate: (currentFps) => {
-        setFps(currentFps);
+        if (fpsRef.current) {
+          fpsRef.current.textContent = `${currentFps} fps`;
+        }
       },
     });
-
-    if (map) {
-      engine.setMap(map);
-      setMoveLimit(map.move_limit ?? 6);
-    }
-    if (tokens && tokens.length > 0) {
-      engine.setTokens(tokens);
-    }
 
     engineRef.current = engine;
 
@@ -93,7 +83,7 @@ export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
       engine.destroy();
       engineRef.current = null;
     };
-  }, [heroId, moveToken]);
+  }, []);
 
   // Atualiza mapa no motor
   useEffect(() => {
@@ -108,18 +98,23 @@ export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
     if (engineRef.current && tokens) {
       engineRef.current.setTokens(tokens);
 
+      const currentHeroId = heroIdRef.current;
       const myToken =
         tokens.find(
           (t) =>
-            (t.hero_id && t.hero_id === heroId) ||
-            (t.name && t.name.toLowerCase().includes(heroId.split('_')[0])),
+            (t.hero_id && t.hero_id === currentHeroId) ||
+            (t.name && t.name.toLowerCase().includes(currentHeroId.split('_')[0])),
         ) || tokens.find((t) => t.kind === 'heroi');
 
       if (myToken) {
+        engineRef.current.setOptions({
+          myHeroTokenId: myToken.id,
+          myHeroId: currentHeroId,
+        });
         setMovesLeft(myToken.moves_left ?? (map?.move_limit ?? 6));
       }
     }
-  }, [tokens, heroId, map]);
+  }, [tokens, map?.move_limit]);
 
   const handleCenter = () => {
     engineRef.current?.centerOnHero();
@@ -260,10 +255,11 @@ export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
 
       {/* Indicador Discreto de FPS */}
       <div
+        ref={fpsRef}
         className="absolute bottom-4 right-4 z-20 pointer-events-none text-[10px] tabular-nums font-mono text-white/20"
         data-testid="fps-counter"
       >
-        {fps} fps
+        60 fps
       </div>
     </div>
   );
