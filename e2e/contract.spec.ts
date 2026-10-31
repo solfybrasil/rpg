@@ -651,4 +651,92 @@ test.describe
 
       await dmContext.close();
     });
+
+    test('Prompt 07: Jogador Oficina 3x3, Minigames e Forja com teste_1', async ({ browser }) => {
+      // 1. Garante que game_state tem forja acesa
+      await supabase.from('game_state').update({ forge_available: true }).eq('id', 1);
+
+      // 2. Insere ferramentas e materiais para teste_1 se necessário
+      await supabase.from('inventory_items').upsert([
+        {
+          id: 'test_ferramentas_ferreiro',
+          character_id: 'teste_1',
+          name: 'Ferramentas de ferreiro',
+          catalog_id: 'ferramentas-de-ferreiro',
+          quantity: 1,
+          category: 'Ferramenta',
+        },
+        {
+          id: 'test_kit_alquimia',
+          character_id: 'teste_1',
+          name: 'Kit de alquimia',
+          catalog_id: 'kit-de-alquimia',
+          quantity: 1,
+          category: 'Ferramenta',
+        },
+        {
+          id: 'test_panela_ferro',
+          character_id: 'teste_1',
+          name: 'Panela de ferro',
+          catalog_id: 'panela-de-ferro',
+          quantity: 1,
+          category: 'Ferramenta',
+        },
+        {
+          id: 'test_ingrediente_1',
+          character_id: 'teste_1',
+          name: 'Barra de Aço',
+          catalog_id: 'barra-aco',
+          quantity: 5,
+          category: 'Material',
+        },
+      ]);
+
+      const ctx = await browser.newContext({
+        viewport: { width: 1440, height: 900 },
+      });
+      const page = await ctx.newPage();
+
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+        );
+      });
+
+      await page.goto('/jogador/oficina');
+
+      // Verifica título e presença das tabs
+      await expect(page.getByText('Oficina do Jurado')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Forja', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Alquimia', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Cozinha', exact: true })).toBeVisible();
+
+      // Verifica Grade 3x3 (9 slots)
+      await expect(page.getByText(/Grade 3×3/i).first()).toBeVisible();
+
+      // Abre o Livro de Receitas
+      const bookBtn = page.getByRole('button', { name: /Livro de Receitas/i });
+      await expect(bookBtn).toBeVisible();
+      await bookBtn.click();
+
+      // Confere modal do Livro de Receitas aberto
+      await expect(page.getByText(/Livro de Receitas/i).first()).toBeVisible();
+      // Fecha o Livro
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(400);
+
+      // Troca para Alquimia
+      await page.getByRole('button', { name: 'Alquimia', exact: true }).first().click();
+      await expect(page.getByText(/Grade 3×3/i).first()).toBeVisible();
+
+      // Troca para Cozinha
+      await page.getByRole('button', { name: 'Cozinha', exact: true }).first().click();
+      await expect(page.getByText(/Grade 3×3/i).first()).toBeVisible();
+
+      // Volta para Forja
+      await page.getByRole('button', { name: 'Forja', exact: true }).first().click();
+
+      await ctx.close();
+    });
   });

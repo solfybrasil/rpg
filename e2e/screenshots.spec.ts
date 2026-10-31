@@ -324,4 +324,80 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     await pageDMPCParch.screenshot({ path: path.join(outDir, 'mestre_mesa_pc_parchment.png') });
     await dmPCParch.close();
   });
+
+  test('Captura Oficina Celular e PC Escuro e Pergaminho', async ({ browser }) => {
+    // 18. Oficina Celular Escuro (390x844)
+    const ofMobDark = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pageOfMD = await ofMobDark.newPage();
+    await pageOfMD.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageOfMD.goto('/jogador/oficina');
+    await expect(pageOfMD.getByText('Oficina do Jurado')).toBeVisible();
+    await pageOfMD.waitForTimeout(500);
+    await pageOfMD.screenshot({ path: path.join(outDir, 'oficina_mobile_dark.png'), fullPage: true });
+    await ofMobDark.close();
+
+    // 19. Oficina Celular Pergaminho (390x844)
+    const ofMobParch = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pageOfMP = await ofMobParch.newPage();
+    await pageOfMP.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageOfMP.goto('/jogador/oficina');
+    await pageOfMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pageOfMP.getByText('Oficina do Jurado')).toBeVisible();
+    await pageOfMP.waitForTimeout(500);
+    await pageOfMP.screenshot({ path: path.join(outDir, 'oficina_mobile_parchment.png'), fullPage: true });
+    await ofMobParch.close();
+
+    // 20. Oficina PC Escuro (1440x900)
+    const ofPCDark = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pageOfPCDark = await ofPCDark.newPage();
+    await pageOfPCDark.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageOfPCDark.goto('/jogador/oficina');
+    await expect(pageOfPCDark.getByText('Oficina do Jurado')).toBeVisible();
+    await pageOfPCDark.waitForTimeout(500);
+    await pageOfPCDark.screenshot({ path: path.join(outDir, 'oficina_pc_dark.png') });
+    await ofPCDark.close();
+
+    // 21. Oficina PC Pergaminho (1440x900)
+    const ofPCParch = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pageOfPCParch = await ofPCParch.newPage();
+    await pageOfPCParch.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'jogador', heroId: 'teste_1' }, version: 0 }),
+      );
+    });
+    await pageOfPCParch.goto('/jogador/oficina');
+    await pageOfPCParch.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pageOfPCParch.getByText('Oficina do Jurado')).toBeVisible();
+    await pageOfPCParch.waitForTimeout(500);
+    await pageOfPCParch.screenshot({ path: path.join(outDir, 'oficina_pc_parchment.png') });
+    await ofPCParch.close();
+  });
 });

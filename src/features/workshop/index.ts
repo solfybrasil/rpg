@@ -1,2 +1,11 @@
-// [peste-v2 fundacao] component placeholder
-
+export * from './types';
+export * from './api/useWorkshop';
+export { PlayerWorkshopView } from './components/PlayerWorkshopView';
+export { DMForgeControl } from './components/DMForgeControl';
+export { WorkbenchGrid } from './components/WorkbenchGrid';
+export { WorkshopBackpack } from './components/WorkshopBackpack';
+export { WorkshopResultSlot } from './components/WorkshopResultSlot';
+export { HammerMinigameModal } from './components/HammerMinigameModal';
+export { BubblesMinigameModal } from './components/BubblesMinigameModal';
+export { CraftDiceResultModal } from './components/CraftDiceResultModal';
+export { RecipeBookModal } from './components/RecipeBookModal';
