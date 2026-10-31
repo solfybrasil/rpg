@@ -67,13 +67,15 @@ export const PlayerInventoryView: React.FC = () => {
   ];
 
   return (
-    <div className="flex-1 flex flex-col h-full w-full bg-[#08080a] text-[#f5f5f7] overflow-hidden">
+    <div className="flex-1 flex flex-col h-full w-full bg-[var(--stone)] text-[var(--text)] overflow-hidden">
       {/* Banner de seleção de herói rápido se não houver herói na sessão */}
       {!sessionHeroId && (
-        <div className="bg-[#f5b65b]/10 border-b border-[#f5b65b]/20 px-4 py-2 flex items-center justify-between text-xs text-[#ffd59a]">
+        <div className="bg-[var(--gold-lo)]/20 border-b border-[var(--gold-lo)] px-4 py-2 flex items-center justify-between text-xs text-[var(--gold-hi)] font-['Cinzel',serif]">
           <div className="flex items-center gap-2">
             <Users className="w-3.5 h-3.5" />
-            <span>Visualizando inventário de teste: <strong>{hero?.name || heroId}</strong></span>
+            <span>
+              Visualizando inventário de teste: <strong>{hero?.name || heroId}</strong>
+            </span>
           </div>
           <div className="flex gap-1">
             {heroes.slice(0, 3).map((h) => (
@@ -81,7 +83,7 @@ export const PlayerInventoryView: React.FC = () => {
                 key={h.id}
                 type="button"
                 onClick={() => selectHero(h.id)}
-                className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-serif font-bold text-white"
+                className="px-2 py-0.5 slab text-[10px] font-['Cinzel',serif] font-bold text-[var(--gold-hi)] hover:brightness-125 cursor-pointer"
               >
                 {h.name.split(' ')[0]}
               </button>
@@ -91,15 +93,15 @@ export const PlayerInventoryView: React.FC = () => {
       )}
 
       {/* Barra de Filtros e Busca */}
-      <div className="p-3 border-b border-white/[0.06] bg-[#0c0c0e]/60 flex flex-col sm:flex-row gap-2 shrink-0">
+      <div className="p-3 border-b border-[var(--iron)]/60 slab flex flex-col sm:flex-row gap-2 shrink-0">
         <div className="relative flex-1">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
           <input
             type="text"
             placeholder="Buscar nos pertences..."
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#f5b65b]/60 transition-colors"
+            className="w-full recess border border-black pl-8 pr-3 py-1.5 text-xs text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--gold-lo)] transition-colors"
           />
         </div>
 
@@ -109,10 +111,10 @@ export const PlayerInventoryView: React.FC = () => {
               key={c.id}
               type="button"
               onClick={() => setCategoryFilter(c.id)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-serif font-medium whitespace-nowrap transition-all ${
+              className={`px-2.5 py-1 text-[11px] font-['Cinzel',serif] uppercase font-medium whitespace-nowrap transition-all cursor-pointer ${
                 categoryFilter === c.id
-                  ? 'bg-[#f5b65b]/20 text-[#ffd59a] border border-[#f5b65b]/40 font-bold'
-                  : 'bg-white/[0.02] text-white/60 hover:text-white border border-transparent'
+                  ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] font-bold shadow-md'
+                  : 'recess text-[var(--muted)] hover:text-[var(--text)] border border-black'
               }`}
             >
               {c.label}
@@ -131,10 +133,10 @@ export const PlayerInventoryView: React.FC = () => {
 
         {/* Separador e Título da Mochila */}
         <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-serif font-bold text-[#f5b65b] uppercase tracking-wider">
+          <span className="text-[11px] font-['Cinzel',serif] font-bold text-[var(--gold-hi)] uppercase tracking-wider">
             Mochila de Viagem
           </span>
-          <span className="text-[10px] text-white/40 font-mono">
+          <span className="text-[10px] text-[var(--muted)] font-mono">
             40 compartimentos
           </span>
         </div>

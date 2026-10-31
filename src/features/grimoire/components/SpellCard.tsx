@@ -1,15 +1,15 @@
+import { BookOpen, Flame, Skull, Sparkles } from 'lucide-react';
 import React from 'react';
-import { Sparkles, BookOpen, Flame, Droplets, Skull, Shield, Eye, Clock } from 'lucide-react';
 import type { Spell, SpellCheckStatus } from '../types';
 
 export const FONTE_CORES: Record<string, string> = {
-  Peste: '#7d8a3c',
-  Fogo: '#b8433a',
-  Som: '#5b7fa6',
-  Sangue: '#8e2a24',
-  Sombra: '#6b6456',
-  Luz: '#c9a961',
-  Arcana: '#4a9084',
+  Peste: 'var(--plague)',
+  Fogo: 'var(--ember)',
+  Som: 'var(--mist)',
+  Sangue: 'var(--blood)',
+  Sombra: 'var(--iron)',
+  Luz: 'var(--gold)',
+  Arcana: 'var(--mana)',
 };
 
 interface SpellCardProps {
@@ -33,53 +33,56 @@ export const SpellCard: React.FC<SpellCardProps> = ({
 }) => {
   const circulo = Number(magia.circulo ?? 0);
   const fonte = (magia.fonte as string) || (magia.escola as string) || 'Arcana';
-  const corFonte = FONTE_CORES[fonte] || '#c9a961';
+  const corFonte = FONTE_CORES[fonte] || 'var(--gold)';
   const custoFoco = Number(magia.custo_foco ?? circulo);
 
   return (
-    <div className="flex flex-col justify-between p-3.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--gold-dim)] transition-colors shadow-sm gap-3">
+    <div className="slab p-3.5 flex flex-col justify-between gap-3 hover:border-[var(--gold-lo)] transition-colors select-none">
       {/* Top Header */}
       <div>
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <span
-              className="w-2 h-2 rounded-full shrink-0"
+              className="w-2.5 h-2.5 rotate-45 shrink-0 shadow-sm"
               style={{ backgroundColor: corFonte }}
               title={`Fonte: ${fonte}`}
             />
-            <h4
+            <button
+              type="button"
               onClick={onInspect}
-              className="font-cinzel font-semibold text-sm text-[var(--text-1)] hover:text-[var(--gold-bright)] cursor-pointer truncate transition-colors"
+              className="font-['Cinzel',serif] font-bold text-sm text-[var(--text)] hover:text-[var(--gold-hi)] cursor-pointer truncate transition-colors text-left"
             >
               {magia.nome}
-            </h4>
+            </button>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Focus Pill */}
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-950/60 text-sky-300 border border-sky-800/70">
-              {custoFoco} {custoFoco === 1 ? 'FOCO' : 'FOCO'}
+            <span className="px-2 py-0.5 border border-[var(--mana)]/60 bg-[var(--mana)]/10 text-[var(--mist)] text-[10px] font-['Cinzel',serif] font-bold tabular-nums">
+              {custoFoco} FOCO
             </span>
             {/* Circle Badge */}
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-cinzel font-semibold bg-[var(--surface)] text-[var(--gold)] border border-[var(--border)]">
+            <span className="px-1.5 py-0.5 border border-[var(--iron)] text-[var(--gold)] text-[10px] font-['Cinzel',serif] font-bold">
               {circulo === 0 ? 'TRUQUE' : `CÍRC ${circulo}`}
             </span>
           </div>
         </div>
 
         {/* Subtitle / School */}
-        <div className="flex items-center gap-2 text-[11px] text-[var(--text-3)] mt-1">
+        <div className="flex items-center gap-2 text-[11px] text-[var(--muted)] font-['EB_Garamond',serif] italic mt-1">
           <span>{magia.escola || fonte}</span>
           {magia.raridade && magia.raridade !== 'Comum' && (
             <>
               <span>•</span>
-              <span className="text-[var(--gold-dim)]">{magia.raridade}</span>
+              <span className="text-[var(--gold)] font-['Cinzel',serif] text-[9.5px] uppercase">
+                {magia.raridade}
+              </span>
             </>
           )}
           {fonte === 'Peste' && (
             <>
               <span>•</span>
-              <span className="text-amber-500 font-semibold flex items-center gap-1">
+              <span className="text-[var(--blood)] font-bold flex items-center gap-1">
                 <Skull size={10} /> Risco Peste
               </span>
             </>
@@ -87,17 +90,17 @@ export const SpellCard: React.FC<SpellCardProps> = ({
         </div>
 
         {/* Short Summary */}
-        <p className="text-xs text-[var(--text-2)] line-clamp-2 mt-2 leading-relaxed">
+        <p className="text-xs text-[var(--text)] font-['EB_Garamond',serif] line-clamp-2 mt-2 leading-relaxed">
           {magia.resumo || magia.descricao || 'Fórmula mística ancestral.'}
         </p>
       </div>
 
       {/* Bottom Actions */}
-      <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]/60 gap-2">
+      <div className="flex items-center justify-between pt-2 border-t border-[var(--iron)]/60 gap-2">
         <button
           type="button"
           onClick={onInspect}
-          className="text-[11px] font-cinzel text-[var(--text-3)] hover:text-[var(--text-1)] px-2 py-1 rounded transition-colors flex items-center gap-1"
+          className="text-[11px] font-['Cinzel',serif] uppercase tracking-wider text-[var(--muted)] hover:text-white px-2 py-1 transition-colors flex items-center gap-1"
         >
           <BookOpen size={12} />
           <span>Detalhes</span>
@@ -107,9 +110,9 @@ export const SpellCard: React.FC<SpellCardProps> = ({
           <button
             type="button"
             onClick={onCast}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[var(--gold)] hover:bg-[var(--gold-bright)] text-black font-cinzel font-semibold text-xs transition-colors shadow-sm active:scale-95 cursor-pointer"
+            className="end-turn h-7 px-3 text-[11px] font-bold font-['Cinzel',serif] text-[var(--abyss)] flex items-center gap-1"
           >
-            <Flame size={13} className="fill-black" />
+            <Flame size={12} className="fill-current" />
             <span>Conjurar</span>
           </button>
         )}
@@ -117,16 +120,18 @@ export const SpellCard: React.FC<SpellCardProps> = ({
         {mode === 'learn' && avaliacao && (
           <div className="flex items-center gap-2">
             {avaliacao.jaAprendida ? (
-              <span className="text-[11px] text-[var(--gold-dim)] font-cinzel">✓ Aprendida</span>
+              <span className="text-[11px] text-[var(--gold)] font-['Cinzel',serif]">
+                ✓ Aprendida
+              </span>
             ) : (
               <button
                 type="button"
                 onClick={onInvest}
                 disabled={!avaliacao.pode || inspiracaoAtual <= 0}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-cinzel transition-colors ${
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-['Cinzel',serif] uppercase tracking-wider border transition-colors ${
                   avaliacao.pode && inspiracaoAtual > 0
-                    ? 'bg-[var(--surface)] text-[var(--gold)] border border-[var(--gold)] hover:bg-[var(--gold)] hover:text-black cursor-pointer'
-                    : 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed'
+                    ? 'border-[var(--gold)] text-[var(--gold-hi)] hover:bg-[var(--gold-lo)]/20 cursor-pointer'
+                    : 'border-[var(--iron)] text-[var(--muted)] opacity-50 cursor-not-allowed'
                 }`}
                 title={avaliacao.statusText}
               >

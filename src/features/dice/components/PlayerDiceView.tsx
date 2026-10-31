@@ -143,27 +143,27 @@ export const PlayerDiceView: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
       {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--iron)]/60 pb-4">
         <div>
-          <h1 className="font-serif text-xl md:text-2xl font-bold text-[#f5b65b] tracking-wide flex items-center gap-2">
-            <Dices className="w-5 h-5" /> Dados Rúnicos do Jurado
+          <h1 className="font-['Cinzel',serif] text-xl md:text-2xl font-bold text-[var(--gold-hi)] tracking-wide flex items-center gap-2">
+            <Dices className="w-5 h-5 text-[var(--gold)]" /> Dados Rúnicos do Jurado
           </h1>
-          <p className="font-serif text-xs md:text-sm text-white/50 italic">
+          <p className="font-serif text-xs md:text-sm text-[var(--muted)] italic">
             2d6 + Atributo + Perícia contra o Peso da Sessão. Transmissão contínua para a mesa.
           </p>
         </div>
 
         {/* Peso Atual */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs font-mono">
-          <span className="text-[#a8947c] uppercase tracking-wider font-serif">Peso da Mesa:</span>
-          <span className="text-base font-bold text-[#f5b65b]">{effectivePeso}</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 slab border border-[var(--iron)] text-xs font-mono">
+          <span className="text-[var(--gold-hi)] uppercase tracking-wider font-['Cinzel',serif]">Peso da Mesa:</span>
+          <span className="text-base font-bold text-[var(--gold-hi)]">{effectivePeso}</span>
         </div>
       </div>
 
       {/* ── ÁREA CENTRAL DOS DADOS GRANDES ── */}
-      <div className="flex flex-col items-center justify-center p-8 md:p-12 rounded-3xl bg-gradient-to-b from-[#18181c] to-[#0c0c0e] border border-white/10 shadow-2xl relative overflow-hidden">
+      <div className="flex flex-col items-center justify-center p-8 md:p-12 slab border border-[var(--iron)] shadow-2xl relative overflow-hidden">
         {/* Glow de fundo */}
-        <div className="absolute inset-0 bg-radial-gradient from-[#f5b65b]/10 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-radial-gradient from-[var(--gold)]/10 via-transparent to-transparent pointer-events-none" />
 
         {/* 2 ou 3 Dados Grandes no Centro */}
         <div className="flex items-center justify-center gap-4 md:gap-6 my-4 z-10">
@@ -178,13 +178,13 @@ export const PlayerDiceView: React.FC = () => {
                 key={idx}
                 data-testid={`dice-face-${idx}`}
                 className={`
-                  w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center font-mono font-bold text-3xl md:text-4xl select-none transition-all duration-300
+                  w-20 h-20 md:w-24 md:h-24 flex items-center justify-center font-mono font-bold text-3xl md:text-4xl select-none transition-all duration-300
                   ${
                     isRolling
-                      ? 'animate-spin scale-105 bg-[#f5b65b]/20 border-2 border-[#f5b65b] text-[#f5b65b]'
+                      ? 'animate-spin scale-105 recess border-2 border-[var(--gold)] text-[var(--gold)]'
                       : isKept
-                      ? 'bg-gradient-to-br from-[#2a241e] via-[#1a1612] to-[#100d0a] border-2 border-[#f5b65b] text-[#ffd59a] shadow-xl shadow-[#f5b65b]/20 scale-100'
-                      : 'bg-black/40 border border-white/10 text-white/30 scale-90 opacity-60'
+                      ? 'slab border-2 border-[var(--gold)] text-[var(--gold-hi)] shadow-xl shadow-[var(--gold)]/20 scale-100'
+                      : 'recess border border-black text-white/30 scale-90 opacity-60'
                   }
                 `}
               >
@@ -196,7 +196,7 @@ export const PlayerDiceView: React.FC = () => {
 
         {/* Informação do Modo (Vantagem/Desvantagem) */}
         {rollMode !== 'normal' && (
-          <div className="text-xs font-serif italic text-white/50 mb-2 z-10">
+          <div className="text-xs font-serif italic text-[var(--muted)] mb-2 z-10">
             {rollMode === 'vantagem'
               ? 'Rolando 3d6 (mantendo os 2 maiores)'
               : 'Rolando 3d6 (mantendo os 2 menores)'}
@@ -210,9 +210,9 @@ export const PlayerDiceView: React.FC = () => {
             data-testid="roll-dice-button"
             onClick={handleRoll}
             disabled={isRolling}
-            className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-b from-[#ca8a04] via-[#b45309] to-[#854d0e] text-[#f5e8c8] font-serif text-sm md:text-base font-bold tracking-widest uppercase border border-[#f5b65b] hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[#ca8a04]/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full end-turn text-stone-950 font-['Cinzel',serif] text-sm md:text-base font-bold tracking-widest uppercase hover:brightness-110 active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            <Dices className="w-5 h-5" />
+            <Dices className="w-5 h-5 inline mr-1" />
             <span>{isRolling ? 'Rolando os Dados...' : 'Rolar Dados'}</span>
           </button>
         </div>
@@ -234,10 +234,10 @@ export const PlayerDiceView: React.FC = () => {
       )}
 
       {/* ── PAINEL DE MODIFICADORES COM STEPPER & SELETORES ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 slab border border-[var(--iron)]">
         {/* Atributo */}
         <div className="space-y-2">
-          <label className="text-[11px] font-serif uppercase tracking-wider text-[#a8947c]">
+          <label className="text-[11px] font-['Cinzel',serif] uppercase tracking-wider text-[var(--gold-hi)] font-bold">
             Atributo Chave
           </label>
           <div className="grid grid-cols-2 gap-1.5">
@@ -250,11 +250,11 @@ export const PlayerDiceView: React.FC = () => {
                   type="button"
                   onClick={() => setSelectedAttr(at.id)}
                   className={`
-                    p-2 rounded-xl text-xs font-serif flex items-center justify-between transition-all
+                    p-2 text-xs font-['Cinzel',serif] flex items-center justify-between transition-all cursor-pointer
                     ${
                       isSelected
-                        ? 'bg-[#f5b65b]/20 text-[#f5b65b] border border-[#f5b65b]/40 font-bold'
-                        : 'bg-white/[0.02] text-white/60 border border-white/[0.04] hover:bg-white/[0.06]'
+                        ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] font-bold shadow-md'
+                        : 'recess text-[var(--muted)] border border-black hover:text-[var(--text)]'
                     }
                   `}
                 >
@@ -268,7 +268,7 @@ export const PlayerDiceView: React.FC = () => {
 
         {/* Modo de Rolagem */}
         <div className="space-y-2">
-          <label className="text-[11px] font-serif uppercase tracking-wider text-[#a8947c]">
+          <label className="text-[11px] font-['Cinzel',serif] uppercase tracking-wider text-[var(--gold-hi)] font-bold">
             Modo da Rolagem
           </label>
           <div className="flex flex-col gap-1.5">
@@ -284,11 +284,11 @@ export const PlayerDiceView: React.FC = () => {
                 type="button"
                 onClick={() => setRollMode(m.id)}
                 className={`
-                  p-2 rounded-xl text-xs font-serif text-left transition-all
+                  p-2 text-xs font-['Cinzel',serif] text-left transition-all cursor-pointer
                   ${
                     rollMode === m.id
-                      ? 'bg-[#f5b65b]/20 text-[#f5b65b] border border-[#f5b65b]/40 font-bold'
-                      : 'bg-white/[0.02] text-white/60 border border-white/[0.04] hover:bg-white/[0.06]'
+                      ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] font-bold shadow-md'
+                      : 'recess text-[var(--muted)] border border-black hover:text-[var(--text)]'
                   }
                 `}
               >
@@ -299,7 +299,7 @@ export const PlayerDiceView: React.FC = () => {
         </div>
 
         {/* Modificador Extra com Stepper */}
-        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-black/20 border border-white/[0.04] space-y-2">
+        <div className="flex flex-col items-center justify-center p-3 recess border border-black space-y-2">
           <Stepper
             value={extraModifier}
             onChange={setExtraModifier}
@@ -307,7 +307,7 @@ export const PlayerDiceView: React.FC = () => {
             max={10}
             label="Modificador Avulso"
           />
-          <div className="text-xs font-mono text-[#f5b65b] font-semibold mt-1">
+          <div className="text-xs font-mono text-[var(--gold-hi)] font-semibold mt-1">
             Total do Bônus: {totalModifier >= 0 ? `+${totalModifier}` : totalModifier}
           </div>
         </div>
@@ -316,7 +316,7 @@ export const PlayerDiceView: React.FC = () => {
       {/* ── HISTÓRICO RECENTE ── */}
       {history.length > 0 && (
         <div className="space-y-2 pt-2">
-          <div className="flex items-center gap-1.5 text-xs font-serif uppercase tracking-wider text-[#a8947c]">
+          <div className="flex items-center gap-1.5 text-xs font-['Cinzel',serif] uppercase tracking-wider text-[var(--gold-hi)] font-bold">
             <History className="w-3.5 h-3.5" />
             <span>Últimas Rolagens da Mesa</span>
           </div>
@@ -325,13 +325,13 @@ export const PlayerDiceView: React.FC = () => {
             {history.slice(0, 6).map((h) => (
               <div
                 key={h.id}
-                className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-between text-xs"
+                className="p-2.5 slab border border-[var(--iron)]/60 flex items-center justify-between text-xs"
               >
                 <div className="min-w-0 pr-2">
-                  <div className="font-serif font-semibold text-white/80 truncate">
+                  <div className="font-['Cinzel',serif] font-semibold text-[var(--gold-hi)] truncate">
                     {h.player_name || 'Jurado'}: {h.label}
                   </div>
-                  <div className="font-mono text-[10px] text-white/40 mt-0.5">
+                  <div className="font-mono text-[10px] text-[var(--muted)] mt-0.5">
                     [{h.kept?.join('+') || '?'}] {h.modifier ? `+${h.modifier}` : ''}
                   </div>
                 </div>
@@ -340,17 +340,17 @@ export const PlayerDiceView: React.FC = () => {
                   <span
                     className={`font-mono font-bold text-sm ${
                       h.result === 'critico'
-                        ? 'text-[#f5b65b]'
+                        ? 'text-[var(--gold-hi)]'
                         : h.result === 'desastre'
-                        ? 'text-[#ff453a]'
+                        ? 'text-[var(--blood)]'
                         : h.total >= h.peso
-                        ? 'text-[#30d158]'
-                        : 'text-[#ff453a]'
+                        ? 'text-[var(--gold)]'
+                        : 'text-[var(--blood)]'
                     }`}
                   >
                     {h.total}
                   </span>
-                  <div className="text-[9px] uppercase font-serif text-white/40">
+                  <div className="text-[9px] uppercase font-['Cinzel',serif] text-[var(--muted)]">
                     {h.result}
                   </div>
                 </div>

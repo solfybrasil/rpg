@@ -1,17 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
+  AlertCircle,
   BookOpen,
-  Plus,
-  Trash2,
   CheckCircle2,
   Clock,
   Feather,
   FileText,
-  AlertCircle,
   Menu,
+  Plus,
+  Trash2,
 } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Parchment } from '../../../shared/ui/Parchment';
+import { StonePanel } from '../../../shared/ui/StonePanel';
 import { useSessionStore } from '../../../shared/stores/session';
-import { fetchPlayerNotes, savePlayerNote, deletePlayerNote } from '../api';
+import { deletePlayerNote, fetchPlayerNotes, savePlayerNote } from '../api';
 import type { PlayerNote, SaveStatus } from '../types';
 
 export const PlayerJournalView: React.FC = () => {
@@ -80,12 +82,13 @@ export const PlayerJournalView: React.FC = () => {
                 character_id: heroId,
                 title: 'Diário de Bordo',
                 body: '',
+                created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               };
-              if (isMounted) {
-                setNotes([fallbackNote]);
-                setSelectedNoteId(fallbackNote.id);
-              }
+              setNotes([fallbackNote]);
+              setSelectedNoteId(fallbackNote.id);
+              setActiveTitle(fallbackNote.title);
+              setActiveBody('');
             }
           }
         }
@@ -102,34 +105,31 @@ export const PlayerJournalView: React.FC = () => {
     };
   }, [heroId]);
 
-  // Debounce autosave de 800ms
-  const triggerAutoSave = useCallback(
-    (noteId: string, title: string, body: string) => {
-      setSaveStatus('Salvando...');
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+  const triggerAutoSave = useCallback((id: string, title: string, body: string) => {
+    setSaveStatus('Salvando...');
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
-      debounceTimerRef.current = setTimeout(async () => {
-        try {
-          const saved = await savePlayerNote({
-            id: noteId.startsWith('local_') ? undefined : noteId,
-            character_id: heroId,
-            session_code: 'MESA',
-            title,
-            body,
-          });
-
-          setNotes((prev) => prev.map((n) => (n.id === noteId ? saved : n)));
-          setSelectedNoteId(saved.id);
-          activeNoteRef.current = { id: saved.id, title: saved.title, body: saved.body };
-          setSaveStatus('Salvo');
-        } catch (err) {
-          console.error('[JOURNAL] Falha no autosave:', err);
-          setSaveStatus('Erro ao salvar');
-        }
-      }, 800);
-    },
-    [heroId],
-  );
+    debounceTimerRef.current = setTimeout(async () => {
+      try {
+        await savePlayerNote({
+          id,
+          character_id: heroId,
+          session_code: 'MESA',
+          title: title.trim() || 'Sem Título',
+          body,
+        });
+        setSaveStatus('Salvo');
+        setNotes((prev) =>
+          prev.map((n) =>
+            n.id === id ? { ...n, title: title.trim() || 'Sem Título', body } : n,
+          ),
+        );
+      } catch (err) {
+        console.error('[JOURNAL] Erro no autosave:', err);
+        setSaveStatus('Erro ao salvar');
+      }
+    }, 1000);
+  }, [heroId]);
 
   const handleTitleChange = (val: string) => {
     setActiveTitle(val);
@@ -153,7 +153,7 @@ export const PlayerJournalView: React.FC = () => {
       const newNote = await savePlayerNote({
         character_id: heroId,
         session_code: 'MESA',
-        title: 'Nova Anotação',
+        title: 'Nova Folha',
         body: '',
       });
 
@@ -211,84 +211,94 @@ export const PlayerJournalView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-16 text-[#c4b59f] font-serif">
-        <BookOpen className="w-8 h-8 text-[#f5b65b] animate-spin mb-4" />
+      <div className="flex flex-col items-center justify-center p-16 text-[var(--muted)] font-['EB_Garamond',serif]">
+        <BookOpen className="w-8 h-8 text-[var(--gold)] animate-spin mb-4" />
         <p className="italic">Abrindo os pergaminhos do seu diário...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-4">
+    <div className="max-w-5xl mx-auto p-4 space-y-4">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+      <div className="flex items-center justify-between border-b border-[var(--iron)] pb-3">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="md:hidden p-2 rounded-lg bg-white/5 border border-white/10 text-[#f5b65b]"
+            className="md:hidden p-2 slab text-[var(--gold)]"
             aria-label="Abrir folhas"
           >
             <Menu className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="font-serif text-xl md:text-2xl font-bold text-[#f5b65b] tracking-wide flex items-center gap-2">
-              <Feather className="w-5 h-5" /> Diário de Bordo
+            <h1 className="font-['Cinzel',serif] text-xl font-bold text-[var(--gold-hi)] tracking-wide flex items-center gap-2">
+              <Feather className="w-5 h-5 text-[var(--gold)]" /> Diário de Bordo
             </h1>
-            <p className="font-serif text-xs md:text-sm text-white/50 italic">
+            <p className="font-['EB_Garamond',serif] text-xs text-[var(--muted)] italic">
               Anotações, presságios e segredos da sua jornada pessoal.
             </p>
           </div>
         </div>
 
-        {/* Status discreto de salvamento no canto */}
+        {/* Status discreto de salvamento */}
         <div
           data-testid="autosave-status"
-          className="flex items-center gap-1.5 text-xs font-mono px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08]"
+          className="flex items-center gap-1.5 text-xs font-mono px-3 py-1 slab"
         >
           {saveStatus === 'Salvo' && (
             <>
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#30d158]" />
-              <span className="text-[#30d158]/90">Salvo</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--moss)]" />
+              <span className="text-[var(--moss)] font-['Cinzel',serif] text-[10px] uppercase font-bold">
+                Salvo
+              </span>
             </>
           )}
           {saveStatus === 'Salvando...' && (
             <>
-              <Clock className="w-3.5 h-3.5 text-[#f5b65b] animate-spin" />
-              <span className="text-[#f5b65b]">Salvando...</span>
+              <Clock className="w-3.5 h-3.5 text-[var(--gold)] animate-spin" />
+              <span className="text-[var(--gold)] font-['Cinzel',serif] text-[10px] uppercase font-bold">
+                Gravando...
+              </span>
             </>
           )}
           {saveStatus === 'Erro ao salvar' && (
             <>
-              <AlertCircle className="w-3.5 h-3.5 text-[#ff453a]" />
-              <span className="text-[#ff453a]">Erro</span>
+              <AlertCircle className="w-3.5 h-3.5 text-[var(--blood)]" />
+              <span className="text-[var(--blood)] font-['Cinzel',serif] text-[10px] uppercase font-bold">
+                Erro
+              </span>
             </>
           )}
         </div>
       </div>
 
-      {/* Grid Principal: Sidebar de Notas + Editor Sem Bordas */}
-      <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 min-h-[560px] relative">
-        {/* Sidebar de Folhas (Mobile drawer & Desktop column) */}
+      {/* Grid Principal: Sidebar de Notas + Editor em Pergaminho */}
+      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 min-h-[520px] relative">
+        {/* Sidebar de Folhas */}
         <div
           className={`
-            ${mobileSidebarOpen ? 'block absolute z-20 inset-y-0 left-0 w-72 bg-[#101014] p-4 shadow-2xl rounded-2xl border border-white/15' : 'hidden md:flex'}
-            flex-col bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden
+            ${
+              mobileSidebarOpen
+                ? 'block absolute z-30 inset-y-0 left-0 w-72 slab p-3 shadow-2xl'
+                : 'hidden md:flex'
+            }
+            flex-col slab overflow-hidden
           `}
         >
           {/* Botão Nova Folha */}
-          <div className="p-3 border-b border-white/[0.08]">
+          <div className="p-2 border-b border-[var(--iron)]">
             <button
               type="button"
               onClick={handleCreateNote}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-b from-[#8f191d] to-[#5e1013] text-[#f5e8c8] font-serif text-sm font-semibold tracking-wide border border-[#f5b65b]/40 hover:brightness-110 active:scale-[0.98] transition-all shadow-md"
+              className="end-turn w-full h-8 text-[11px] font-bold font-['Cinzel',serif] flex items-center justify-center gap-1.5"
             >
-              <Plus className="w-4 h-4" /> Nova Folha
+              <Plus className="w-3.5 h-3.5" /> Nova Folha
             </button>
           </div>
 
           {/* Lista de Folhas */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-1.5 max-h-[520px]">
+          <div className="flex-1 overflow-y-auto p-1.5 space-y-1 max-h-[480px]">
             {notes.map((n) => {
               const isSelected = n.id === selectedNoteId;
               return (
@@ -296,30 +306,30 @@ export const PlayerJournalView: React.FC = () => {
                   key={n.id}
                   onClick={() => handleSelectNote(n)}
                   className={`
-                    group p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between
+                    group p-2 cursor-pointer transition-all flex items-center justify-between border
                     ${
                       isSelected
-                        ? 'bg-[#f5b65b]/15 border border-[#f5b65b]/40 text-[#f5b65b]'
-                        : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] text-white/80'
+                        ? 'border-[var(--gold-lo)] bg-[var(--gold-lo)]/20 text-[var(--gold-hi)]'
+                        : 'border-transparent hover:border-[var(--iron)] text-[var(--text)]'
                     }
                   `}
                 >
-                  <div className="min-w-0 flex-1 pr-2">
-                    <div className="font-serif text-sm font-semibold truncate">
+                  <div className="min-w-0 flex-1 pr-1">
+                    <div className="font-['Cinzel',serif] text-xs font-bold truncate">
                       {n.title || 'Sem Título'}
                     </div>
-                    <div className="font-serif text-xs text-white/40 truncate italic mt-0.5">
-                      {n.body ? n.body.substring(0, 35) : '(Vazio)'}
+                    <div className="font-['EB_Garamond',serif] text-[11px] text-[var(--muted)] truncate italic">
+                      {n.body ? n.body.substring(0, 30) : '(Vazio)'}
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={(e) => handleDeleteNote(n.id, e)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-white/40 hover:text-[#ff453a] transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1 text-[var(--muted)] hover:text-red-400 transition-all"
                     title="Excluir folha"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               );
@@ -327,34 +337,36 @@ export const PlayerJournalView: React.FC = () => {
           </div>
         </div>
 
-        {/* Editor de Texto Limpo em Newsreader Sem Bordas */}
-        <div className="flex flex-col bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 md:p-8 relative">
+        {/* Editor de Texto em Pergaminho Rasgado */}
+        <Parchment seed={44} className="flex flex-col flex-1 p-5 md:p-6 space-y-3 min-h-[480px]">
           {selectedNoteId ? (
-            <div className="flex flex-col flex-1 space-y-4">
-              {/* Título sem bordas em Newsreader/Cinzel */}
+            <div className="flex flex-col flex-1 space-y-3">
+              {/* Título sobre pergaminho em Cinzel */}
               <input
                 type="text"
                 value={activeTitle}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 placeholder="Título da folha..."
-                className="w-full bg-transparent border-0 border-b border-white/10 pb-2 text-2xl md:text-3xl font-serif font-bold text-[#f5f5f7] placeholder:text-white/20 focus:outline-none focus:border-[#f5b65b]/50 transition-colors"
+                className="w-full bg-transparent border-0 border-b border-[var(--ink-soft)]/20 pb-1.5 text-xl font-['Cinzel',serif] font-bold text-[var(--ink)] placeholder:text-[var(--ink-soft)]/40 focus:outline-none focus:border-[var(--gold-lo)] transition-colors"
               />
 
-              {/* Corpo em Newsreader, espaçamento generoso */}
+              {/* Corpo em EB Garamond sobre pergaminho */}
               <textarea
                 value={activeBody}
                 onChange={(e) => handleBodyChange(e.target.value)}
                 placeholder="Escreva aqui suas impressões da jornada, pistas de juramentos, nomes de aliados ou mapas de criptas..."
-                className="w-full flex-1 min-h-[380px] md:min-h-[460px] bg-transparent border-0 text-base md:text-lg font-serif text-[#e8dcce] placeholder:text-white/20 focus:outline-none resize-none leading-relaxed tracking-normal"
+                className="w-full flex-1 min-h-[360px] bg-transparent border-0 text-base font-['EB_Garamond',serif] text-[var(--ink)] placeholder:text-[var(--ink-soft)]/40 focus:outline-none resize-none leading-relaxed tracking-normal"
               />
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center flex-1 text-white/40 font-serif p-12">
-              <FileText className="w-12 h-12 opacity-30 mb-3" />
-              <p className="italic">Selecione ou crie uma folha de diário para começar a escrever.</p>
+            <div className="flex flex-col items-center justify-center flex-1 text-[var(--ink-soft)] font-['EB_Garamond',serif] p-12">
+              <FileText className="w-10 h-10 opacity-40 mb-2" />
+              <p className="italic">
+                Selecione ou crie uma folha de diário para começar a escrever.
+              </p>
             </div>
           )}
-        </div>
+        </Parchment>
       </div>
     </div>
   );

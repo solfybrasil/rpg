@@ -137,18 +137,18 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({
       {/* Item em elevação visual enquanto arrastado (escala 1.06 + sombra suave) */}
       <DragOverlay dropAnimation={null}>
         {activeDragItem ? (
-          <div className="w-14 h-14 rounded-xl border border-[#f5b65b] bg-[#1a1a20] shadow-[0_12px_28px_rgba(0,0,0,0.8),0_0_15px_rgba(245,182,91,0.4)] flex flex-col items-center justify-center p-1 scale-[1.06] select-none pointer-events-none cursor-grabbing">
+          <div className="w-14 h-14 slab border border-[var(--gold)] shadow-[0_12px_28px_rgba(0,0,0,0.8),0_0_15px_rgba(201,164,92,0.4)] flex flex-col items-center justify-center p-1 scale-[1.06] select-none pointer-events-none cursor-grabbing">
             {activeDragItem.item.image_url ? (
               <img
                 src={activeDragItem.item.image_url}
                 alt={activeDragItem.item.name}
-                className="w-8 h-8 object-contain rounded"
+                className="w-8 h-8 object-contain"
               />
             ) : (
               <span className="text-xl">{activeDragItem.item.icon || '📦'}</span>
             )}
             {Number(activeDragItem.item.quantity || 1) > 1 && (
-              <span className="absolute bottom-1 right-1 font-sans text-xs font-bold text-white bg-black/80 px-1 rounded">
+              <span className="absolute bottom-1 right-1 font-['Cinzel',serif] text-xs font-bold text-[var(--gold-hi)] bg-black/80 px-1">
                 {activeDragItem.item.quantity}
               </span>
             )}

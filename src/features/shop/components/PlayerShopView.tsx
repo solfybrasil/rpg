@@ -158,28 +158,28 @@ export const PlayerShopView: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
       {/* ── CABEÇALHO DA LOJA COM NOME EM CINZEL E DIVISOR ◆ ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--iron)]/60 pb-5">
         <div>
-          <div className="flex items-center gap-2 text-xs font-serif text-[#f5b65b] uppercase tracking-widest">
+          <div className="flex items-center gap-2 text-xs font-['Cinzel',serif] text-[var(--gold-hi)] uppercase tracking-widest font-bold">
             <span>Módulo de Comércio</span>
             <span>◆</span>
-            <span className={shopOpen ? 'text-[#30d158]' : 'text-[#ff453a]'}>
+            <span className={shopOpen ? 'text-[var(--gold)]' : 'text-[var(--blood)]'}>
               {shopOpen ? 'Portas Abertas' : 'Portas Trancadas'}
             </span>
           </div>
-          <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#f5f5f7] tracking-wider mt-1 flex items-center gap-3">
-            <Store className="w-6 h-6 text-[#f5b65b]" />
+          <h1 className="font-['Cinzel',serif] text-2xl md:text-3xl font-bold text-[var(--gold-hi)] tracking-wider mt-1 flex items-center gap-3">
+            <Store className="w-6 h-6 text-[var(--gold)]" />
             <span>{shopName}</span>
           </h1>
-          <p className="font-serif text-xs md:text-sm text-white/50 italic mt-0.5">
+          <p className="font-serif text-xs md:text-sm text-[var(--muted)] italic mt-0.5">
             Câmbio Oficial: 50 Bronze = 1 Prata · 50 Prata = 1 Ouro (2.500b = 1o)
           </p>
         </div>
 
         {/* Bolsa Pessoal do Jogador */}
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] shadow-inner">
+        <div className="flex items-center gap-3 px-4 py-2.5 slab border border-[var(--iron)] shadow-inner">
           <div className="text-right">
-            <div className="text-[10px] font-serif uppercase tracking-wider text-[#a8947c]">
+            <div className="text-[10px] font-['Cinzel',serif] uppercase tracking-wider text-[var(--gold-hi)] font-bold">
               Sua Bolsa de Moedas
             </div>
             <CoinsBadge coinsBronze={playerCoins} size="md" />
@@ -191,25 +191,25 @@ export const PlayerShopView: React.FC = () => {
       {!shopOpen && (
         <Empty
           data-testid="shop-closed-empty"
-          icon={<Lock className="w-10 h-10 text-[#ff453a]" />}
+          icon={<Lock className="w-10 h-10 text-[var(--blood)]" />}
           title="As portas estão trancadas."
           description="O mercado encontra-se recolhido sob toque de recolher pelo Confessor. Você pode inspecionar os artigos em vitrine, mas as negociações de compra e venda estão temporariamente suspensas."
-          className="bg-[#ff453a]/5 border-[#ff453a]/20 mb-6"
+          className="bg-[var(--blood)]/10 border-[var(--blood)]/40 mb-6"
         />
       )}
 
       {/* ── NAVEGAÇÃO DE ABAS: COMPRAR / VENDER ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--iron)]/60 pb-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveTab('buy')}
             className={`
-              flex items-center gap-2 px-4 py-2 rounded-xl font-serif text-xs font-bold uppercase tracking-wider transition-all
+              flex items-center gap-2 px-4 py-2 font-['Cinzel',serif] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer
               ${
                 activeTab === 'buy'
-                  ? 'bg-gradient-to-b from-[#8f191d] to-[#5e1013] text-[#f5e8c8] border border-[#f5b65b]/50 shadow-md'
-                  : 'bg-white/[0.03] text-white/60 hover:text-white border border-white/[0.06]'
+                  ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] shadow-md'
+                  : 'slab text-[var(--muted)] hover:text-[var(--text)] border border-[var(--iron)]'
               }
             `}
           >
@@ -221,40 +221,38 @@ export const PlayerShopView: React.FC = () => {
             type="button"
             onClick={() => setActiveTab('sell')}
             className={`
-              flex items-center gap-2 px-4 py-2 rounded-xl font-serif text-xs font-bold uppercase tracking-wider transition-all
+              flex items-center gap-2 px-4 py-2 font-['Cinzel',serif] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer
               ${
                 activeTab === 'sell'
-                  ? 'bg-gradient-to-b from-[#ca8a04] to-[#854d0e] text-[#f5e8c8] border border-[#f5b65b]/50 shadow-md'
-                  : 'bg-white/[0.03] text-white/60 hover:text-white border border-white/[0.06]'
+                  ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] shadow-md'
+                  : 'slab text-[var(--muted)] hover:text-[var(--text)] border border-[var(--iron)]'
               }
             `}
           >
             <Coins className="w-3.5 h-3.5" />
-            <span>Vender Pertences ({sellableItems.length})</span>
+            <span>Vender ({inventoryItems.length})</span>
           </button>
         </div>
 
-        {/* Filtros de Categoria na Aba Comprar */}
+        {/* Filtros de Categoria */}
         {activeTab === 'buy' && (
-          <div className="flex items-center gap-1.5 text-xs font-serif overflow-x-auto pb-1 sm:pb-0">
-            {(
-              [
-                { id: 'all', label: 'Tudo' },
-                { id: 'weapon', label: 'Armas' },
-                { id: 'armor', label: 'Armaduras' },
-                { id: 'consumable', label: 'Consumíveis' },
-              ] as const
-            ).map((cat) => (
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            {[
+              { id: 'all' as const, label: 'Todos' },
+              { id: 'weapon' as const, label: 'Armas' },
+              { id: 'armor' as const, label: 'Armaduras' },
+              { id: 'consumable' as const, label: 'Consumíveis' },
+            ].map((cat) => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setFilterCategory(cat.id)}
                 className={`
-                  px-3 py-1.5 rounded-lg transition-all
+                  px-3 py-1 text-[11px] font-['Cinzel',serif] uppercase transition-all whitespace-nowrap cursor-pointer
                   ${
                     filterCategory === cat.id
-                      ? 'bg-[#f5b65b]/20 text-[#f5b65b] border border-[#f5b65b]/40 font-semibold'
-                      : 'bg-white/[0.02] text-white/50 hover:text-white border border-transparent'
+                      ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] font-bold'
+                      : 'recess text-[var(--muted)] border border-black hover:text-[var(--text)]'
                   }
                 `}
               >
@@ -269,7 +267,7 @@ export const PlayerShopView: React.FC = () => {
       {activeTab === 'buy' && (
         <div>
           {filteredShopItems.length === 0 ? (
-            <div className="text-center py-16 text-white/40 font-serif italic">
+            <div className="text-center py-16 text-[var(--muted)] font-serif italic">
               <Package className="w-10 h-10 opacity-30 mx-auto mb-3" />
               Nenhum artigo disponível nesta categoria no momento.
             </div>
@@ -282,12 +280,12 @@ export const PlayerShopView: React.FC = () => {
                 return (
                   <div
                     key={item.id}
-                    className="flex flex-col justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] hover:border-white/15 transition-all shadow-lg space-y-3"
+                    className="flex flex-col justify-between p-4 slab border border-[var(--iron)] hover:border-[var(--gold-lo)] transition-all shadow-lg space-y-3"
                   >
                     <div>
                       {/* Ícone, Nome e Categoria */}
                       <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-2xl shrink-0 overflow-hidden">
+                        <div className="w-12 h-12 recess border border-black flex items-center justify-center text-2xl shrink-0 overflow-hidden">
                           {item.image_url ? (
                             <img
                               src={item.image_url}
@@ -300,15 +298,15 @@ export const PlayerShopView: React.FC = () => {
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-serif text-sm font-bold text-[#f5f5f7] truncate">
+                          <h3 className="font-['Cinzel',serif] text-sm font-bold text-[var(--gold-hi)] truncate">
                             {item.name}
                           </h3>
                           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-[#f5b65b]">
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 slab text-[var(--gold-hi)]">
                               {item.rarity || 'Comum'}
                             </span>
                             {item.category && (
-                              <span className="text-[10px] text-white/50 font-serif">
+                              <span className="text-[10px] text-[var(--muted)] font-['Cinzel',serif]">
                                 {item.category}
                               </span>
                             )}
@@ -319,38 +317,38 @@ export const PlayerShopView: React.FC = () => {
                       {/* Atributos / Stats */}
                       <div className="flex flex-wrap gap-1.5 mt-3 text-[11px] font-mono">
                         {item.damage_dice && (
-                          <span className="px-2 py-0.5 rounded bg-[#ff453a]/15 text-[#fca5a5] border border-[#ff453a]/30">
+                          <span className="px-2 py-0.5 bg-[var(--blood)]/20 text-[#fca5a5] border border-[var(--blood)]/40">
                             Dano: {item.damage_dice}
                             {item.damage_bonus ? ` +${item.damage_bonus}` : ''}
                           </span>
                         )}
                         {(item.armor_bonus ?? 0) > 0 && (
-                          <span className="px-2 py-0.5 rounded bg-[#0a84ff]/15 text-[#7dd3fc] border border-[#0a84ff]/30">
+                          <span className="px-2 py-0.5 bg-[var(--mist)]/20 text-[#7dd3fc] border border-[var(--mist)]/40">
                             Defesa +{item.armor_bonus}
                           </span>
                         )}
                         {item.two_handed && (
-                          <span className="px-2 py-0.5 rounded bg-[#f5b65b]/15 text-[#fed7aa] border border-[#f5b65b]/30">
+                          <span className="px-2 py-0.5 bg-[var(--gold)]/20 text-[var(--gold-hi)] border border-[var(--gold-lo)]">
                             2 Mãos
                           </span>
                         )}
                         {item.ranged && (
-                          <span className="px-2 py-0.5 rounded bg-white/[0.06] text-white/80 border border-white/10">
+                          <span className="px-2 py-0.5 slab text-[var(--muted)] border border-[var(--iron)]">
                             À Distância
                           </span>
                         )}
                       </div>
 
-                      {/* Descrição em Newsreader */}
+                      {/* Descrição em Garamond */}
                       {item.description && (
-                        <p className="font-serif italic text-xs text-white/60 leading-relaxed mt-2.5 line-clamp-2">
+                        <p className="font-serif italic text-xs text-[var(--muted)] leading-relaxed mt-2.5 line-clamp-2">
                           "{item.description}"
                         </p>
                       )}
                     </div>
 
                     {/* Preço e Botão de Compra Dourado */}
-                    <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] mt-2">
+                    <div className="flex items-center justify-between pt-3 border-t border-[var(--iron)]/60 mt-2">
                       <CoinsBadge coinsBronze={item.price_bronze} size="sm" />
 
                       <button
@@ -366,11 +364,11 @@ export const PlayerShopView: React.FC = () => {
                             : 'Comprar item'
                         }
                         className={`
-                          px-4 py-2 rounded-xl font-serif text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all
+                          px-4 py-2 font-['Cinzel',serif] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer
                           ${
                             !shopOpen || !canAfford || loadingAction
-                              ? 'bg-white/[0.04] text-white/30 border border-white/[0.06] cursor-not-allowed'
-                              : 'bg-gradient-to-b from-[#ca8a04] to-[#854d0e] text-[#f5e8c8] border border-[#f5b65b]/60 hover:brightness-110 active:scale-95 shadow-md'
+                              ? 'recess text-white/30 border border-black cursor-not-allowed'
+                              : 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] hover:brightness-110 active:scale-95 shadow-md'
                           }
                         `}
                       >

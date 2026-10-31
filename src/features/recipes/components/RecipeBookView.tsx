@@ -143,30 +143,30 @@ export const RecipeBookView: React.FC<RecipeBookViewProps> = ({
   }, [filteredList, pageIndex, pageSize]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-neutral-950 text-neutral-100 p-4 md:p-6 pb-20 max-w-5xl mx-auto space-y-5">
+    <div className="flex flex-col min-h-screen bg-[var(--stone)] text-[var(--text)] p-4 md:p-6 pb-20 max-w-5xl mx-auto space-y-5">
       {/* Cabeçalho do Livro */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--iron)]/60 pb-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-serif font-bold tracking-wide text-white flex items-center gap-2">
-            <BookOpen size={22} className="text-amber-500" />
+          <h1 className="text-xl md:text-2xl font-['Cinzel',serif] font-bold tracking-wide text-[var(--gold-hi)] flex items-center gap-2">
+            <BookOpen size={22} className="text-[var(--gold)]" />
             <span>Livro de Receitas</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-950/60 border border-amber-600/40 text-amber-300 font-mono font-normal">
+            <span className="text-xs px-2 py-0.5 slab text-[var(--gold-hi)] font-mono font-normal">
               {filteredList.length} receitas
             </span>
           </h1>
-          <p className="text-xs text-neutral-400 font-serif italic mt-0.5">
+          <p className="text-xs text-[var(--muted)] font-serif italic mt-0.5">
             Compêndio de manufatura tradicional de Aldrenor para Forja, Alquimia e Cozinha.
           </p>
         </div>
       </div>
 
       {/* Barra de Filtros e Busca Intuitiva */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-neutral-900/60 border border-neutral-800/80 shadow-inner">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 slab border border-[var(--iron)] shadow-inner">
         {/* Chips de Bancada */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {[
             { id: 'todas' as const, label: 'Todas' },
-            { id: 'forja' as const, label: 'Forja', icon: Anvil, color: 'text-amber-500' },
+            { id: 'forja' as const, label: 'Forja', icon: Anvil, color: 'text-[var(--gold)]' },
             { id: 'alquimia' as const, label: 'Alquimia', icon: FlaskConical, color: 'text-purple-400' },
             { id: 'cozinha' as const, label: 'Cozinha', icon: UtensilsCrossed, color: 'text-emerald-400' },
           ].map((tab) => {
@@ -181,10 +181,10 @@ export const RecipeBookView: React.FC<RecipeBookViewProps> = ({
                   setPageIndex(0);
                   playPageFlipSound();
                 }}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-['Cinzel',serif] font-bold transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-neutral-950 border border-amber-600/70 text-amber-200 shadow-sm'
-                    : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                    ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] shadow-sm'
+                    : 'recess border border-black text-[var(--muted)] hover:text-[var(--text)]'
                 }`}
               >
                 {Icon && <Icon size={13} className={tab.color} />}
@@ -204,15 +204,15 @@ export const RecipeBookView: React.FC<RecipeBookViewProps> = ({
               setPageIndex(0);
               playPageFlipSound();
             }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-['Cinzel',serif] font-bold transition-all cursor-pointer ${
               onlyCraftable
-                ? 'bg-emerald-950 border border-emerald-500 text-emerald-300 shadow-[0_0_10px_rgba(74,124,89,0.3)]'
-                : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-300'
+                ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] shadow-[0_0_10px_rgba(201,164,92,0.4)]'
+                : 'recess border border-black text-[var(--muted)] hover:text-[var(--text)]'
             }`}
           >
             <div
-              className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${
-                onlyCraftable ? 'bg-emerald-500 border-emerald-400 text-black' : 'border-neutral-600'
+              className={`w-3.5 h-3.5 flex items-center justify-center border ${
+                onlyCraftable ? 'bg-black text-[var(--gold-hi)] border-[var(--gold-hi)]' : 'border-[var(--iron)]'
               }`}
             >
               {onlyCraftable && <Check size={10} />}

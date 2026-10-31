@@ -64,21 +64,21 @@ Inspirado em inventários de ARPG sombrio clássico (estilo Diablo / Grim Dawn /
 
 | Rota | Tela | Papel | Lote | Status do Design |
 |---|---|---|---|---|
-| `/design` | Vitrine de Componentes & Animações | Dev / Showcase | Lote 1 | Em Execução (Lote 1) |
-| `/` | Entrada / Santuário / Escolha de Herói | Geral | Lote 1 / 2 | Pedra e Pergaminho Base |
-| `/jogador/ficha` | Ficha do Jurado (Atributos, Bio, Peste, Dom) | Jogador | Lote 2 | Aguardando Lote 2 |
-| `/jogador/mochila` | Mochila & Inventário (Grade 8 colunas, Boneco) | Jogador | Lote 2 | Aguardando Lote 2 |
-| `/jogador/grimorio` | Grimório (Feitiços, Círculos, Sigilos) | Jogador | Lote 2 | Aguardando Lote 2 |
-| `/jogador/diario` | Diário de Quests & Anotações | Jogador | Lote 2 | Aguardando Lote 2 |
-| `/jogador/combate` | Combate por Turnos (Iniciativa, Ações, Fila) | Jogador | Lote 2 | Aguardando Lote 2 |
-| `/jogador/oficina` | Oficina & Bancada de Alquimia/Forja | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
-| `/jogador/receitas` | Catálogo de Receitas Conhecidas | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
-| `/jogador/loja` | Mercador / Empório de Artigos | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
-| `/jogador/mapa` | Mapa do Mundo & Regiões | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
-| `/jogador/arvore` | Árvore de Juramento & Bênçãos | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
-| `/jogador/missivas` | Missivas e Cartas Seladas | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
-| `/jogador/dados` | Rolador de Dados 3D Peste | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
-| `/jogador/mesa` | Mesa Tática do Jogador | Jogador (Mais) | Lote 2 | Aguardando Lote 2 |
+| `/design` | Vitrine de Componentes & Animações | Dev / Showcase | Lote 1 | Concluído (Lote 1) |
+| `/` | Entrada / Santuário / Escolha de Herói | Geral | Lote 1 / 2 | Concluído (Lote 2) |
+| `/jogador/ficha` | Ficha do Jurado (Atributos, Bio, Peste, Dom) | Jogador | Lote 2 | Concluído (Lote 2) |
+| `/jogador/mochila` | Mochila & Inventário (Grade 8 colunas, Boneco) | Jogador | Lote 2 | Concluído (Lote 2) |
+| `/jogador/grimorio` | Grimório (Feitiços, Círculos, Sigilos) | Jogador | Lote 2 | Concluído (Lote 2) |
+| `/jogador/diario` | Diário de Quests & Anotações | Jogador | Lote 2 | Concluído (Lote 2) |
+| `/jogador/combate` | Combate por Turnos (Iniciativa, Ações, Fila) | Jogador | Lote 2 | Concluído (Lote 2) |
+| `/jogador/oficina` | Oficina & Bancada de Alquimia/Forja | Jogador (Mais) | Lote 2 | Concluído (Lote 2) |
+| `/jogador/receitas` | Catálogo de Receitas Conhecidas | Jogador (Mais) | Lote 2 | Concluído (Lote 2) |
+| `/jogador/loja` | Mercador / Empório de Artigos | Jogador (Mais) | Lote 2 | Concluído (Lote 2) |
+| `/jogador/mapa` | Mapa do Mundo & Regiões | Jogador (Mais) | Lote 2 | Concluído (Lote 2) |
+| `/jogador/arvore` | Árvore de Juramento & Bênçãos | Jogador (Mais) | Lote 2 | Concluído (Lote 2) |
+| `/jogador/missivas` | Missivas e Cartas Seladas | Jogador (Mais) | Lote 2 | Concluído (Lote 2) |
+| `/jogador/dados` | Rolador de Dados 3D Peste | Jogador (Mais) | Lote 2 | Concluído (Lote 2) |
+| `/jogador/mesa` | Mesa Tática do Jogador | Jogador (Mais) | Lote 2 | Concluído (Lote 2) |
 | `/mestre` | Painel Geral do Mestre (Dashboard) | Mestre | Lote 3 | Aguardando Lote 3 |
 | `/mestre/jogadores` | Fichas & Monitoramento de Heróis | Mestre | Lote 3 | Aguardando Lote 3 |
 | `/mestre/campanha` | Crônicas, Linha do Tempo e Clima | Mestre | Lote 3 | Aguardando Lote 3 |

@@ -357,17 +357,17 @@ export const PlayerWorkshopView: React.FC = () => {
   const inspiration = typeof hero?.inspiration === 'number' ? hero.inspiration : 0;
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 md:p-6 pb-20 max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[var(--abyss)] text-[var(--text)] p-4 md:p-6 pb-20 max-w-6xl mx-auto space-y-6">
       {/* Barra de Status e Seletor de Bancadas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--iron)] pb-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-mono font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="text-xl md:text-2xl font-['Cinzel',serif] font-bold tracking-wide text-[var(--gold-hi)] flex items-center gap-2">
             <span>Oficina do Jurado</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-950/60 border border-amber-600/40 text-amber-300 font-normal">
-              3×3
+            <span className="text-[10px] px-2 py-0.5 border border-[var(--gold-lo)] text-[var(--gold-hi)] font-bold">
+              Grade 3×3
             </span>
           </h1>
-          <p className="text-xs text-neutral-400 font-serif italic mt-0.5">
+          <p className="text-xs text-[var(--muted)] font-['EB_Garamond',serif] italic mt-0.5">
             Manufatura, forja de aço negro, elixires e culinária de sobrevivência.
           </p>
         </div>
@@ -377,11 +377,11 @@ export const PlayerWorkshopView: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsBookOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-700 hover:border-amber-500/60 text-neutral-200 text-xs font-mono font-medium transition-all shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 slab border border-[var(--gold-lo)] text-[var(--gold-hi)] text-xs font-['Cinzel',serif] uppercase tracking-wider font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
           >
-            <BookOpen size={14} className="text-amber-400" />
+            <BookOpen size={14} className="text-[var(--gold)]" />
             <span>Livro de Receitas</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px]">
+            <span className="ml-1 px-1.5 py-0.2 border border-[var(--gold)] bg-[var(--gold)]/20 text-[var(--gold-hi)] font-bold text-[10px]">
               {knownRecipeIds.size}
             </span>
           </button>
@@ -389,11 +389,11 @@ export const PlayerWorkshopView: React.FC = () => {
       </div>
 
       {/* Tabs das Três Bancadas (Forja, Alquimia, Cozinha) */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-neutral-900/60 border border-neutral-800 max-w-md">
+      <div className="grid grid-cols-3 gap-2 p-1 max-w-md recess">
         {[
-          { id: 'forja' as WorkshopStation, label: 'Forja', icon: Anvil, color: 'text-amber-500' },
-          { id: 'alquimia' as WorkshopStation, label: 'Alquimia', icon: FlaskConical, color: 'text-purple-400' },
-          { id: 'cozinha' as WorkshopStation, label: 'Cozinha', icon: UtensilsCrossed, color: 'text-emerald-400' },
+          { id: 'forja' as WorkshopStation, label: 'Forja', icon: Anvil, color: 'text-[var(--ember)]' },
+          { id: 'alquimia' as WorkshopStation, label: 'Alquimia', icon: FlaskConical, color: 'text-[var(--violet)]' },
+          { id: 'cozinha' as WorkshopStation, label: 'Cozinha', icon: UtensilsCrossed, color: 'text-[var(--moss)]' },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeStation === tab.id;
@@ -405,10 +405,10 @@ export const PlayerWorkshopView: React.FC = () => {
                 setActiveStation(tab.id);
                 setGridSlots(Array(9).fill(null));
               }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-mono font-bold transition-all ${
+              className={`flex items-center justify-center gap-2 py-2 text-xs font-['Cinzel',serif] uppercase tracking-wider font-bold transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-neutral-950 border border-neutral-700 text-white shadow-md'
-                  : 'text-neutral-400 hover:text-neutral-200'
+                  ? 'slab border border-[var(--gold-lo)] text-[var(--gold-hi)] shadow-md'
+                  : 'text-[var(--muted)] hover:text-[var(--text)]'
               }`}
             >
               <Icon size={15} className={tab.color} />

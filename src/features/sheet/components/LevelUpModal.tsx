@@ -1,6 +1,8 @@
 import { CheckCircle2, Sparkles, X } from 'lucide-react';
 import React, { useState } from 'react';
 import type { CharacterRow } from '../../../shared/hooks/baseHooks';
+import { GoldButton } from '../../../shared/ui/GoldButton';
+import { StoneButton } from '../../../shared/ui/StoneButton';
 
 interface LevelUpModalProps {
   hero: CharacterRow;
@@ -39,7 +41,12 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   const handleConfirm = async () => {
     await onConfirm({
       boostAttr: needsAttr ? chosenAttr : undefined,
-      specSkill: needsSpec ? chosenSpecSkill || (typeof skills[0] === 'string' ? skills[0] : (skills[0] as any)?.name || 'Atletismo') : undefined,
+      specSkill: needsSpec
+        ? chosenSpecSkill ||
+          (typeof skills[0] === 'string'
+            ? skills[0]
+            : (skills[0] as any)?.name || 'Atletismo')
+        : undefined,
       newSkill: needsNewSkill ? newSkillInput || 'Sobrevivência' : undefined,
     });
     onClose();
@@ -47,36 +54,38 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-2xl bg-[var(--solid-2)] border-2 border-[var(--gold)] p-6 shadow-2xl shadow-amber-500/20 flex flex-col gap-4">
+      <div className="w-full max-w-lg slab border-2 border-[var(--gold)] p-6 shadow-2xl flex flex-col gap-4 relative">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[var(--hair)] pb-3">
+        <div className="flex items-center justify-between border-b border-[var(--iron)]/60 pb-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-400" />
-            <h3 className="text-lg font-bold font-cinzel text-[var(--gold-bright)] uppercase tracking-wider m-0">
+            <Sparkles className="h-5 w-5 text-[var(--gold)]" />
+            <h3 className="text-lg font-bold font-['Cinzel',serif] text-[var(--gold-hi)] uppercase tracking-wider m-0">
               Consagração: Nível {nextLvl}
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
+            className="p-1 text-[var(--muted)] hover:text-[var(--text)] transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <p className="text-xs text-[var(--text-2)] font-serif italic m-0">
+        <p className="text-xs text-[var(--muted)] font-serif italic m-0">
           A glória dos juramentos expande os limites do seu ser e consagra sua carne.
         </p>
 
         {/* Universal benefits */}
-        <div className="flex flex-col gap-2 p-3 rounded-xl bg-[var(--surface)] border border-[var(--hair)] text-xs text-[var(--text)]">
-          <div className="flex items-center gap-2 text-emerald-400 font-medium">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>Vida Máxima: <strong>+4</strong> (recupera 4 de Vida imediatamente)</span>
+        <div className="flex flex-col gap-2 p-3 recess border border-black text-xs text-[var(--text)]">
+          <div className="flex items-center gap-2 text-[var(--gold-hi)] font-medium">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--gold)]" />
+            <span>
+              Vida Máxima: <strong>+4</strong> (recupera 4 de Vida imediatamente)
+            </span>
           </div>
-          <div className="flex items-center gap-2 text-cyan-400 font-medium">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <div className="flex items-center gap-2 text-[var(--mist)] font-medium">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--mist)]" />
             <span>Reserva de Foco renovada ao novo teto místico!</span>
           </div>
         </div>
@@ -84,7 +93,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
         {/* Choice: Attribute (4, 8, 10) */}
         {needsAttr && (
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-cinzel font-bold text-[var(--gold-bright)] uppercase tracking-wider">
+            <label className="text-xs font-['Cinzel',serif] font-bold text-[var(--gold-hi)] uppercase tracking-wider">
               Escolha 1 Atributo para aumentar (+1):
             </label>
             <div className="grid grid-cols-4 gap-2">
@@ -93,10 +102,10 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
                   key={attr}
                   type="button"
                   onClick={() => setChosenAttr(attr)}
-                  className={`py-2 px-1 text-xs font-bold font-cinzel uppercase rounded-lg border transition-all ${
+                  className={`py-2 px-1 text-xs font-bold font-['Cinzel',serif] uppercase border transition-all cursor-pointer ${
                     chosenAttr === attr
-                      ? 'bg-[var(--gold)] text-[var(--accent-ink)] border-[var(--gold-bright)] shadow-md'
-                      : 'bg-[var(--solid)] text-[var(--text-2)] border-[var(--hair)] hover:border-[var(--line)]'
+                      ? 'bg-[var(--gold)] text-black border-[var(--gold-hi)] font-bold shadow-md'
+                      : 'recess text-[var(--muted)] border-black hover:border-[var(--gold-lo)]'
                   }`}
                 >
                   {attr}
@@ -109,13 +118,13 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
         {/* Choice: Specialization (Level 5) */}
         {needsSpec && (
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-cinzel font-bold text-[var(--gold-bright)] uppercase tracking-wider">
+            <label className="text-xs font-['Cinzel',serif] font-bold text-[var(--gold-hi)] uppercase tracking-wider">
               Escolha 1 Perícia para Especialização (+2):
             </label>
             <select
               value={chosenSpecSkill}
               onChange={(e) => setChosenSpecSkill(e.target.value)}
-              className="w-full rounded-xl bg-[var(--solid)] border border-[var(--line)] p-2.5 text-xs text-[var(--text)] font-sans"
+              className="w-full recess border border-black p-2.5 text-xs text-[var(--text)] font-sans"
             >
               {skills.map((s: any, idx: number) => {
                 const name = typeof s === 'string' ? s : s.name || s.pericia || 'Perícia';
@@ -132,7 +141,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
         {/* Choice: New Skill (Level 7) */}
         {needsNewSkill && (
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-cinzel font-bold text-[var(--gold-bright)] uppercase tracking-wider">
+            <label className="text-xs font-['Cinzel',serif] font-bold text-[var(--gold-hi)] uppercase tracking-wider">
               Nomeie uma Nova Perícia Aprendida (+1):
             </label>
             <input
@@ -140,29 +149,21 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
               placeholder="Ex: Medicina, Rastreamento, Furtividade..."
               value={newSkillInput}
               onChange={(e) => setNewSkillInput(e.target.value)}
-              className="w-full rounded-xl bg-[var(--solid)] border border-[var(--line)] p-2.5 text-xs text-[var(--text)] font-sans"
-            />
+              className="w-full recess border border-black p-2.5 text-xs text-[var(--text)] font-sans"
+            >
+            </input>
           </div>
         )}
 
         {/* Buttons */}
-        <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--hair)]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] font-semibold text-xs transition-colors"
-          >
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--iron)]/60">
+          <StoneButton variant="ghost" onClick={onClose} size="sm">
             Cancelar
-          </button>
-          <button
-            type="button"
-            disabled={isLeveling}
-            onClick={handleConfirm}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-bold font-cinzel text-xs tracking-wider shadow-lg shadow-amber-500/30 hover:brightness-110 transition-all disabled:opacity-50 flex items-center gap-1.5"
-          >
-            <Sparkles className="h-4 w-4" />
+          </StoneButton>
+          <GoldButton disabled={isLeveling} onClick={handleConfirm} size="md">
+            <Sparkles className="h-4 w-4 inline mr-1" />
             <span>{isLeveling ? 'Consagrando...' : `Confirmar Nível ${nextLvl}`}</span>
-          </button>
+          </GoldButton>
         </div>
       </div>
     </div>

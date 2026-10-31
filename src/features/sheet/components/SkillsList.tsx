@@ -1,7 +1,8 @@
+import { Link } from '@tanstack/react-router';
 import { Award, ChevronRight } from 'lucide-react';
 import React from 'react';
-import { Link } from '@tanstack/react-router';
 import { calcSkillBonus, calcSkillMastery } from '../../../entities/hero';
+import { StonePanel } from '../../../shared/ui/StonePanel';
 
 export interface SkillItem {
   name: string;
@@ -34,7 +35,7 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills }) => {
           return { name: s, bonus: 1, nivel: 1, maestria: 0 };
         }
         const name = s.name || s.pericia || 'Perícia';
-        const nivel = s.nivel !== undefined ? Number(s.nivel) : (s.bonus === 2 ? 3 : 1);
+        const nivel = s.nivel !== undefined ? Number(s.nivel) : s.bonus === 2 ? 3 : 1;
         const bonus = s.bonus !== undefined ? Number(s.bonus) : calcSkillBonus(nivel);
         const maestria = s.maestria !== undefined ? Number(s.maestria) : calcSkillMastery(nivel);
         return { name, bonus, nivel, maestria };
@@ -44,22 +45,22 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills }) => {
   }, [skills]);
 
   return (
-    <section className="flex flex-col gap-3 p-4 rounded-2xl bg-[var(--surface-card)] border border-[var(--line)] shadow-sm">
+    <StonePanel className="flex flex-col gap-3 p-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Award className="h-4 w-4 text-[var(--gold)]" />
-          <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--gold-bright)] font-cinzel m-0">
+          <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--gold-hi)] font-['Cinzel',serif] m-0">
             Perícias Treinadas
           </h2>
         </div>
 
         <Link
           to="/jogador/arvore"
-          className="text-[11px] font-semibold text-[var(--gold)] hover:underline flex items-center gap-1 font-cinzel"
+          className="text-[11px] font-bold text-[var(--gold)] hover:underline flex items-center gap-1 font-['Cinzel',serif] uppercase tracking-wider"
         >
           <span>Árvore do Juramento</span>
-          <ChevronRight className="h-3 w-3" />
+          <ChevronRight className="h-3 w-3 text-[var(--gold)]" />
         </Link>
       </div>
 
@@ -75,26 +76,24 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills }) => {
                 key={idx}
                 to="/jogador/dados"
                 search={{ pericia: skill.name }}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--solid)] border border-[var(--hair)] hover:border-[var(--gold-dim)] transition-all group shadow-sm text-decoration-none"
+                className="flex items-center justify-between p-2.5 slab hover:border-[var(--gold-lo)] transition-all group text-decoration-none"
                 title={`Toque para rolar ${skill.name} no Rolador de Dados`}
               >
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-semibold text-[var(--text)] font-sans group-hover:text-[var(--gold-bright)] transition-colors truncate">
+                  <span className="text-xs font-semibold text-[var(--text)] group-hover:text-[var(--gold-hi)] transition-colors truncate font-['Cinzel',serif]">
                     {skill.name}
                   </span>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[11px] text-[var(--gold)] tracking-wider">
-                      {dots}
-                    </span>
+                    <span className="text-[11px] text-[var(--gold)] tracking-wider">{dots}</span>
                     {(skill.maestria ?? 0) > 0 && (
-                      <span className="text-[10px] text-[var(--text-3)] font-sans">
+                      <span className="text-[10px] text-[var(--muted)] font-mono">
                         · Mst {skill.maestria}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <span className="text-sm font-bold font-sans tabular-nums text-emerald-400 group-hover:scale-105 transition-transform shrink-0 ml-2">
+                <span className="text-sm font-bold font-['Cinzel',serif] tabular-nums text-[var(--moss)] group-hover:scale-105 transition-transform shrink-0 ml-2">
                   {bonusStr}
                 </span>
               </Link>
@@ -102,10 +101,10 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills }) => {
           })}
         </div>
       ) : (
-        <p className="text-xs text-[var(--text-3)] font-serif italic m-0">
+        <p className="text-xs text-[var(--muted)] font-['EB_Garamond',serif] italic m-0">
           Nenhuma perícia especializada registrada.
         </p>
       )}
-    </section>
+    </StonePanel>
   );
 };

@@ -86,18 +86,18 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                   key={h.id}
                   type="button"
                   onClick={() => setTargetHeroId(h.id)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                  className={`flex items-center gap-3 p-3 border transition-all text-left cursor-pointer ${
                     selected
-                      ? 'bg-[#f5b65b]/15 border-[#f5b65b] text-[#ffd59a]'
-                      : 'bg-white/[0.03] border-white/[0.08] text-white/70 hover:bg-white/[0.06]'
+                      ? 'bg-[var(--gold)] text-black border-[var(--gold-hi)] font-bold shadow-md'
+                      : 'recess border-black text-[var(--muted)] hover:text-[var(--text)]'
                   }`}
                 >
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-serif font-bold text-white">
+                  <div className="w-8 h-8 slab flex items-center justify-center text-xs font-['Cinzel',serif] font-bold text-[var(--gold-hi)]">
                     {h.name.substring(0, 2).toUpperCase()}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-serif font-semibold text-white">{h.name}</span>
-                    <span className="text-[10px] text-white/50">{h.title || h.race || 'Companheiro'}</span>
+                    <span className="text-sm font-['Cinzel',serif] font-semibold text-inherit">{h.name}</span>
+                    <span className="text-[10px] opacity-75">{h.title || h.race || 'Companheiro'}</span>
                   </div>
                 </button>
               );
@@ -107,23 +107,23 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Quantidade (se > 1) */}
         {maxQty > 1 && (
-          <div className="space-y-1.5 border-t border-white/10 pt-3">
-            <div className="flex justify-between items-center text-xs font-serif">
-              <span className="text-white/70 font-bold uppercase tracking-wider">Quantidade</span>
-              <span className="text-white/50">Disponível: {maxQty}</span>
+          <div className="space-y-1.5 border-t border-[var(--iron)]/60 pt-3">
+            <div className="flex justify-between items-center text-xs font-['Cinzel',serif]">
+              <span className="text-[var(--gold-hi)] font-bold uppercase tracking-wider">Quantidade</span>
+              <span className="text-[var(--muted)]">Disponível: {maxQty}</span>
             </div>
 
-            <div className="flex items-center justify-center gap-4 bg-white/[0.02] border border-white/[0.08] rounded-xl p-2">
+            <div className="flex items-center justify-center gap-4 recess border border-black p-2">
               <button
                 type="button"
                 onClick={handleDecrement}
                 disabled={quantity <= 1}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white disabled:opacity-30"
+                className="w-8 h-8 slab flex items-center justify-center text-[var(--text)] disabled:opacity-30 cursor-pointer"
               >
                 <Minus className="w-4 h-4" />
               </button>
 
-              <span className="font-mono text-lg font-bold text-[#f5b65b] w-12 text-center">
+              <span className="font-mono text-lg font-bold text-[var(--gold-hi)] w-12 text-center">
                 {quantity}
               </span>
 
@@ -131,7 +131,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 type="button"
                 onClick={handleIncrement}
                 disabled={quantity >= maxQty}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white disabled:opacity-30"
+                className="w-8 h-8 slab flex items-center justify-center text-[var(--text)] disabled:opacity-30 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -140,7 +140,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
         )}
 
         {/* Ações */}
-        <div className="flex justify-end gap-2 border-t border-white/10 pt-4">
+        <div className="flex justify-end gap-2 border-t border-[var(--iron)]/60 pt-4">
           <Button
             type="button"
             variant="secondary"

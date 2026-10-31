@@ -1,6 +1,6 @@
 import { Hammer } from 'lucide-react';
 import type React from 'react';
-import { Card } from './Card.tsx';
+import { StonePanel } from './StonePanel';
 
 export interface PlaceholderViewProps {
   title: string;
@@ -15,21 +15,25 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
 }) => {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none animate-in fade-in-50 duration-200">
-      <Card variant="gold" className="max-w-md w-full p-8 flex flex-col items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-[#f5b65b]/15 border border-[#f5b65b]/30 flex items-center justify-center text-[#f5b65b] shadow-inner">
-          <Hammer className="w-7 h-7 animate-pulse" />
+      <StonePanel className="max-w-md w-full p-8 flex flex-col items-center gap-4 border border-[var(--gold-lo)]">
+        <div className="w-14 h-14 bg-black/40 border border-[var(--gold-lo)] flex items-center justify-center text-[var(--gold)] shadow-inner">
+          <Hammer className="w-7 h-7 animate-pulse text-[var(--gold)]" />
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-mono uppercase tracking-widest text-[#f5b65b]">
+          <span className="text-[10px] font-['Cinzel',serif] uppercase tracking-widest text-[var(--gold)] font-bold">
             {category}
           </span>
-          <h2 className="text-xl font-serif font-bold text-white tracking-wide">{title}</h2>
+          <h2 className="text-xl font-['Cinzel',serif] font-bold text-[var(--gold-hi)] tracking-wide">
+            {title}
+          </h2>
         </div>
-        <p className="text-xs text-white/60 leading-relaxed">{description}</p>
-        <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-mono text-white/40">
+        <p className="text-xs text-[var(--text)] font-['EB_Garamond',serif] leading-relaxed italic">
+          {description}
+        </p>
+        <div className="mt-2 inline-flex items-center px-3 py-1 border border-[var(--iron)] text-[10px] font-['Cinzel',serif] uppercase tracking-wider text-[var(--muted)]">
           Status: Em Construção
         </div>
-      </Card>
+      </StonePanel>
     </div>
   );
 };

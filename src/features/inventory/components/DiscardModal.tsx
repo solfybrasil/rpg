@@ -58,24 +58,24 @@ export const DiscardModal: React.FC<DiscardModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4 pt-2">
         {maxQty > 1 && (
           <div className="space-y-1.5">
-            <div className="flex justify-between items-center text-xs font-serif">
-              <span className="text-white/70 font-bold uppercase tracking-wider">
+            <div className="flex justify-between items-center text-xs font-['Cinzel',serif]">
+              <span className="text-[var(--gold-hi)] font-bold uppercase tracking-wider">
                 Quantidade a Descartar
               </span>
-              <span className="text-white/50">Disponível: {maxQty}</span>
+              <span className="text-[var(--muted)]">Disponível: {maxQty}</span>
             </div>
 
-            <div className="flex items-center justify-center gap-4 bg-white/[0.02] border border-white/[0.08] rounded-xl p-2">
+            <div className="flex items-center justify-center gap-4 recess border border-black p-2">
               <button
                 type="button"
                 onClick={handleDecrement}
                 disabled={quantity <= 1}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white disabled:opacity-30"
+                className="w-8 h-8 slab flex items-center justify-center text-[var(--text)] disabled:opacity-30 cursor-pointer"
               >
                 <Minus className="w-4 h-4" />
               </button>
 
-              <span className="font-mono text-lg font-bold text-[#ff6b62] w-12 text-center">
+              <span className="font-mono text-lg font-bold text-[var(--blood)] w-12 text-center">
                 {quantity}
               </span>
 
@@ -83,7 +83,7 @@ export const DiscardModal: React.FC<DiscardModalProps> = ({
                 type="button"
                 onClick={handleIncrement}
                 disabled={quantity >= maxQty}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white disabled:opacity-30"
+                className="w-8 h-8 slab flex items-center justify-center text-[var(--text)] disabled:opacity-30 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -91,7 +91,7 @@ export const DiscardModal: React.FC<DiscardModalProps> = ({
           </div>
         )}
 
-        <div className="flex justify-end gap-2 border-t border-white/10 pt-4">
+        <div className="flex justify-end gap-2 border-t border-[var(--iron)]/60 pt-4">
           <Button
             type="button"
             variant="secondary"
@@ -103,10 +103,11 @@ export const DiscardModal: React.FC<DiscardModalProps> = ({
           <Button
             type="submit"
             variant="danger"
-            loading={loading}
-            leftIcon={<Trash2 className="w-4 h-4" />}
+            disabled={loading}
+            className="flex items-center gap-1.5"
           >
-            Descartar {quantity > 1 ? `${quantity}x` : ''}
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>{loading ? 'Descartando...' : 'Confirmar Descarte'}</span>
           </Button>
         </div>
       </form>

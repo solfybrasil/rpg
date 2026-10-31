@@ -17,7 +17,7 @@ import {
   formatCoinsString,
   parseConsumableEffects,
 } from '../../../entities/item';
-import { Badge, type BadgeVariant, Button, Sheet } from '../../../shared/ui';
+import { Badge, type BadgeVariant, Button, Parchment, Sheet } from '../../../shared/ui';
 
 export interface ItemDetailSheetProps {
   item: InventoryItemRecord | null;
@@ -68,74 +68,63 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
     item.wear_type === 'single_use';
 
   const actionVerb = effects.isFood
-    ? 'Comer'
-    : item.category?.toLowerCase().includes('poção')
-    ? 'Beber'
-    : item.category?.toLowerCase().includes('pergaminho')
-    ? 'Ler'
-    : 'Usar';
+    ? 'Comer / Ingerir'
+    : effects.healsHp || effects.restoresFocus
+      ? 'Beber / Usar'
+      : 'Ativar Item';
 
   return (
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
-      side="bottom"
-      title={
-        <div className="flex items-center gap-3">
-          <span className="font-serif font-bold text-lg sm:text-xl text-[#f5b65b] tracking-wide">
-            {item.name}
-          </span>
-          <Badge variant={rarity}>{item.rarity || 'Comum'}</Badge>
-        </div>
-      }
-      description={
-        <span>
-          {item.category || 'Item'} · {Number(item.quantity || 1)}x unidade(s)
-          {isEquipped ? ` · Equipado em ${item.equip_slot}` : ''}
-        </span>
-      }
+      title={item.item_name}
+      description={`${item.category || 'Item'} • Peso: ${item.weight || 0} kg`}
     >
-      <div className="space-y-6 pt-2 pb-6">
-        {/* Imagem / Ícone Grande e Estatísticas Rápidas */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
-          <div className="w-24 h-24 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-            {item.image_url ? (
-              <img
-                src={item.image_url}
-                alt={item.name}
-                className="w-full h-full object-contain p-1"
-              />
-            ) : (
-              <span className="text-4xl">{item.icon || '📦'}</span>
-            )}
-          </div>
-
-          <div className="flex-1 space-y-2 text-center sm:text-left">
-            <p className="font-serif italic text-sm text-white/80 leading-relaxed">
-              {item.description || 'Nenhuma descrição gravada para este objeto.'}
-            </p>
-
-            {item.price_bronze !== undefined && item.price_bronze !== null && (
-              <div className="text-xs text-[#f5b65b] font-mono">
-                Valor estimado: {formatCoinsString(item.price_bronze)}
+      <div className="flex flex-col gap-4 py-2">
+        {/* Parchment Card with Item Details */}
+        <Parchment seed={33} unroll className="space-y-3">
+          <div className="flex items-start justify-between gap-3 border-b border-[var(--ink-soft)]/20 pb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 border border-[var(--gold-lo)] bg-black/10 flex items-center justify-center shrink-0">
+                {item.icon ? (
+                  <span className="text-2xl leading-none">{item.icon}</span>
+                ) : (
+                  <Package className="w-5 h-5 text-[var(--ink)]" />
+                )}
               </div>
-            )}
+              <div>
+                <h3 className="font-['Cinzel',serif] text-base font-bold text-[var(--ink)] leading-tight">
+                  {item.item_name}
+                </h3>
+                <span className="text-[11px] font-['EB_Garamond',serif] italic text-[var(--ink-soft)]">
+                  {item.rarity?.toUpperCase() || 'COMUM'} • {item.category || 'Geral'}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <span className="text-[11px] font-mono text-[var(--ink-soft)] block">Valor:</span>
+              <span className="text-xs font-['Cinzel',serif] font-bold text-[var(--ink)] tabular-nums">
+                {formatCoinsString(item.base_cost_bronze || 0)}
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Lista de Efeitos e Atributos */}
-        <div className="space-y-2">
-          <h4 className="text-[11px] font-serif font-bold text-white/50 uppercase tracking-widest">
-            Propriedades e Efeitos
-          </h4>
+          {/* Description */}
+          <p className="text-xs text-[var(--ink)] font-['EB_Garamond',serif] italic leading-relaxed">
+            {item.description || 'Nenhuma inscrição rúnica visível neste artefato.'}
+          </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-[var(--ink-soft)]/20">
             {item.damage_dice && (
-              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <Sword className="w-4 h-4 text-amber-400 shrink-0" />
+              <div className="flex items-center gap-2 p-2 border border-[var(--ink-soft)]/20 bg-black/5">
+                <Sword className="w-4 h-4 text-[var(--blood)] shrink-0" />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-white/50">Dano</span>
-                  <span className="text-xs font-mono font-bold text-white">
+                  <span className="text-[9px] uppercase font-['Cinzel',serif] text-[var(--ink-soft)] font-bold">
+                    Dano
+                  </span>
+                  <span className="text-xs font-mono font-bold text-[var(--ink)]">
                     {item.damage_dice}
                     {item.damage_bonus ? ` +${item.damage_bonus}` : ''}
                   </span>
@@ -144,11 +133,13 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             )}
 
             {Boolean(item.armor_bonus && Number(item.armor_bonus) > 0) && (
-              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="flex items-center gap-2 p-2 border border-[var(--ink-soft)]/20 bg-black/5">
+                <Shield className="w-4 h-4 text-[var(--moss)] shrink-0" />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-white/50">Defesa</span>
-                  <span className="text-xs font-mono font-bold text-white">
+                  <span className="text-[9px] uppercase font-['Cinzel',serif] text-[var(--ink-soft)] font-bold">
+                    Defesa
+                  </span>
+                  <span className="text-xs font-mono font-bold text-[var(--ink)]">
                     +{item.armor_bonus} Armadura
                   </span>
                 </div>
@@ -156,48 +147,42 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             )}
 
             {effects.isFood && effects.saciedade > 0 && (
-              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <Utensils className="w-4 h-4 text-amber-400 shrink-0" />
+              <div className="flex items-center gap-2 p-2 border border-[var(--ink-soft)]/20 bg-black/5">
+                <Utensils className="w-4 h-4 text-[var(--gold-lo)] shrink-0" />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-white/50">Nutrição</span>
-                  <span className="text-xs font-mono font-bold text-white">
-                    +{effects.saciedade} Saciedade
+                  <span className="text-[9px] uppercase font-['Cinzel',serif] text-[var(--ink-soft)] font-bold">
+                    Nutrição
+                  </span>
+                  <span className="text-xs font-mono font-bold text-[var(--ink)]">
+                    +{effects.saciedade} Fome
                   </span>
                 </div>
               </div>
             )}
 
             {(effects.healsHp || effects.healsAllHp) && (
-              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <Heart className="w-4 h-4 text-rose-400 shrink-0" />
+              <div className="flex items-center gap-2 p-2 border border-[var(--ink-soft)]/20 bg-black/5">
+                <Heart className="w-4 h-4 text-[var(--blood)] shrink-0" />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-white/50">Cura</span>
-                  <span className="text-xs font-mono font-bold text-white">
-                    {effects.healsAllHp ? 'Vida Máxima' : `+${effects.healsHp} Vida`}
+                  <span className="text-[9px] uppercase font-['Cinzel',serif] text-[var(--ink-soft)] font-bold">
+                    Cura
+                  </span>
+                  <span className="text-xs font-mono font-bold text-[var(--ink)]">
+                    {effects.healsAllHp ? 'Vida Total' : `+${effects.healsHp} Vida`}
                   </span>
                 </div>
               </div>
             )}
 
             {(effects.restoresFocus || effects.restoresAllFocus) && (
-              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <Zap className="w-4 h-4 text-blue-400 shrink-0" />
+              <div className="flex items-center gap-2 p-2 border border-[var(--ink-soft)]/20 bg-black/5">
+                <Zap className="w-4 h-4 text-[var(--mana)] shrink-0" />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-white/50">Foco</span>
-                  <span className="text-xs font-mono font-bold text-white">
-                    {effects.restoresAllFocus ? 'Foco Total' : `+${effects.restoresFocus} Foco`}
+                  <span className="text-[9px] uppercase font-['Cinzel',serif] text-[var(--ink-soft)] font-bold">
+                    Foco
                   </span>
-                </div>
-              </div>
-            )}
-
-            {item.wear_type === 'durability' && item.max_durability && (
-              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-white/50">Cargas</span>
-                  <span className="text-xs font-mono font-bold text-white">
-                    {item.durability ?? item.max_durability} / {item.max_durability}
+                  <span className="text-xs font-mono font-bold text-[var(--ink)]">
+                    {effects.restoresAllFocus ? 'Foco Total' : `+${effects.restoresFocus} Foco`}
                   </span>
                 </div>
               </div>
@@ -205,73 +190,67 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
           </div>
 
           {effects.givesPlague && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs mt-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="flex items-center gap-2 p-2.5 border border-[var(--blood)]/40 bg-[var(--blood)]/10 text-[var(--blood)] text-xs mt-2">
+              <AlertTriangle className="w-4 h-4 text-[var(--blood)] shrink-0" />
               <span>
-                <strong>Atenção:</strong> O consumo deste item transfere <strong>+1 de Peste</strong> ao corpo do herói.
+                <strong>Atenção:</strong> O consumo transfere <strong>+1 Peste</strong> ao corpo do
+                herói.
               </span>
             </div>
           )}
-        </div>
+        </Parchment>
 
         {/* Barra de Ações Rápidas */}
-        <div className="border-t border-white/10 pt-4 flex flex-wrap gap-2.5 items-center justify-between">
+        <div className="border-t border-[var(--iron)] pt-4 flex flex-wrap gap-2.5 items-center justify-between">
           <div className="flex gap-2">
-            {/* Botão de Enviar */}
-            <Button
-              variant="secondary"
-              size="md"
-              leftIcon={<ArrowRightLeft className="w-4 h-4" />}
-              onClick={() => onOpenTransfer?.(item)}
-            >
-              Enviar
-            </Button>
+            {onOpenTransfer && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenTransfer(item)}
+                className="flex items-center gap-1.5"
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5 text-[var(--gold)]" />
+                <span>Enviar</span>
+              </Button>
+            )}
 
-            {/* Botão de Descartar */}
-            <Button
-              variant="danger"
-              size="md"
-              leftIcon={<Trash2 className="w-4 h-4" />}
-              onClick={() => onOpenDiscard?.(item)}
-            >
-              Descartar
-            </Button>
+            {onOpenDiscard && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => onOpenDiscard(item)}
+                className="flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                <span>Descartar</span>
+              </Button>
+            )}
           </div>
 
           <div className="flex gap-2">
-            {/* Desequipar se equipado */}
-            {isEquipped && onUnequipItem && (
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => onUnequipItem(item)}
-              >
-                Desequipar
-              </Button>
-            )}
-
-            {/* Equipar se puder ser equipado e não estiver equipado */}
-            {!isEquipped && isEquippable && onEquipItem && (
-              <Button
-                variant="primary"
-                size="md"
-                leftIcon={<Shield className="w-4 h-4" />}
-                onClick={() => onEquipItem(item)}
-              >
-                Equipar
-              </Button>
-            )}
-
-            {/* Usar se for consumível */}
             {isUsable && onUseItem && (
-              <Button
-                variant="primary"
-                size="md"
-                leftIcon={<Sparkles className="w-4 h-4" />}
-                onClick={() => onUseItem(item)}
-              >
+              <Button variant="primary" size="sm" onClick={() => onUseItem(item)}>
                 {actionVerb}
               </Button>
+            )}
+
+            {isEquippable && (
+              <>
+                {isEquipped ? (
+                  onUnequipItem && (
+                    <Button variant="secondary" size="sm" onClick={() => onUnequipItem(item)}>
+                      Desequipar
+                    </Button>
+                  )
+                ) : (
+                  onEquipItem && (
+                    <Button variant="primary" size="sm" onClick={() => onEquipItem(item)}>
+                      Equipar
+                    </Button>
+                  )
+                )}
+              </>
             )}
           </div>
         </div>

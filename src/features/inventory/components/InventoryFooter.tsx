@@ -14,20 +14,20 @@ export const InventoryFooter: React.FC<InventoryFooterProps> = ({
   totalWeight,
 }) => {
   return (
-    <footer className="w-full bg-[#0c0c0e]/90 border-t border-white/[0.08] px-4 py-2 flex items-center justify-between text-xs select-none backdrop-blur-md shrink-0">
+    <footer className="w-full slab border-t border-[var(--iron)] px-4 py-2 flex items-center justify-between text-xs select-none shrink-0">
       {/* Moedas */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1 text-[#f5b65b]">
+        <div className="flex items-center gap-1 text-[var(--gold)]">
           <Coins className="w-3.5 h-3.5" />
-          <span className="font-serif font-bold text-[11px] text-white/50 uppercase tracking-wider">
+          <span className="font-['Cinzel',serif] font-bold text-[11px] text-[var(--gold-hi)] uppercase tracking-wider">
             Tesouro:
           </span>
         </div>
 
         <div className="flex items-center gap-2 font-mono text-[11px]">
           {/* Ouro */}
-          <span className="flex items-center gap-1 text-amber-300 font-bold" title="Moedas de Ouro">
-            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block shadow-sm shadow-amber-400/50" />
+          <span className="flex items-center gap-1 text-[var(--gold-hi)] font-bold" title="Moedas de Ouro">
+            <span className="w-2 h-2 rounded-full bg-[var(--gold)] inline-block shadow-sm shadow-[var(--gold)]/50" />
             {coins.gold}o
           </span>
 
@@ -46,20 +46,20 @@ export const InventoryFooter: React.FC<InventoryFooterProps> = ({
       </div>
 
       {/* Espaço e Carga */}
-      <div className="flex items-center gap-3 text-white/60 font-mono text-[11px]">
+      <div className="flex items-center gap-3 text-[var(--muted)] font-mono text-[11px]">
         <div className="flex items-center gap-1.5" title="Slots ocupados na mochila">
-          <Package className="w-3.5 h-3.5 text-white/40" />
-          <span className={occupiedCount >= 40 ? 'text-red-400 font-bold' : 'text-white/80'}>
+          <Package className="w-3.5 h-3.5 text-[var(--muted)]" />
+          <span className={occupiedCount >= 40 ? 'text-[var(--blood)] font-bold' : 'text-[var(--text)]'}>
             {occupiedCount} / 40
           </span>
-          <span className="text-[10px] text-white/40">slots</span>
+          <span className="text-[10px] text-[var(--muted)]">slots</span>
         </div>
 
-        <span className="text-white/20">|</span>
+        <span className="text-[var(--iron)]">|</span>
 
         <div className="flex items-center gap-1" title="Carga total estimada">
-          <span className="text-white/80">{totalWeight}</span>
-          <span className="text-[10px] text-white/40">carga</span>
+          <span className="text-[var(--text)]">{totalWeight}</span>
+          <span className="text-[10px] text-[var(--muted)]">carga</span>
         </div>
       </div>
     </footer>

@@ -13,14 +13,7 @@ export interface BackpackSlotProps {
 }
 
 export const BackpackSlot: React.FC<BackpackSlotProps> = React.memo(
-  ({
-    slotIndex,
-    item,
-    isSelected,
-    isRecentlyReceived,
-    isDimmed = false,
-    onSelect,
-  }) => {
+  ({ slotIndex, item, isSelected, isRecentlyReceived, isDimmed = false, onSelect }) => {
     const { isOver, setNodeRef: setDroppableRef } = useDroppable({
       id: `slot-${slotIndex}`,
       data: { slotIndex },
@@ -39,112 +32,71 @@ export const BackpackSlot: React.FC<BackpackSlotProps> = React.memo(
 
     const rarity = (item?.rarity || 'comum').toLowerCase();
 
-    // Rarity border classes
-    const rarityBorderClass = item
-      ? rarity === 'artefato'
-        ? 'border-amber-400/80 shadow-[0_0_10px_rgba(245,182,91,0.25)]'
-        : rarity === 'lendario'
-        ? 'border-purple-400/70 shadow-[0_0_8px_rgba(191,90,242,0.2)]'
-        : rarity === 'raro'
-        ? 'border-blue-400/60'
-        : rarity === 'incomum'
-        ? 'border-emerald-400/60'
-        : 'border-white/15'
-      : 'border-white/[0.06]';
+    // Rarity class mapping conforme Design Pedra e Pergaminho
+    const rarityClass = item
+      ? rarity === 'lendario' || rarity === 'artefato'
+        ? 'r-leg'
+        : rarity === 'epico'
+          ? 'r-epic'
+          : rarity === 'raro'
+            ? 'r-rare'
+            : rarity === 'incomum'
+              ? 'r-unc'
+              : 'r-com'
+      : '';
 
     return (
       <div
         ref={setDroppableRef}
         data-slot-index={slotIndex}
-        className={`relative w-full aspect-square min-w-[56px] max-w-[64px] min-h-[56px] max-h-[64px] rounded-xl border flex items-center justify-center select-none transition-all duration-150 ${
+        className={`relative w-full aspect-square min-w-[42px] max-w-[56px] min-h-[42px] max-h-[56px] recess border flex items-center justify-center select-none transition-all duration-150 ${
           isOver
-            ? 'border-[#f5b65b] bg-[#f5b65b]/20 shadow-[0_0_15px_rgba(245,182,91,0.4)] scale-105'
+            ? 'border-[var(--gold)] shadow-[inset_0_0_8px_rgba(201,164,92,0.4)]'
             : isSelected
-            ? 'border-[#f5b65b] bg-white/[0.08]'
-            : isRecentlyReceived
-            ? 'border-amber-400 bg-amber-500/30 animate-pulse shadow-[0_0_16px_rgba(245,182,91,0.6)]'
-            : item
-            ? `bg-[#141417] hover:bg-[#1a1a1f] ${rarityBorderClass}`
-            : 'bg-white/[0.015] hover:bg-white/[0.03] border-dashed border-white/[0.07]'
-        } ${isDimmed ? 'opacity-30' : 'opacity-100'}`}
-        onClick={() => {
-          if (item) onSelect(item);
-        }}
-        title={
-          item
-            ? `${item.name} (${item.rarity || 'Comum'})\nCompartimento #${slotIndex + 1}`
-            : `Compartimento #${slotIndex + 1} (Vazio)`
-        }
+              ? 'border-[var(--gold-hi)] shadow-[inset_0_0_10px_rgba(236,211,149,0.5)]'
+              : 'border-[#1a1714]'
+        } ${isDimmed ? 'opacity-30' : ''}`}
       >
         {item ? (
           <div
             ref={setDraggableRef}
             {...listeners}
             {...attributes}
-            className={`w-full h-full flex flex-col items-center justify-center p-1 cursor-grab active:cursor-grabbing touch-none transition-transform duration-100 ${
-              isDragging ? 'opacity-20 scale-95' : 'opacity-100 hover:scale-[1.03]'
+            onClick={() => onSelect(item)}
+            className={`w-full h-full p-1.5 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing border ${rarityClass} ${
+              isDragging ? 'opacity-30 scale-105' : ''
+            } ${
+              isRecentlyReceived
+                ? 'animate-pulse ring-2 ring-[var(--gold)] ring-offset-1 ring-offset-black'
+                : ''
             }`}
           >
-            {item.image_url ? (
-              <img
-                src={item.image_url}
-                alt={item.name}
-                loading="lazy"
-                decoding="async"
-                className="w-8 h-8 object-contain rounded pointer-events-none drop-shadow-sm"
-              />
+            {item.icon ? (
+              <span className="text-xl leading-none select-none drop-shadow-md">{item.icon}</span>
             ) : (
-              <span className="text-xl select-none leading-none pointer-events-none">
-                {item.icon || '📦'}
-              </span>
+              <Package className="w-5 h-5 text-current opacity-80" />
             )}
 
-            {/* Quantidade no canto inferior direito em Inter 12 */}
-            {Number(item.quantity || 1) > 1 && (
-              <span className="absolute bottom-1 right-1 font-sans text-xs font-bold text-white bg-black/75 px-1 py-0.2 rounded leading-none border border-white/10 shadow-sm pointer-events-none">
+            {/* Quantidade no canto inferior direito */}
+            {(item.quantity || 1) > 1 && (
+              <span className="absolute bottom-0.5 right-1 text-[9px] font-bold font-['Cinzel',serif] text-white tabular-nums drop-shadow-[0_1px_2px_#000]">
                 {item.quantity}
               </span>
             )}
 
-            {/* Barra de desgaste/durabilidade sutil */}
-            {item.wear_type === 'durability' && item.max_durability && (
-              <div className="absolute bottom-1 left-1.5 right-1.5 h-1 bg-black/60 rounded-full overflow-hidden pointer-events-none">
-                <div
-                  className={`h-full rounded-full ${
-                    Number(item.durability || 0) / item.max_durability <= 0.3
-                      ? 'bg-red-500'
-                      : Number(item.durability || 0) / item.max_durability <= 0.6
-                      ? 'bg-amber-500'
-                      : 'bg-emerald-500'
-                  }`}
-                  style={{
-                    width: `${Math.max(
-                      10,
-                      Math.min(100, (Number(item.durability || 0) / item.max_durability) * 100),
-                    )}%`,
-                  }}
-                />
-              </div>
+            {/* Indicador de peso */}
+            {(item.weight || 0) >= 2 && (
+              <span className="absolute top-0.5 left-1 text-[8px] font-mono text-[var(--gold)] opacity-75">
+                {item.weight}kg
+              </span>
             )}
           </div>
         ) : (
-          <span className="text-[10px] font-sans text-white/15 select-none pointer-events-none">
+          <span className="text-[10px] text-[var(--iron)]/40 font-mono select-none">
             {slotIndex + 1}
           </span>
         )}
       </div>
-    );
-  },
-  (prev, next) => {
-    return (
-      prev.slotIndex === next.slotIndex &&
-      prev.isSelected === next.isSelected &&
-      prev.isRecentlyReceived === next.isRecentlyReceived &&
-      prev.isDimmed === next.isDimmed &&
-      prev.item?.id === next.item?.id &&
-      prev.item?.quantity === next.item?.quantity &&
-      prev.item?.durability === next.item?.durability &&
-      prev.item?.rarity === next.item?.rarity
     );
   },
 );

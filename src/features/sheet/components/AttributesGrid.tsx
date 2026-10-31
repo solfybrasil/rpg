@@ -1,5 +1,6 @@
 import React from 'react';
 import type { HeroAttributes } from '../../../entities/hero';
+import { AttrSlab } from '../../../shared/ui/AttrSlab';
 
 interface AttributesGridProps {
   attributes?: HeroAttributes | Record<string, number> | null;
@@ -38,38 +39,20 @@ export const AttributesGrid: React.FC<AttributesGridProps> = ({ attributes }) =>
   const attrs = attributes || { corpo: 0, vontade: 0, astucia: 0, presenca: 0 };
 
   return (
-    <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
       {ATTRIBUTES_CONFIG.map((attr) => {
         const val = Number((attrs as Record<string, number>)[attr.key] ?? 0);
-        const signed = val > 0 ? `+${val}` : `${val}`;
+        // Em Peste do Juramento, o atributo base é calculado em torno de 10 + mod ou o próprio mod
+        const score = 10 + val;
 
         return (
-          <div
+          <AttrSlab
             key={attr.key}
-            className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl bg-[var(--surface-card)] border border-[var(--line)] shadow-md hover:border-[var(--line-strong)] transition-all group relative overflow-hidden"
+            name={attr.label}
+            value={score}
+            modifier={val}
             title={`${attr.label}: ${attr.description}`}
-          >
-            {/* Background glowing flare */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[var(--surface)] to-transparent pointer-events-none opacity-50" />
-
-            {/* Big number in Cinzel 32 */}
-            <span
-              className={`text-[32px] font-cinzel font-bold leading-tight tabular-nums transition-transform duration-200 group-hover:scale-105 ${
-                val > 0
-                  ? 'text-[var(--gold-bright)]'
-                  : val < 0
-                  ? 'text-red-400'
-                  : 'text-[var(--text)]'
-              }`}
-            >
-              {signed}
-            </span>
-
-            {/* Label in small Inter */}
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-3)] mt-1 font-sans">
-              {attr.label}
-            </span>
-          </div>
+          />
         );
       })}
     </section>

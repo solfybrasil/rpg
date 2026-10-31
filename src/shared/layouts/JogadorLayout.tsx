@@ -1,10 +1,14 @@
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
-import React, { useEffect, useRef, useMemo } from 'react';
+import { AnimatePresence, m } from 'motion/react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useActiveBattleMap } from '../../features/battle-map/api/useBattle.ts';
 import { useHero, useInventory } from '../hooks/baseHooks.ts';
 import { useSessionStore } from '../stores/session.ts';
+import { motionTokens, tabTransitionVariants } from '../styles/motion.ts';
 import { Belt, type BeltItem } from '../ui/Belt';
 import { BottomNav } from '../ui/BottomNav';
+import { EpicMoment } from '../ui/EpicMoment';
+import { type FloatingItem, FloatingNumberContainer } from '../ui/FloatingNumber';
 import { Orb } from '../ui/Orb';
 import { StatusBar } from '../ui/StatusBar';
 
@@ -20,7 +24,49 @@ export const JogadorLayout: React.FC = () => {
   const isBattleLive = activeBattleMap?.status === 'ao_vivo';
   const isMesaRoute = currentPath.includes('/jogador/mesa');
 
+  // Estados de Realtime e Animações
+  const [isDamaged, setIsDamaged] = useState(false);
+  const [isHealing, setIsHealing] = useState(false);
+  const [showVignette, setShowVignette] = useState(false);
+  const [floatingItems, setFloatingItems] = useState<FloatingItem[]>([]);
+  const [epicMoment, setEpicMoment] = useState<'level_up' | null>(null);
+
+  const prevHealthRef = useRef<number | null>(null);
+  const prevLevelRef = useRef<number | null>(null);
   const previousStatusRef = useRef<string | null | undefined>(undefined);
+
+  // Reatividade em tempo real aos eventos do herói (SKILL.md Seção 9.5)
+  useEffect(() => {
+    if (!hero) return;
+
+    const currentHealth = hero.health ?? 20;
+    const currentLevel = hero.level ?? 1;
+
+    // Detecta Dano ou Cura do Mestre
+    if (prevHealthRef.current !== null && prevHealthRef.current !== currentHealth) {
+      const diff = currentHealth - prevHealthRef.current;
+      const id = Date.now().toString();
+
+      if (diff < 0) {
+        setIsDamaged(true);
+        setShowVignette(true);
+        setFloatingItems((prev) => [...prev, { id, value: Math.abs(diff), type: 'damage' }]);
+        setTimeout(() => setIsDamaged(false), 400);
+        setTimeout(() => setShowVignette(false), 320);
+      } else if (diff > 0) {
+        setIsHealing(true);
+        setFloatingItems((prev) => [...prev, { id, value: diff, type: 'heal' }]);
+        setTimeout(() => setIsHealing(false), 600);
+      }
+    }
+    prevHealthRef.current = currentHealth;
+
+    // Detecta Subida de Nível
+    if (prevLevelRef.current !== null && currentLevel > prevLevelRef.current) {
+      setEpicMoment('level_up');
+    }
+    prevLevelRef.current = currentLevel;
+  }, [hero]);
 
   // Abre sozinha quando a mesa liga (transição para 'ao_vivo')
   useEffect(() => {
@@ -46,7 +92,18 @@ export const JogadorLayout: React.FC = () => {
   }, [inventory]);
 
   return (
-    <div className="flex-1 flex flex-col h-full w-full bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none">
+    <div className="flex-1 flex flex-col h-full w-full bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none font-sans">
+      {/* Vinheta de Dano na Tela */}
+      {showVignette && <div className="damage-vignette" />}
+
+      {/* Momento Épico: Subida de Nível */}
+      <EpicMoment
+        type={epicMoment}
+        level={hero?.level || 2}
+        heroName={hero?.name || 'Jurado'}
+        onClose={() => setEpicMoment(null)}
+      />
+
       {/* Contêiner centralizado no PC (máx 480px), tela cheia no Celular */}
       <div className="w-full max-w-[480px] mx-auto flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--stone)] border-x border-[var(--iron)]/40 shadow-2xl">
         {/* 1. StatusBar no topo (52px) */}
@@ -56,7 +113,7 @@ export const JogadorLayout: React.FC = () => {
           coinsBronze={hero?.coins_bronze || 0}
         />
 
-        {/* Banner de Batalha Ao Vivo (se houver combate aberto e o jogador estiver em outra aba) */}
+        {/* Banner de Batalha Ao Vivo */}
         {isBattleLive && !isMesaRoute && (
           <Link
             to="/jogador/mesa"
@@ -72,18 +129,31 @@ export const JogadorLayout: React.FC = () => {
           </Link>
         )}
 
-        {/* 2. Área Central com Rolagem */}
+        {/* 2. Área Central com Rolagem e Transição de Tela Animada */}
         <main
           className={`flex-1 flex flex-col relative min-h-0 ${
-            isMesaRoute ? 'overflow-hidden' : 'overflow-y-auto pb-[155px]'
+            isMesaRoute
+              ? 'overflow-hidden'
+              : 'overflow-y-auto pb-[calc(155px+env(safe-area-inset-bottom,0px))]'
           }`}
         >
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <m.div
+              key={currentPath}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={tabTransitionVariants}
+              className="flex-1 flex flex-col w-full"
+            >
+              <Outlet />
+            </m.div>
+          </AnimatePresence>
         </main>
 
-        {/* 3. HUD Fixo na Base (150px): Orbe Vida (esquerda), Orbe Foco (direita), Cinto (centro) e BottomNav (base) */}
+        {/* 3. HUD Fixo na Base (150px): Orbes de Vidro, Cinto de Poções e BottomNav */}
         {!isMesaRoute && (
-          <div className="hud">
+          <div className="hud" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
             {/* Cinto de poções */}
             <Belt items={quickItems} />
 
@@ -93,6 +163,12 @@ export const JogadorLayout: React.FC = () => {
               current={hero?.health ?? 20}
               max={hero?.max_health ?? 20}
               label="VIDA"
+              isDamaged={isDamaged}
+              isHealing={isHealing}
+              floatingItems={floatingItems}
+              onFloatingComplete={(id) =>
+                setFloatingItems((prev) => prev.filter((i) => i.id !== id))
+              }
             />
 
             {/* Orbe de Foco (Azul Mana) */}
