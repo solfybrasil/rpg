@@ -59,7 +59,10 @@ export function getNodeState(
   if (node.adj) {
     for (const a of node.adj) {
       const aNode = nodesMap[a];
-      const aDone = a === 'hub' || (treeState.m?.[a] || 0) >= (aNode?.custo ?? 999) || Boolean(treeState.g?.[a]);
+      const aDone =
+        a === 'hub' ||
+        (treeState.m?.[a] || 0) >= (aNode?.custo ?? 999) ||
+        Boolean(treeState.g?.[a]);
       if (aDone) {
         connected = true;
         break;

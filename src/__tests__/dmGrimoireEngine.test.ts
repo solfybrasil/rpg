@@ -58,9 +58,7 @@ describe('DM Grimoire Engine & Catalog Filtering', () => {
       const term = q.trim().toLowerCase();
       if (!term) return spells;
       return spells.filter(
-        (s) =>
-          s.nome.toLowerCase().includes(term) ||
-          (s.resumo && s.resumo.toLowerCase().includes(term)),
+        (s) => s.nome.toLowerCase().includes(term) || s.resumo?.toLowerCase().includes(term),
       );
     };
 
@@ -71,11 +69,7 @@ describe('DM Grimoire Engine & Catalog Filtering', () => {
   });
 
   it('filtra magias por Círculo e Fonte/Escola', () => {
-    const filterCircleAndSchool = (
-      spells: GrimorioSpell[],
-      circulo: string,
-      fonte: string,
-    ) => {
+    const filterCircleAndSchool = (spells: GrimorioSpell[], circulo: string, fonte: string) => {
       return spells.filter((s) => {
         if (circulo !== 'todos' && String(s.circulo) !== circulo) return false;
         if (fonte !== 'todas' && s.fonte !== fonte) return false;
@@ -95,10 +89,15 @@ describe('DM Grimoire Engine & Catalog Filtering', () => {
   });
 
   it('identifica corretamente magias para a fila de arbitragem do Mestre (revisar_mestre ou narrativo)', () => {
-    const getArbitrationSpells = (spells: GrimorioSpell[], filterType: 'todas' | 'revisar_mestre' | 'narrativo') => {
+    const getArbitrationSpells = (
+      spells: GrimorioSpell[],
+      filterType: 'todas' | 'revisar_mestre' | 'narrativo',
+    ) => {
       return spells.filter((s) => {
         const hasRevisar = Boolean(s.revisar_mestre);
-        const hasNarrativo = Array.isArray(s.efeitos) && s.efeitos.some((e: any) => e.bloco === 'narrativo');
+        const hasNarrativo =
+          Array.isArray(s.efeitos) &&
+          s.efeitos.some((e: unknown) => (e as Record<string, unknown>).bloco === 'narrativo');
 
         if (filterType === 'revisar_mestre') return hasRevisar;
         if (filterType === 'narrativo') return hasNarrativo;
@@ -119,8 +118,20 @@ describe('DM Grimoire Engine & Catalog Filtering', () => {
   it('calcula progresso e categoriza aprendidas vs em estudo', () => {
     const heroMagias = [
       { character_id: 'kaelis_moonfire', magia_id: 1, marcas: 1, aprendida: true, gratis: true },
-      { character_id: 'kaelis_moonfire', magia_id: 2, marcas: 2, aprendida: false, liberada_pelo_mestre: true },
-      { character_id: 'kaelis_moonfire', magia_id: 3, marcas: 0, aprendida: false, liberada_pelo_mestre: false },
+      {
+        character_id: 'kaelis_moonfire',
+        magia_id: 2,
+        marcas: 2,
+        aprendida: false,
+        liberada_pelo_mestre: true,
+      },
+      {
+        character_id: 'kaelis_moonfire',
+        magia_id: 3,
+        marcas: 0,
+        aprendida: false,
+        liberada_pelo_mestre: false,
+      },
     ];
 
     const categorizeProgression = (spells: GrimorioSpell[], records: typeof heroMagias) => {

@@ -101,9 +101,7 @@ export const Switch: React.FC<SwitchProps> = ({
           </label>
         )}
         {description && (
-          <span className="text-[11px] text-white/50 font-serif leading-tight">
-            {description}
-          </span>
+          <span className="text-[11px] text-white/50 font-serif leading-tight">{description}</span>
         )}
       </div>
       {switchButton}

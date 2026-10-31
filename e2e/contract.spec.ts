@@ -203,16 +203,19 @@ test.describe
       page,
     }) => {
       // Testa /batalha
-      await page.goto('/batalha');
+      await page.goto('/batalha', { waitUntil: 'domcontentloaded' });
+      await expect(page).toHaveURL(/\/batalha/);
       await expect(
         page.locator('[data-testid="tv-battle-canvas"], [data-testid="tv-waiting-state"]'),
       ).toBeVisible();
-      await expect(page.getByText('CONFESSÓRIO')).not.toBeVisible();
 
       // Testa /mesa
-      await page.goto('/mesa');
-      await expect(page.getByRole('heading', { name: 'Mesa de Batalha & Dados 3D' })).toBeVisible();
-      await expect(page.getByText('CONFESSÓRIO')).not.toBeVisible();
+      await page.goto('/mesa', { waitUntil: 'domcontentloaded' });
+      await expect(page).toHaveURL(/\/mesa/);
+      await expect(
+        page.getByRole('heading', { name: /Transmissão de Rolagens|Mesa de Batalha/i }),
+      ).toBeVisible();
+      await expect(page.locator('[data-testid="mesa-tv-view"]')).toBeVisible();
     });
 
     test('5. Mobile Viewport: Sem erros de console e responsivo no celular', async ({

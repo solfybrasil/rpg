@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  checkStationPrerequisites,
-  type InventoryItemRecord,
-} from '../entities/recipe';
+import { type InventoryItemRecord, checkStationPrerequisites } from '../entities/recipe';
 import { STARTER_SHOP_ITEMS } from '../features/shop/data/starterShopItems';
 
 describe('DM Workshop & Shop Engine', () => {
@@ -116,8 +113,8 @@ describe('DM Workshop & Shop Engine', () => {
     expect(names.some((n) => n.includes('corda') || n.includes('tocha'))).toBe(true);
 
     // Verify all items have valid prices in bronze
-    STARTER_SHOP_ITEMS.forEach((it) => {
+    for (const it of STARTER_SHOP_ITEMS) {
       expect(it.price_bronze).toBeGreaterThan(0);
-    });
+    }
   });
 });

@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import { fromBronzeToCoins } from '../features/system/api/useDMSystem';
+import { describe, expect, it } from 'vitest';
 import { rulebook } from '../data/rules';
+import { fromBronzeToCoins } from '../features/system/api/useDMSystem';
 import {
   ATMOSPHERES,
   SFX_ITEMS,
-  setSoundboardVolume,
-  getSoundboardVolume,
-  stopAtmosphere,
   getActiveAtmosphere,
+  getSoundboardVolume,
+  setSoundboardVolume,
+  stopAtmosphere,
 } from '../features/system/services/soundboardService';
 
 describe('DM System Engine & Utilities', () => {
@@ -37,7 +37,7 @@ describe('DM System Engine & Utilities', () => {
     });
 
     it('handles negative or invalid numbers safely', () => {
-      const res = fromBronzeToCoins(-50 as any);
+      const res = fromBronzeToCoins(-50);
       expect(res.gold).toBe(0);
       expect(res.silver).toBe(0);
       expect(res.bronze).toBe(0);
@@ -50,12 +50,14 @@ describe('DM System Engine & Utilities', () => {
     });
 
     it('has sequential chapter numbers from 1 to 10', () => {
-      rulebook.chapters.forEach((chapter, idx) => {
+      let idx = 0;
+      for (const chapter of rulebook.chapters) {
         expect(chapter.number).toBe(idx + 1);
         expect(chapter.id).toBeTruthy();
         expect(chapter.title).toBeTruthy();
         expect(chapter.content.length).toBeGreaterThan(50);
-      });
+        idx++;
+      }
     });
 
     it('contains specific core chapters (O Mundo, Como Jogar, Atributos, O Juramento)', () => {
@@ -74,20 +76,20 @@ describe('DM System Engine & Utilities', () => {
       expect(ATMOSPHERES).toHaveLength(6);
       const ids = ATMOSPHERES.map((a) => a.id);
       expect(ids).toEqual(['tavern', 'chapel', 'plague', 'catacombs', 'rain', 'war']);
-      ATMOSPHERES.forEach((item) => {
+      for (const item of ATMOSPHERES) {
         expect(item.category).toBe('ambiente');
         expect(item.icon).toBeTruthy();
-      });
+      }
     });
 
     it('defines 6 instant sound effects (SFX)', () => {
       expect(SFX_ITEMS).toHaveLength(6);
       const ids = SFX_ITEMS.map((s) => s.id);
       expect(ids).toEqual(['dice', 'sword', 'shield', 'plague_stab', 'spell', 'death']);
-      SFX_ITEMS.forEach((item) => {
+      for (const item of SFX_ITEMS) {
         expect(item.category).toBe('sfx');
         expect(item.icon).toBeTruthy();
-      });
+      }
     });
 
     it('clamps volume correctly between 0 and 1', () => {

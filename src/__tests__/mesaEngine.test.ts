@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { calculateDiceOutcome } from '../features/mesa/services/mesaRealtime';
 
 describe('Mesa Engine & 2d6 Rules', () => {

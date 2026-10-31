@@ -4,10 +4,7 @@ import {
   getItemRarityBadgeVariant,
   getItemRarityBorder,
 } from '../features/item-catalog/components/ItemCatalogCardGrid.tsx';
-import {
-  ITEM_CATEGORIES,
-  ITEM_RARITIES,
-} from '../features/item-catalog/data/constants.ts';
+import { ITEM_CATEGORIES, ITEM_RARITIES } from '../features/item-catalog/data/constants.ts';
 
 describe('Item Catalog Engine & Logic', () => {
   it('correctly maps rarity strings to Badge variants', () => {
@@ -54,7 +51,7 @@ describe('Item Catalog Engine & Logic', () => {
   });
 
   it('correctly formats CSV lines with quotes and escaping', () => {
-    const escapeCSV = (val: any) => {
+    const escapeCSV = (val: unknown) => {
       if (val === null || val === undefined) return '""';
       const str = String(val).replace(/"/g, '""');
       return `"${str}"`;
