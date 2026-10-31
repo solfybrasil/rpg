@@ -1,26 +1,12 @@
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
-import {
-  Backpack,
-  BookOpen,
-  Compass,
-  Dices,
-  FileText,
-  GitFork,
-  Hammer,
-  Mail,
-  MapPin,
-  MoreHorizontal,
-  ShoppingBag,
-  Swords,
-  User,
-  X,
-} from 'lucide-react';
-import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { useActiveBattleMap } from '../../features/battle-map/api/useBattle.ts';
-import { useHero } from '../hooks/baseHooks.ts';
+import { useHero, useInventory } from '../hooks/baseHooks.ts';
 import { useSessionStore } from '../stores/session.ts';
-import { Bar } from '../ui/Card.tsx';
+import { Belt, type BeltItem } from '../ui/Belt';
+import { BottomNav } from '../ui/BottomNav';
+import { Orb } from '../ui/Orb';
+import { StatusBar } from '../ui/StatusBar';
 
 export const JogadorLayout: React.FC = () => {
   const routerState = useRouterState();
@@ -28,10 +14,11 @@ export const JogadorLayout: React.FC = () => {
   const currentPath = routerState.location.pathname;
   const heroId = useSessionStore((s) => s.heroId);
   const { hero } = useHero(heroId);
+  const { data: inventory = [] } = useInventory(heroId);
   const { data: activeBattleMap } = useActiveBattleMap();
-  const [moreOpen, setMoreOpen] = useState(false);
 
   const isBattleLive = activeBattleMap?.status === 'ao_vivo';
+  const isMesaRoute = currentPath.includes('/jogador/mesa');
 
   const previousStatusRef = useRef<string | null | undefined>(undefined);
 
@@ -43,153 +30,84 @@ export const JogadorLayout: React.FC = () => {
 
     if (prev !== undefined) {
       if (prev !== 'ao_vivo' && current === 'ao_vivo') {
-        // Mesa acabou de ser iniciada pelo Mestre -> abre automaticamente
         navigate({ to: '/jogador/mesa' });
       }
     }
   }, [activeBattleMap?.status, navigate]);
 
-  const mainTabs = [
-    { label: 'Mochila', path: '/jogador/mochila', icon: Backpack },
-    { label: 'Ficha', path: '/jogador/ficha', icon: User },
-    { label: 'Grimório', path: '/jogador/grimorio', icon: BookOpen },
-    { label: 'Oficina', path: '/jogador/oficina', icon: Hammer },
-    { label: 'Combate', path: '/jogador/combate', icon: Swords },
-  ];
-
-  const extraTabs = [
-    { label: 'Mesa de Batalha', path: '/jogador/mesa', icon: MapPin },
-    { label: 'Árvore do Juramento', path: '/jogador/arvore', icon: GitFork },
-    { label: 'Livro de Receitas', path: '/jogador/receitas', icon: BookOpen },
-    { label: 'Mapa do Mundo', path: '/jogador/mapa', icon: Compass },
-    { label: 'Diário de Bordo', path: '/jogador/diario', icon: FileText },
-    { label: 'Missivas', path: '/jogador/missivas', icon: Mail },
-    { label: 'Mercado / Loja', path: '/jogador/loja', icon: ShoppingBag },
-    { label: 'Rolador de Dados', path: '/jogador/dados', icon: Dices },
-  ];
+  // Itens rápidos para o Cinto de Poções/Consumíveis
+  const quickItems: BeltItem[] = useMemo(() => {
+    return inventory.slice(0, 4).map((it) => ({
+      id: it.id,
+      name: it.item_name || 'Item do Cinto',
+      quantity: it.quantity || 1,
+      rarity: (it.rarity as BeltItem['rarity']) || 'comum',
+    }));
+  }, [inventory]);
 
   return (
-    <div className="flex-1 flex flex-col h-full w-full bg-[#08080a] text-[#f5f5f7] overflow-hidden">
-      {/* Top Header do Jogador */}
-      <header className="h-14 border-b border-white/[0.08] bg-[#0c0c0e]/80 backdrop-blur-md px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#f5b65b]/20 border border-[#f5b65b]/40 flex items-center justify-center text-xs font-serif font-bold text-[#f5b65b]">
-            {hero?.name ? hero.name.substring(0, 2).toUpperCase() : 'HJ'}
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-serif font-semibold text-white tracking-wide leading-tight">
-              {hero?.name || 'Herói Selecionado'}
-            </span>
-            <span className="text-[10px] text-white/50 leading-tight">
-              {hero?.title || hero?.race || 'Aventureiro de Aldrenor'}
-            </span>
-          </div>
-        </div>
+    <div className="flex-1 flex flex-col h-full w-full bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none">
+      {/* Contêiner centralizado no PC (máx 480px), tela cheia no Celular */}
+      <div className="w-full max-w-[480px] mx-auto flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--stone)] border-x border-[var(--iron)]/40 shadow-2xl">
+        {/* 1. StatusBar no topo (52px) */}
+        <StatusBar
+          heroName={hero?.name || 'Jurado de Aldrenor'}
+          level={hero?.level || 1}
+          coinsBronze={hero?.coins_bronze || 0}
+        />
 
-        {hero && (
-          <div className="flex items-center gap-3 w-40">
-            <Bar value={hero.health} max={hero.max_health} type="vida" showNumbers={false} />
-            <Bar value={hero.focus} max={hero.max_focus} type="foco" showNumbers={false} />
+        {/* Banner de Batalha Ao Vivo (se houver combate aberto e o jogador estiver em outra aba) */}
+        {isBattleLive && !isMesaRoute && (
+          <Link
+            to="/jogador/mesa"
+            className="h-10 bg-[var(--gold-lo)]/30 border-b border-[var(--gold-lo)] px-4 flex items-center justify-between text-xs font-serif text-[var(--gold-hi)] hover:brightness-125 transition-all shrink-0 z-20"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[var(--gold)] animate-ping" />
+              <span className="font-['Cinzel',serif] font-bold">Mesa de Batalha Ao Vivo</span>
+            </div>
+            <span className="text-[10px] uppercase font-['Cinzel',serif] tracking-wider text-[var(--gold)] font-bold">
+              Entrar →
+            </span>
+          </Link>
+        )}
+
+        {/* 2. Área Central com Rolagem */}
+        <main
+          className={`flex-1 flex flex-col relative min-h-0 ${
+            isMesaRoute ? 'overflow-hidden' : 'overflow-y-auto pb-[155px]'
+          }`}
+        >
+          <Outlet />
+        </main>
+
+        {/* 3. HUD Fixo na Base (150px): Orbe Vida (esquerda), Orbe Foco (direita), Cinto (centro) e BottomNav (base) */}
+        {!isMesaRoute && (
+          <div className="hud">
+            {/* Cinto de poções */}
+            <Belt items={quickItems} />
+
+            {/* Orbe de Vida (Carmim) */}
+            <Orb
+              variant="hp"
+              current={hero?.health ?? 20}
+              max={hero?.max_health ?? 20}
+              label="VIDA"
+            />
+
+            {/* Orbe de Foco (Azul Mana) */}
+            <Orb
+              variant="focus"
+              current={hero?.focus ?? 5}
+              max={hero?.max_focus ?? 5}
+              label="FOCO"
+            />
+
+            {/* 5 Abas: Ficha, Mochila, Grimório, Diário, Mais */}
+            <BottomNav />
           </div>
         )}
-      </header>
-
-      {/* Banner de Batalha Ao Vivo */}
-      {isBattleLive && !currentPath.includes('/jogador/mesa') && (
-        <Link
-          to="/jogador/mesa"
-          className="h-10 bg-[#f5b65b]/20 border-b border-[#f5b65b]/40 px-4 flex items-center justify-between text-xs font-serif text-[#ffd59a] hover:bg-[#f5b65b]/30 transition-colors shrink-0"
-        >
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#f5b65b] animate-ping" />
-            <span className="font-semibold">⚔️ Mesa de Batalha Ao Vivo</span>
-            <span className="text-white/60 text-[11px] font-sans">
-              — O Mestre iniciou o combate
-            </span>
-          </div>
-          <span className="text-[10px] uppercase font-sans tracking-wider text-[#f5b65b] font-bold">
-            Entrar no Mapa →
-          </span>
-        </Link>
-      )}
-
-      {/* Área Central / Conteúdo da Aba */}
-      <main
-        className={`flex-1 flex flex-col relative min-h-0 ${
-          currentPath.includes('/jogador/mesa') ? 'overflow-hidden' : 'overflow-y-auto'
-        }`}
-      >
-        <Outlet />
-      </main>
-
-      {/* Menu 'Mais' Gaveta Modal */}
-      {moreOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end p-4 animate-in fade-in-0 duration-150">
-          <div className="bg-[#141417] border border-white/10 rounded-3xl p-5 shadow-2xl max-w-md w-full mx-auto flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-serif font-bold text-[#f5b65b] uppercase tracking-wider">
-                Outros Módulos
-              </h3>
-              <button
-                type="button"
-                onClick={() => setMoreOpen(false)}
-                className="p-1 rounded-lg bg-white/5 text-white/60 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {extraTabs.map((t) => {
-                const Icon = t.icon;
-                const active = currentPath === t.path;
-                return (
-                  <Link
-                    key={t.path}
-                    to={t.path}
-                    onClick={() => setMoreOpen(false)}
-                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs font-medium transition-all ${
-                      active
-                        ? 'bg-[#f5b65b]/15 border-[#f5b65b]/40 text-[#ffd59a]'
-                        : 'bg-white/[0.03] border-white/[0.06] text-white/70 hover:bg-white/[0.08]'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 text-[#f5b65b]" />
-                    <span>{t.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bottom Navigation Bar (Celular e Tablet) */}
-      <nav className="h-16 border-t border-white/[0.08] bg-[#0c0c0e] px-2 flex items-center justify-around shrink-0 safe-bottom">
-        {mainTabs.map((t) => {
-          const Icon = t.icon;
-          const active = currentPath.startsWith(t.path);
-          return (
-            <Link
-              key={t.path}
-              to={t.path}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
-                active ? 'text-[#f5b65b]' : 'text-white/40 hover:text-white/70'
-              }`}
-            >
-              <Icon className="w-5 h-5 mb-0.5" />
-              <span className="text-[10px] font-medium tracking-tight">{t.label}</span>
-            </Link>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => setMoreOpen(true)}
-          className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-white/40 hover:text-white/70"
-        >
-          <MoreHorizontal className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px] font-medium tracking-tight">Mais</span>
-        </button>
-      </nav>
+      </div>
     </div>
   );
 };
