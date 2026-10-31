@@ -2,7 +2,17 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Sparkles, Store } from 'lucide-react';
 import React, { useState } from 'react';
 import { formatCoinsString } from '../entities/item';
-import { Badge, Button, Card, CoinsBadge, DiceResult, Empty, Modal, Stepper } from '../shared/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CoinsBadge,
+  DiceResult,
+  Empty,
+  Modal,
+  Sheet,
+  Stepper,
+} from '../shared/ui';
 
 export const Route = createFileRoute('/design')({
   component: DesignSystemShowcase,
@@ -10,6 +20,7 @@ export const Route = createFileRoute('/design')({
 
 function DesignSystemShowcase() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [stepperVal, setStepperVal] = useState(2);
 
   return (
@@ -158,10 +169,15 @@ function DesignSystemShowcase() {
             </div>
           </Card>
           <Card>
-            <h3 className="font-serif font-bold text-sm text-[#f5b65b]">Interações Modais</h3>
+            <h3 className="font-serif font-bold text-sm text-[#f5b65b]">
+              Interações Modais & Gavetas
+            </h3>
             <div className="flex gap-2 mt-2">
               <Button size="sm" variant="outline" onClick={() => setModalOpen(true)}>
                 Abrir Modal
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => setSheetOpen(true)}>
+                Abrir Sheet Lateral
               </Button>
             </div>
           </Card>
@@ -184,6 +200,26 @@ function DesignSystemShowcase() {
           </Button>
         </div>
       </Modal>
+
+      <Sheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        side="right"
+        title="Ficha Lateral (Sheet)"
+        description="Gaveta lateral ampla para fichas detalhadas de criaturas e heróis."
+      >
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-white/80 font-serif leading-relaxed">
+            Painel deslizante de alta densidade com layout Dark Fantasy. Perfeito para visualização
+            de estatísticas sem perder o contexto do catálogo.
+          </p>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setSheetOpen(false)}>
+              Fechar Gaveta
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }

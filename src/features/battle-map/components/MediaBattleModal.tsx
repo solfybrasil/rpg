@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Upload,
@@ -495,13 +496,13 @@ export function MediaBattleModal({
 
   if (!isOpen) return null;
 
-  return (
+  const modalNode = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="media-modal-title"
       data-testid="media-battle-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm pointer-events-auto"
     >
       <div className="relative w-full max-w-2xl bg-[#111114] border border-[#26262a] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[#ebe6d6]">
         {/* Top Header */}
@@ -690,4 +691,9 @@ export function MediaBattleModal({
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(modalNode, document.body);
+  }
+  return modalNode;
 }

@@ -973,5 +973,78 @@ test.describe
 
       await ctx.close();
     });
+
+    test('Prompt 15: Mestre - Bestiário com Busca no Servidor, Ficha em Sheet, Mídia e Mesa', async ({
+      browser,
+    }) => {
+      const ctx = await browser.newContext({
+        viewport: { width: 1440, height: 900 },
+      });
+      const page = await ctx.newPage();
+
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+        );
+      });
+
+      await page.goto('/mestre/bestiario');
+      await expect(page.getByRole('heading', { name: /Bestiário de Aldrenor/i })).toBeVisible({
+        timeout: 10000,
+      });
+
+      // 1. Filtros e Busca no Servidor
+      const searchInput = page.getByTestId('bestiary-search-input');
+      await expect(searchInput).toBeVisible();
+
+      // Aguarda a lista virtualizada carregar
+      await expect(page.getByTestId('bestiary-virtual-list')).toBeVisible({ timeout: 10000 });
+      const firstRow = page.locator('[data-testid^="creature-row-"]').first();
+      await expect(firstRow).toBeVisible({ timeout: 10000 });
+
+      // 2. Abertura da Ficha em Sheet Lateral
+      await firstRow.click();
+      await expect(page.getByTestId('detail-send-table-btn')).toBeVisible({ timeout: 5000 });
+      await expect(page.getByTestId('detail-send-battle-btn')).toBeVisible();
+
+      // Verifica blocos de estatísticas
+      await expect(page.getByText('Vida Máxima')).toBeVisible();
+      await expect(page.getByText('Defesa').first()).toBeVisible();
+      await expect(page.getByText(/Ataques & Ações de Combate/i)).toBeVisible();
+
+      // 3. Ação Principal "Colocar na mesa" (Dourado)
+      await page.getByTestId('detail-send-table-btn').click();
+      await page.waitForTimeout(600);
+
+      // 4. Ação "Colocar na batalha"
+      await page.getByTestId('detail-send-battle-btn').click();
+      await page.waitForTimeout(600);
+
+      // 5. Mídia de Batalha (Modal do Prompt 06)
+      await page.getByTestId('detail-open-media-btn').click();
+      const mediaModal = page.getByTestId('media-battle-modal');
+      await expect(mediaModal).toBeVisible({ timeout: 5000 });
+      // Fecha o modal de mídia
+      await mediaModal.getByRole('button', { name: 'Cancelar' }).click();
+      await expect(mediaModal).not.toBeVisible();
+
+      // 6. Teste de Criação de Nova Fera
+      await page.keyboard.press('Escape'); // Fecha o Sheet
+      await page.waitForTimeout(500);
+
+      const createBtn = page.getByTestId('create-creature-btn');
+      await createBtn.click();
+      await expect(page.getByTestId('creature-form-name')).toBeVisible();
+
+      await page.getByTestId('creature-form-name').fill('Fera de Teste E2E');
+      await page.getByRole('button', { name: /Criar Criatura/i }).click();
+      await page.waitForTimeout(800);
+
+      // Cleanup da fera de teste criada
+      await supabase.from('creature_catalog').delete().eq('name', 'Fera de Teste E2E');
+
+      await ctx.close();
+    });
   });
 
