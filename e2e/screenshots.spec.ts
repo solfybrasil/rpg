@@ -1018,5 +1018,83 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     await pPP.screenshot({ path: path.join(outDir, 'grimorio_mestre_pc_parchment.png') });
     await pcParch.close();
   });
+
+  test('Captura Sistema do Mestre Celular e PC (Dark e Pergaminho)', async ({ browser }) => {
+    test.setTimeout(120000);
+
+    // 1. Mobile Dark (390x844)
+    const mobDark = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pMD = await mobDark.newPage();
+    await pMD.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+      );
+    });
+    await pMD.goto('/mestre/sistema');
+    await expect(pMD.getByRole('heading', { name: /Sons, Códice & Ajustes/i })).toBeVisible();
+    await pMD.waitForTimeout(400);
+    await pMD.screenshot({ path: path.join(outDir, 'sistema_mestre_mobile_dark.png'), fullPage: true });
+    await mobDark.close();
+
+    // 2. Mobile Parchment (390x844)
+    const mobParch = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const pMP = await mobParch.newPage();
+    await pMP.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+      );
+    });
+    await pMP.goto('/mestre/sistema');
+    await pMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pMP.getByRole('heading', { name: /Sons, Códice & Ajustes/i })).toBeVisible();
+    await pMP.waitForTimeout(400);
+    await pMP.screenshot({ path: path.join(outDir, 'sistema_mestre_mobile_parchment.png'), fullPage: true });
+    await mobParch.close();
+
+    // 3. PC Dark (1440x900)
+    const pcDark = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pPD = await pcDark.newPage();
+    await pPD.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+      );
+    });
+    await pPD.goto('/mestre/sistema');
+    await expect(pPD.getByRole('heading', { name: /Sons, Códice & Ajustes/i })).toBeVisible();
+    await pPD.waitForTimeout(400);
+    await pPD.screenshot({ path: path.join(outDir, 'sistema_mestre_pc_dark.png') });
+    await pcDark.close();
+
+    // 4. PC Parchment (1440x900)
+    const pcParch = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    });
+    const pPP = await pcParch.newPage();
+    await pPP.addInitScript(() => {
+      localStorage.setItem(
+        'peste_session',
+        JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+      );
+    });
+    await pPP.goto('/mestre/sistema');
+    await pPP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
+    await expect(pPP.getByRole('heading', { name: /Sons, Códice & Ajustes/i })).toBeVisible();
+    await pPP.waitForTimeout(400);
+    await pPP.screenshot({ path: path.join(outDir, 'sistema_mestre_pc_parchment.png') });
+    await pcParch.close();
+  });
 });
 

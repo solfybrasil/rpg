@@ -1238,5 +1238,111 @@ test.describe
 
       await ctx.close();
     });
+
+    test('P20: Mestre: Sons, Códice, Configurações e JSON (/mestre/sistema)', async ({ browser }) => {
+      const ctx = await browser.newContext();
+      const page = await ctx.newPage();
+      page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
+      page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
+
+      await page.addInitScript(() => {
+        window.localStorage.setItem(
+          'peste_session',
+          JSON.stringify({ state: { role: 'mestre', heroId: null }, version: 0 }),
+        );
+      });
+
+      await page.goto('/mestre/sistema');
+
+      // 1. Validar cabeçalho principal
+      await expect(
+        page.getByRole('heading', { name: /Sons, Códice & Ajustes/i }),
+      ).toBeVisible();
+
+      // 2. Tab 1: Soundboard
+      await expect(page.getByTestId('dm-tab-soundboard')).toBeVisible();
+      await expect(page.getByTestId('master-volume-slider')).toBeVisible();
+      const tavernBtn = page.getByTestId('soundboard-atmosphere-tavern');
+      await expect(tavernBtn).toBeVisible();
+      await tavernBtn.click();
+      await page.waitForTimeout(200);
+
+      const diceSfxBtn = page.getByTestId('soundboard-sfx-dice');
+      await expect(diceSfxBtn).toBeVisible();
+      await diceSfxBtn.click();
+      await page.waitForTimeout(200);
+
+      const stopBtn = page.getByTestId('stop-all-audio-btn');
+      await expect(stopBtn).toBeVisible();
+      await stopBtn.click();
+      await page.waitForTimeout(200);
+
+      // 3. Tab 2: Códice de Regras
+      await page.getByTestId('dm-tab-codice').click();
+      await page.waitForTimeout(300);
+
+      const codexSearch = page.getByTestId('codex-search-input');
+      await expect(codexSearch).toBeVisible();
+      await codexSearch.fill('Mundo');
+      await page.waitForTimeout(200);
+
+      const mundoChapter = page.getByTestId('codex-chapter-mundo');
+      await expect(mundoChapter).toBeVisible();
+      await mundoChapter.click();
+      await page.waitForTimeout(200);
+
+      // 4. Tab 3: Configurações & Backup
+      await page.getByTestId('dm-tab-configuracoes').click();
+      await page.waitForTimeout(300);
+
+      const parchmentSwitch = page.getByTestId('parchment-mode-switch');
+      await expect(parchmentSwitch).toBeVisible();
+      await parchmentSwitch.click();
+      await page.waitForTimeout(200);
+      // Toggle back to clean state
+      await parchmentSwitch.click();
+      await page.waitForTimeout(200);
+
+      await expect(page.getByTestId('export-backup-btn')).toBeVisible();
+      const openRestoreBtn = page.getByTestId('open-restore-modal-btn');
+      await expect(openRestoreBtn).toBeVisible();
+      await openRestoreBtn.click();
+      await page.waitForTimeout(200);
+      await expect(page.getByTestId('restore-json-textarea')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(200);
+
+      // 5. Tab 4: JSON dos Jogadores
+      await page.getByTestId('dm-tab-json').click();
+      await page.waitForTimeout(300);
+
+      await expect(page.getByTestId('json-filter-all')).toBeVisible();
+      await expect(page.getByTestId('json-format-minified')).toBeVisible();
+      await page.getByTestId('json-format-minified').click();
+      await page.waitForTimeout(200);
+      await page.getByTestId('json-format-indented').click();
+      await page.waitForTimeout(200);
+
+      await expect(page.getByTestId('json-code-viewer')).toBeVisible();
+      await expect(page.getByTestId('json-copy-btn')).toBeVisible();
+      await expect(page.getByTestId('json-download-btn')).toBeVisible();
+
+      // 6. Command Palette
+      const openPaletteBtn = page.getByTestId('open-command-palette-btn');
+      await expect(openPaletteBtn).toBeVisible();
+      await openPaletteBtn.click();
+      await page.waitForTimeout(300);
+
+      const paletteInput = page.getByTestId('command-palette-input');
+      await expect(paletteInput).toBeVisible();
+      await paletteInput.fill('Kaelis');
+      await page.waitForTimeout(200);
+      await expect(page.getByTestId('command-item-hero-kaelis')).toBeVisible();
+
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(200);
+
+      await ctx.close();
+    });
   });
 
