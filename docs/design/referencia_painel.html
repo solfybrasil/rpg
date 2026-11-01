@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do Jogador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+/* Layout: cinco telas de celular lado a lado, cada uma = pedra + pergaminho + orbes, como um inventário de ARPG sombrio. */
+:root{
+  color-scheme: dark;
+  --abyss:#070605;
+  --stone:#151311;
+  --stone-2:#1e1b18;
+  --iron:#3a342d;
+  --gold:#c9a45c;
+  --gold-hi:#ecd395;
+  --gold-lo:#6e5528;
+  --parch:#d6c9aa;
+  --parch-2:#bfae88;
+  --ink:#2a1f15;
+  --ink-soft:#5a4632;
+  --blood:#a3291f;
+  --mana:#2c5fb8;
+  --mist:#7fa6cf;
+  --violet:#9c7bd1;
+  --moss:#7fa36b;
+  --text:#e7dcc6;
+  --muted:#958a78;
+  --display:"Cinzel", "Trajan Pro", Georgia, serif;
+  --body:"EB Garamond", Garamond, Georgia, serif;
+  --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --mottle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.018' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.4 0 0 0 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E");
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--abyss);color:var(--text)}
+body{
+  font-family:var(--body);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(201,164,92,.10), transparent 60%),
+    var(--noise),
+    var(--abyss);
+  min-height:100%;
+  padding:48px 16px 64px;
+}
+.page-head{max-width:1180px;margin:0 auto 40px;display:grid;gap:18px}
+.eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--gold)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,5vw,48px);letter-spacing:.06em;color:var(--gold-hi);text-wrap:balance;text-shadow:0 2px 0 #000,0 0 24px rgba(201,164,92,.25)}
+.lede{font-size:19px;line-height:1.5;max-width:62ch;color:var(--text)}
+.lede em{color:var(--gold)}
+.materials{display:flex;flex-wrap:wrap;gap:10px}
+.mat{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border:1px solid var(--iron);background:var(--stone);font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.mat i{width:22px;height:22px;display:block;border:1px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+
+.gallery{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:center;gap:48px 36px}
+figure{display:grid;gap:14px;justify-items:center}
+figcaption{font-family:var(--display);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+figcaption span{color:var(--muted);margin-right:8px}
+
+/* ---------- Phone ---------- */
+.phone{width:360px;height:780px;padding:10px;border-radius:44px;background:linear-gradient(160deg,#2a2622,#0b0a09 40%,#1a1714);box-shadow:0 0 0 1px #000,0 30px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.08)}
+.screen{position:relative;width:340px;height:760px;border-radius:34px;overflow:hidden;background:var(--mottle),var(--noise),var(--stone);isolation:isolate}
+@media (max-width:400px){.phone{zoom:.86}}
+
+/* status bar */
+.status{height:52px;display:flex;align-items:center;justify-content:space-between;padding:10px 16px 0;background:linear-gradient(#0d0c0b,var(--stone-2));border-bottom:1px solid #000;box-shadow:0 1px 0 var(--gold-lo),0 6px 14px rgba(0,0,0,.6);position:relative;z-index:2}
+.who{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:13px;letter-spacing:.08em;color:var(--gold-hi)}
+.who .lvl{font-size:10px;color:var(--muted);letter-spacing:.16em}
+.mini-port{width:28px;height:28px;border-radius:50%;border:1px solid var(--gold);background:radial-gradient(circle at 50% 35%,#a9c4e0,#3d5878 60%,#101820);box-shadow:0 0 0 2px #000}
+.gold-count{display:flex;align-items:center;gap:6px;font-family:var(--display);font-size:14px;color:var(--gold-hi);font-variant-numeric:tabular-nums}
+.gold-count svg{width:16px;height:16px;color:var(--gold)}
+
+.content{position:absolute;top:52px;left:0;right:0;bottom:150px;padding:12px 12px 0;display:flex;flex-direction:column;gap:10px}
+
+/* ---------- Materials ---------- */
+.slab{background:var(--noise),linear-gradient(#1d1a17,#121010);border:1px solid #2d2823;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -3px 8px rgba(0,0,0,.55),0 0 0 1px #050404;position:relative}
+.slab.on{border-color:var(--gold-lo);box-shadow:inset 0 0 14px rgba(201,164,92,.18),0 0 0 1px #050404}
+.slab.on::after{content:"";position:absolute;left:50%;top:-4px;width:7px;height:7px;background:var(--gold);transform:translateX(-50%) rotate(45deg);box-shadow:0 0 6px rgba(236,211,149,.7)}
+.recess{background:var(--noise),#0c0b0a;border:1px solid #000;box-shadow:inset 0 2px 6px rgba(0,0,0,.9),0 1px 0 rgba(255,255,255,.04)}
+
+.parch{position:relative;color:var(--ink);background:
+   radial-gradient(ellipse at 22% 18%,rgba(140,100,40,.22),transparent 55%),
+   radial-gradient(ellipse at 85% 88%,rgba(100,65,25,.32),transparent 50%),
+   radial-gradient(ellipse at 70% 30%,rgba(255,250,235,.35),transparent 45%),
+   var(--noise),var(--parch);
+  box-shadow:inset 0 0 34px rgba(70,45,15,.55);
+  filter:drop-shadow(0 4px 6px rgba(0,0,0,.6));
+}
+.parch-wrap{filter:drop-shadow(0 3px 0 #000) drop-shadow(0 8px 12px rgba(0,0,0,.6))}
+
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tab{height:34px;display:grid;place-items:center;font-family:var(--display);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.tab.on{color:var(--gold-hi)}
+
+.rule{display:flex;align-items:center;gap:8px;color:var(--gold-lo)}
+.rule::before,.rule::after{content:"";flex:1;height:1px;background:currentColor}
+.rule b{width:6px;height:6px;background:currentColor;transform:rotate(45deg)}
+
+/* ---------- HUD ---------- */
+.hud{position:absolute;left:0;right:0;bottom:0;height:150px;z-index:3}
+.belt{position:absolute;left:0;right:0;top:12px;height:74px;background:var(--mottle),var(--noise),linear-gradient(#1a1714,#0e0d0c);border-top:1px solid #000;box-shadow:0 -1px 0 var(--gold-lo),0 -10px 20px rgba(0,0,0,.6);display:flex;justify-content:center;align-items:center;gap:4px;padding:0 112px}
+.belt .q{width:26px;height:36px;display:grid;place-items:center;position:relative}
+.belt .q svg{width:18px;height:18px}
+.belt .q small{position:absolute;right:3px;bottom:1px;font-family:var(--display);font-size:9px;color:var(--muted)}
+.orb{position:absolute;top:0;width:96px;height:96px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 45%,#1a1212,#030303 70%);box-shadow:0 0 0 3px #0a0908,0 0 0 5px var(--gold-lo),0 0 0 6px #000,0 0 0 8px #24201b,0 0 0 9px #000,0 8px 18px rgba(0,0,0,.8),inset 0 0 20px #000}
+.orb.hp{left:10px}.orb.mp{right:10px}
+.orb .liq{position:absolute;left:0;right:0;bottom:0;height:calc(var(--f) * 100%)}
+.orb.hp .liq{background:radial-gradient(circle at 35% 10%,#e8584a,#a3291f 45%,#4a0d08 95%)}
+.orb.mp .liq{background:radial-gradient(circle at 35% 10%,#6d9ae6,#2c5fb8 45%,#0d1f45 95%)}
+.orb .liq::before{content:"";position:absolute;left:-10%;right:-10%;top:-4px;height:8px;border-radius:50%;background:rgba(255,255,255,.22);filter:blur(1px)}
+.orb .glass{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 34% 24%,rgba(255,255,255,.55) 0 5%,rgba(255,255,255,.12) 6% 18%,transparent 34%),radial-gradient(circle at 62% 70%,rgba(255,255,255,.08),transparent 30%),radial-gradient(circle,transparent 58%,rgba(0,0,0,.65) 100%)}
+.orb .val{position:absolute;inset:0;display:grid;place-content:center;text-align:center;font-family:var(--display);font-weight:700;font-size:20px;color:#fff;text-shadow:0 1px 2px #000,0 0 8px #000;font-variant-numeric:tabular-nums;line-height:1}
+.orb .val small{display:block;font-size:10px;font-weight:500;letter-spacing:.14em;color:rgba(255,255,255,.75);margin-top:3px}
+.nav{position:absolute;left:0;right:0;bottom:0;height:60px;display:grid;grid-template-columns:repeat(5,1fr);background:linear-gradient(#0e0d0c,#060505);border-top:1px solid #2a2520;padding-bottom:6px}
+.nav a{display:grid;justify-items:center;align-content:center;gap:3px;color:var(--muted);text-decoration:none;font-family:var(--display);font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+.nav a svg{width:21px;height:21px}
+.nav a.on{color:var(--gold-hi);text-shadow:0 0 8px rgba(236,211,149,.5)}
+.nav a.on svg{filter:drop-shadow(0 0 5px rgba(236,211,149,.55))}
+
+svg{display:block;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- Ficha ---------- */
+.hero-card{padding:16px 16px 14px;display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:center}
+.portrait{width:96px;height:120px;position:relative;border:2px solid var(--ink);box-shadow:0 0 0 1px var(--gold-lo),inset 0 0 20px rgba(0,0,0,.8);background:radial-gradient(ellipse at 50% 30%,#c4d6ea,#5d7c9e 40%,#1a2532 85%)}
+.portrait canvas{width:100%;height:100%;display:block}
+.hero-name{font-family:var(--display);font-weight:900;font-size:24px;letter-spacing:.04em;line-height:1}
+.hero-sub{font-style:italic;font-size:16px;color:var(--ink-soft);margin-top:4px}
+.seal-lvl{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.seal-lvl b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#d24a3c,#7d1a12 70%);color:#f3d9c4;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.5),inset 0 0 0 2px rgba(0,0,0,.25)}
+.xp{grid-column:1/-1;display:grid;gap:4px}
+.xp-row{display:flex;justify-content:space-between;font-family:var(--display);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.xp-bar{height:6px;background:rgba(42,31,21,.25);border:1px solid rgba(42,31,21,.5)}
+.xp-bar i{display:block;height:100%;width:62%;background:linear-gradient(90deg,#8c6a22,#c9a45c)}
+.quote{grid-column:1/-1;font-style:italic;font-size:15px;line-height:1.35;color:var(--ink-soft);border-top:1px solid rgba(42,31,21,.3);padding-top:8px}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.trio .slab{padding:8px 4px 7px;text-align:center}
+.k{font-family:var(--display);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.v{font-family:var(--display);font-weight:700;font-size:20px;color:var(--gold-hi);font-variant-numeric:tabular-nums;line-height:1.15}
+.v small{font-size:11px;color:var(--muted);font-weight:500}
+.attrs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.attr{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 6px;padding:8px 10px 8px 8px;min-width:0}
+.attr .k{font-size:8px;letter-spacing:.08em}
+.attr .v{font-size:22px}
+.attr .mod{grid-row:1/3;grid-column:2;width:22px;height:22px;margin-right:4px;display:grid;place-items:center;border:1px solid var(--gold-lo);transform:rotate(45deg);font-family:var(--display);font-size:10px;color:var(--gold)}
+.attr .mod span{transform:rotate(-45deg)}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 8px;border:1px solid;font-family:var(--display);font-size:10px;letter-spacing:.1em;text-transform:uppercase;background:rgba(0,0,0,.35)}
+.pill i{width:6px;height:6px;transform:rotate(45deg);background:currentColor}
+.pill.bad{color:#7fbf5a;border-color:rgba(127,191,90,.4)}
+.pill.good{color:var(--gold);border-color:var(--gold-lo)}
+
+/* ---------- Mochila ---------- */
+.doll{height:168px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(4,1fr);gap:4px;padding:8px 26px;background:radial-gradient(ellipse at 50% 55%,rgba(127,166,207,.12),transparent 60%),var(--noise),#100f0e}
+.doll .s{display:grid;place-items:center;color:var(--muted)}
+.doll .s svg{width:22px;height:22px}
+.doll .helm{grid-area:1/3/2/4}.doll .amu{grid-area:1/4/2/5}
+.doll .weap{grid-area:2/1/5/2}.doll .armor{grid-area:2/3/4/4}.doll .off{grid-area:2/5/4/6}
+.doll .r1{grid-area:4/2/5/3}.doll .boots{grid-area:4/3/5/4}.doll .r2{grid-area:4/4/5/5}
+.doll .weap svg{width:34px;height:34px}.doll .armor svg{width:30px;height:30px}
+.grid8{display:grid;grid-template-columns:repeat(8,1fr);grid-auto-rows:36px;gap:3px;padding:6px;background:#0a0908;border:1px solid #2a2520}
+.cell{background:var(--noise),#13110f;border:1px solid #000;box-shadow:inset 0 1px 3px rgba(0,0,0,.8),inset 0 0 0 1px rgba(255,255,255,.025)}
+.item{display:grid;place-items:center;position:relative;z-index:1;border:1px solid}
+.item svg{width:24px;height:24px}
+.item small{position:absolute;right:2px;bottom:0;font-family:var(--display);font-size:9px;color:var(--text);text-shadow:0 1px 1px #000}
+.r-com{border-color:#3d3833;color:#b9b0a2;background:linear-gradient(#1f1c19,#141210)}
+.r-rare{border-color:#2f5d8f;color:var(--mist);background:radial-gradient(circle,rgba(44,95,184,.28),#121318 75%)}
+.r-epic{border-color:#5d4589;color:var(--violet);background:radial-gradient(circle,rgba(156,123,209,.3),#15121b 75%)}
+.r-leg{border-color:var(--gold);color:var(--gold-hi);background:radial-gradient(circle,rgba(201,164,92,.35),#18140c 75%);box-shadow:0 0 10px rgba(201,164,92,.35)}
+.item.sel{outline:2px solid var(--gold-hi);outline-offset:1px}
+.tip{padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:2px 10px}
+.tip h3{font-family:var(--display);font-size:17px;letter-spacing:.03em;color:#3c2466}
+.tip .rar{font-family:var(--display);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#5d4589;align-self:center}
+.tip p{grid-column:1/-1;font-size:15px;line-height:1.3}
+.tip p b{font-weight:600}
+.tip .meta{grid-column:1/-1;display:flex;justify-content:space-between;font-family:var(--display);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-top:4px;font-variant-numeric:tabular-nums}
+
+/* ---------- Grimório ---------- */
+.book{flex:1;padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.book-head{text-align:center;font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.2em;text-transform:uppercase}
+.book-head small{display:block;font-family:var(--body);font-style:italic;font-weight:400;font-size:14px;letter-spacing:0;text-transform:none;color:var(--ink-soft)}
+.spell{display:grid;grid-template-columns:40px 1fr auto;gap:2px 10px;padding:9px 8px;border-left:3px solid transparent}
+.spell + .spell{border-top:1px dashed rgba(42,31,21,.3)}
+.spell.sel{border-left-color:#8c6a22;background:rgba(140,106,34,.13)}
+.sig{grid-row:1/3;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--ink);color:var(--ink);background:rgba(255,255,255,.15)}
+.sig svg{width:22px;height:22px}
+.spell h4{font-family:var(--display);font-size:14px;letter-spacing:.04em}
+.spell p{grid-column:2/4;font-style:italic;font-size:14.5px;line-height:1.25;color:var(--ink-soft)}
+.cost{display:flex;align-items:center;gap:4px;font-family:var(--display);font-size:11px;color:#1d3f7d;font-variant-numeric:tabular-nums}
+.cost i{width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6d9ae6,#1d3f7d)}
+.cd{font-family:var(--display);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#7d1a12}
+.talent{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.talent b{color:var(--gold-hi);font-size:16px}
+
+/* ---------- Diário ---------- */
+.journal{flex:1;padding:18px 18px 14px;display:flex;flex-direction:column;gap:10px}
+.quest-main{position:relative;padding-right:52px}
+.wax{position:absolute;right:0;top:-2px;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d24a3c,#7d1a12 65%,#4d0d08);box-shadow:0 2px 3px rgba(0,0,0,.45),inset 0 0 0 4px rgba(0,0,0,.18);display:grid;place-items:center;color:rgba(255,220,200,.75)}
+.wax svg{width:20px;height:20px}
+.qtag{font-family:var(--display);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#7d1a12}
+.qtitle{font-family:var(--display);font-weight:700;font-size:19px;line-height:1.15;margin-top:2px}
+.qdesc{font-style:italic;font-size:15px;line-height:1.3;color:var(--ink-soft);margin-top:4px}
+.objs{display:grid;gap:6px;list-style:none}
+.objs li{display:grid;grid-template-columns:14px 1fr;gap:10px;align-items:start;font-size:15.5px;line-height:1.25}
+.objs li::before{content:"";width:9px;height:9px;margin-top:5px;border:1.5px solid var(--ink);transform:rotate(45deg)}
+.objs li.done{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:rgba(42,31,21,.5)}
+.objs li.done::before{background:var(--ink)}
+.side{display:grid;gap:8px}
+.side-q{display:flex;justify-content:space-between;gap:10px;font-size:15px;align-items:baseline}
+.side-q b{font-family:var(--display);font-size:12.5px;letter-spacing:.03em;font-weight:700}
+.side-q span{font-family:var(--display);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
+.note{margin-top:auto;padding:10px 12px;border:1px solid rgba(42,31,21,.35);background:rgba(42,31,21,.07);font-style:italic;font-size:14.5px;line-height:1.3}
+.note b{font-style:normal;font-family:var(--display);font-size:10px;letter-spacing:.16em;text-transform:uppercase;display:block;color:#7d1a12;margin-bottom:2px}
+
+/* ---------- Combate ---------- */
+.round{display:flex;justify-content:space-between;align-items:center;padding:8px 12px}
+.round .k{color:var(--gold)}
+.round .turn{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-hi)}
+.init{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 0}
+.tok{display:grid;justify-items:center;gap:4px;font-family:var(--display);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tok i{width:44px;height:44px;border-radius:50%;display:block;box-shadow:0 0 0 2px #000,0 0 0 3px var(--iron)}
+.tok.ally i{box-shadow:0 0 0 2px #000,0 0 0 3px #3e5a3a}
+.tok.foe i{box-shadow:0 0 0 2px #000,0 0 0 3px #6b1e17}
+.tok.now{color:var(--gold-hi)}
+.tok.now i{width:54px;height:54px;box-shadow:0 0 0 2px #000,0 0 0 4px var(--gold),0 0 16px rgba(236,211,149,.55)}
+.tok .hpb{width:40px;height:3px;background:#2a0d0a}
+.tok .hpb b{display:block;height:100%;background:var(--blood)}
+.dice{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:center;padding:12px 14px}
+.d20{position:relative;width:92px;height:92px;color:var(--gold);display:grid;place-items:center}
+.d20 svg{position:absolute;inset:0;width:100%;height:100%;stroke-width:1.2;filter:drop-shadow(0 0 10px rgba(201,164,92,.35))}
+.d20 b{position:relative;font-family:var(--display);font-weight:900;font-size:32px;color:var(--gold-hi);text-shadow:0 2px 0 #000;margin-top:8px}
+.roll-line{font-family:var(--display);font-size:12px;letter-spacing:.08em;color:var(--muted);font-variant-numeric:tabular-nums}
+.roll-total{font-family:var(--display);font-weight:900;font-size:30px;color:var(--text);line-height:1.1}
+.verdict{display:inline-block;margin-top:4px;padding:3px 10px;border:1px solid var(--moss);color:var(--moss);font-family:var(--display);font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.act{display:flex;align-items:center;gap:10px;height:50px;padding:0 12px;color:var(--text);font-family:var(--display);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.act svg{width:22px;height:22px;color:var(--gold)}
+.act small{display:block;font-family:var(--body);font-size:12.5px;letter-spacing:0;text-transform:none;color:var(--muted);font-style:italic}
+.end-turn{height:44px;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:#1a1208;background:linear-gradient(#ecd395,#c9a45c 50%,#8c6a22);border:1px solid #3a2a10;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 1px #000,0 4px 12px rgba(201,164,92,.25)}
+.log{padding:9px 12px;font-size:14px;line-height:1.3;display:grid;gap:3px}
+.log b{font-weight:600}
+.log .dmg{color:#7d1a12;font-family:var(--display);font-weight:700;font-size:12px}
+
+.foot{max-width:1180px;margin:48px auto 0;display:grid;gap:10px;color:var(--muted);font-size:16px;line-height:1.45}
+.foot h2{font-family:var(--display);font-size:14px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+.foot ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 28px;list-style:none}
+.foot li{padding-left:16px;position:relative;max-width:60ch}
+.foot li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6px;background:var(--gold-lo);transform:rotate(45deg)}
+.foot b{color:var(--text);font-weight:600}
+@media (prefers-reduced-motion:no-preference){
+  .orb .liq::before{animation:slosh 4s ease-in-out infinite}
+  @keyframes slosh{50%{transform:translateY(2px) scaleX(1.05)}}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v5l-5 9a3 3 0 0 0 2.6 4.5h8.8A3 3 0 0 0 19 17l-5-9V3"/><path d="M7 15h10l1.6 2.7a1.5 1.5 0 0 1-1.3 2.3H6.7a1.5 1.5 0 0 1-1.3-2.3z" fill="currentColor" stroke="none" opacity=".75"/></symbol>
+  <symbol id="i-scythe" viewBox="0 0 24 24"><path d="M5 22 15 3"/><path d="M15 3C10 2.5 5 4.5 3 9c3-2.2 7-3 11-2.2"/></symbol>
+  <symbol id="i-ring" viewBox="0 0 24 24"><circle cx="12" cy="15" r="6"/><path d="M9 6.5 12 3l3 3.5-3 2.5z"/></symbol>
+  <symbol id="i-scroll" viewBox="0 0 24 24"><path d="M7 4h11a2 2 0 0 1 0 4h-2v10a2 2 0 0 1-2 2H6a2 2 0 0 1 0-4h2V6"/><path d="M11 10h3M11 13h3"/></symbol>
+  <symbol id="i-gem" viewBox="0 0 24 24"><path d="M6 9l3-5h6l3 5-6 11z"/><path d="M6 9h12M9 4l3 5 3-5M12 9v11"/></symbol>
+  <symbol id="i-herb" viewBox="0 0 24 24"><path d="M12 21V9"/><path d="M12 14c-3.5 0-5.5-2-6.5-5.5 3.5 0 5.5 1.5 6.5 3.5"/><path d="M12 11c1.5-3.5 4-5 7.5-5-1 3.5-3.5 5.5-7.5 5.5"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><path d="M11 11l9 9M16 16l2-2M18.5 18.5l2-2"/></symbol>
+  <symbol id="i-helm" viewBox="0 0 24 24"><path d="M5 15a7 7 0 0 1 14 0v4h-5v-4h-4v4H5z"/><path d="M12 8v7"/></symbol>
+  <symbol id="i-boots" viewBox="0 0 24 24"><path d="M7 3h5v9l6 3a2 2 0 0 1 1 2v3H6z"/><path d="M6 17h13"/></symbol>
+  <symbol id="i-amulet" viewBox="0 0 24 24"><path d="M6 3c0 6 3 8 6 8s6-2 6-8"/><path d="M12 11v2"/><path d="M12 13l3.5 4-3.5 4-3.5-4z"/></symbol>
+  <symbol id="i-armor" viewBox="0 0 24 24"><path d="M8 3l4 2 4-2 4 4-3 3v11H7V10L4 7z"/><path d="M12 5v16"/></symbol>
+  <symbol id="i-bone" viewBox="0 0 24 24"><path d="M7 17 17 7"/><circle cx="5.5" cy="16.5" r="2"/><circle cx="7.5" cy="18.5" r="2"/><circle cx="16.5" cy="5.5" r="2"/><circle cx="18.5" cy="7.5" r="2"/></symbol>
+  <symbol id="i-sheet" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M6 8h12l-1 13H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M10 13h4"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6C10 4 7 4 4 4v14c3 0 6 0 8 2 2-2 5-2 8-2V4c-3 0-6 0-8 2z"/><path d="M12 6v14"/></symbol>
+  <symbol id="i-quill" viewBox="0 0 24 24"><path d="M20 3C12 4 7 9 5 21"/><path d="M20 3c-1 7-5 10-11 11"/><path d="M9 9l4 4"/></symbol>
+  <symbol id="i-swords" viewBox="0 0 24 24"><path d="M4 4l11 11M15 15l2 4 2-2-4-2M4 4h4v1L5 8H4z"/><path d="M20 4 9 15M9 15l-2 4-2-2 4-2M20 4h-4v1l3 3h1z"/></symbol>
+  <symbol id="i-boot-move" viewBox="0 0 24 24"><path d="M4 18h16M6 14l3-8 4 3 3-2 2 7"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M5 5l4 4M15 15l4 4M19 5l-4 4M9 15l-4 4"/></symbol>
+  <symbol id="i-mist" viewBox="0 0 24 24"><path d="M3 9h12a3 3 0 1 0-3-3"/><path d="M3 13h16a3 3 0 1 1-3 3"/><path d="M3 17h8"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 21c-4 0-6-3-6-6 0-4 4-6 4-11 3 2 5 5 5 8 1-1 2-2 2-4 2 2 1 5 1 7 0 3-2 6-6 6z"/></symbol>
+  <symbol id="i-leaf-heal" viewBox="0 0 24 24"><path d="M12 7v10M7 12h10"/><circle cx="12" cy="12" r="9"/></symbol>
+  <symbol id="i-skull" viewBox="0 0 24 24"><path d="M5 11a7 7 0 1 1 14 0c0 3-2 4-2 6H7c0-2-2-3-2-6z"/><circle cx="9" cy="11" r="1.6"/><circle cx="15" cy="11" r="1.6"/><path d="M10 20v-3M14 20v-3"/></symbol>
+  <symbol id="i-ember" viewBox="0 0 24 24"><path d="M12 3c2 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-4 3-6 1 2 2 3 3 3 0-3-1-5 0-8z"/></symbol>
+  <symbol id="i-d20" viewBox="0 0 100 100"><path d="M50 4 90 27v46L50 96 10 73V27z"/><path d="M50 4 26 62h48z"/><path d="M10 27l16 35M90 27 74 62M26 62 50 96 74 62M10 73l16-11M90 73 74 62"/></symbol>
+</svg>
+
+<header class="page-head">
+  <p class="eyebrow">Peste do Juramento · A Última Brasa</p>
+  <h1>Painel do Jogador</h1>
+  <p class="lede">Moldura de <em>pedra negra</em>, conteúdo em <em>pergaminho</em> e detalhes em <em>ouro velho</em>. Vida e essência ficam em dois orbes de vidro nos cantos, sempre visíveis, com o cinto de poções entre eles. Os dados abaixo são de exemplo, com a Malenia.</p>
+  <div class="materials" aria-label="Materiais do design">
+    <span class="mat"><i style="background:var(--stone)"></i>Pedra</span>
+    <span class="mat"><i style="background:var(--iron)"></i>Ferro</span>
+    <span class="mat"><i style="background:var(--gold)"></i>Ouro velho</span>
+    <span class="mat"><i style="background:var(--parch)"></i>Pergaminho</span>
+    <span class="mat"><i style="background:var(--ink)"></i>Tinta</span>
+    <span class="mat"><i style="background:var(--blood)"></i>Sangue</span>
+    <span class="mat"><i style="background:var(--mana)"></i>Essência</span>
+  </div>
+</header>
+
+<main class="gallery">
+
+<!-- ================= 01 FICHA ================= -->
+<figure>
+<div class="phone"><div class="screen">
+  <div class="status"><div class="who"><span class="mini-port"></span>Malenia <span class="lvl">Nv 5</span></div><div class="gold-count"><svg><use href="#i-coin"/></svg>247</div></div>
+  <div class="content">
+    <div class="parch-wrap"><div class="parch torn hero-card">
+      <div class="portrait"><canvas data-portrait width="96" height="120"></canvas></div>
+      <div>
+        <div class="hero-name">Malenia</div>
+        <div class="hero-sub">Feérica da Névoa · Alquimista</div>
+        <div class="seal-lvl"><b>5</b>Nível</div>
+      </div>
+      <div class="xp"><div class="xp-row"><span>Experiência</span><span>1.240 / 2.000</span></div><div class="xp-bar"><i></i></div></div>
+      <p class="quote">“A névoa guarda o que o juramento esqueceu.”</p>
+    </div></div>
+    <div class="trio">
+      <div class="slab"><div class="k">Armadura</div><div class="v">14</div></div>
+      <div class="slab"><div class="k">Iniciativa</div><div class="v">+3</div></div>
+      <div class="slab"><div class="k">Movimento</div><div class="v">6 <small>qd</small></div></div>
+    </div>
+    <div class="rule"><b></b></div>
+    <div class="attrs">
+      <div class="slab attr"><div class="k">Força</div><div class="v">8</div><div class="mod"><span>−1</span></div></div>
+      <div class="slab attr"><div class="k">Agilidade</div><div class="v">14</div><div class="mod"><span>+2</span></div></div>
+      <div class="slab attr"><div class="k">Vigor</div><div class="v">12</div><div class="mod"><span>+1</span></div></div>
+      <div class="slab attr on"><div class="k">Intelecto</div><div class="v">16</div><div class="mod"><span>+3</span></div></div>
+      <div class="slab attr"><div class="k">Espírito</div><div class="v">13</div><div class="mod"><span>+1</span></div></div>
+      <div class="slab attr"><div class="k">Presença</div><div class="v">10</div><div class="mod"><span>+0</span></div></div>
+    </div>
+    <div class="pills">
+      <span class="pill bad"><i></i>Envenenada · 2 turnos</span>
+      <span class="pill good"><i></i>Bênção da Brasa</span>
+    </div>
+  </div>
+  <div class="hud" data-hud data-tab="0"></div>
+</div></div>
+<figcaption><span>01</span>Ficha</figcaption>
+</figure>
+
+<!-- ================= 02 MOCHILA ================= -->
+<figure>
+<div class="phone"><div class="screen">
+  <div class="status"><div class="who"><span class="mini-port"></span>Malenia <span class="lvl">Nv 5</span></div><div class="gold-count"><svg><use href="#i-coin"/></svg>247</div></div>
+  <div class="content">
+    <div class="doll recess">
+      <div class="s helm slab"><svg><use href="#i-helm"/></svg></div>
+      <div class="s amu item r-rare"><svg><use href="#i-amulet"/></svg></div>
+      <div class="s weap item r-epic sel"><svg><use href="#i-scythe"/></svg></div>
+      <div class="s armor item r-com"><svg><use href="#i-armor"/></svg></div>
+      <div class="s off item r-rare"><svg><use href="#i-flask"/></svg></div>
+      <div class="s r1 item r-leg"><svg><use href="#i-ring"/></svg></div>
+      <div class="s boots item r-com"><svg><use href="#i-boots"/></svg></div>
+      <div class="s r2 slab"><svg><use href="#i-ring"/></svg></div>
+    </div>
+    <div class="tabs">
+      <div class="slab tab on">Itens</div><div class="slab tab">Materiais</div><div class="slab tab">Relíquias</div>
+    </div>
+    <div class="grid8" data-inv></div>
+    <div class="parch-wrap"><div class="parch torn tip">
+      <h3>Foice da Névoa</h3><span class="rar">Épico</span>
+      <p><b>Dano 1d10 + INT.</b> Ao acertar, o alvo perde 1 quadrado de movimento no próximo turno.</p>
+      <div class="meta"><span>Duas mãos · 4 kg</span><span>Valor 180</span></div>
+    </div></div>
+  </div>
+  <div class="hud" data-hud data-tab="1"></div>
+</div></div>
+<figcaption><span>02</span>Mochila</figcaption>
+</figure>
+
+<!-- ================= 03 GRIMÓRIO ================= -->
+<figure>
+<div class="phone"><div class="screen">
+  <div class="status"><div class="who"><span class="mini-port"></span>Malenia <span class="lvl">Nv 5</span></div><div class="gold-count"><svg><use href="#i-coin"/></svg>247</div></div>
+  <div class="content">
+    <div class="tabs">
+      <div class="slab tab on">Feitiços</div><div class="slab tab">Fórmulas</div><div class="slab tab">Árvore</div>
+    </div>
+    <div class="parch-wrap" style="flex:1;display:flex"><div class="parch torn book" style="flex:1">
+      <div class="book-head">Grimório<small>Caminho da Destilação</small></div>
+      <div>
+        <div class="spell">
+          <span class="sig"><svg><use href="#i-mist"/></svg></span><h4>Névoa Velada</h4><span class="cost"><i></i>4</span>
+          <p>Some na névoa até o próximo ataque.</p>
+        </div>
+        <div class="spell sel">
+          <span class="sig"><svg><use href="#i-flame"/></svg></span><h4>Frasco de Brasa</h4><span class="cost"><i></i>6</span>
+          <p>2d6 de fogo numa área de 2×2 quadrados.</p>
+        </div>
+        <div class="spell">
+          <span class="sig"><svg><use href="#i-leaf-heal"/></svg></span><h4>Destilar Remédio</h4><span class="cost"><i></i>3</span>
+          <p>Cura 1d8 + INT em um aliado adjacente.</p>
+        </div>
+        <div class="spell">
+          <span class="sig"><svg><use href="#i-scythe"/></svg></span><h4>Ceifa Pálida</h4><span class="cost"><i></i>5</span>
+          <p>Golpe de foice que causa Medo. <span class="cd">Recarga 2 turnos</span></p>
+        </div>
+      </div>
+    </div></div>
+    <div class="slab talent">Pontos de talento <b>2</b></div>
+  </div>
+  <div class="hud" data-hud data-tab="2"></div>
+</div></div>
+<figcaption><span>03</span>Grimório</figcaption>
+</figure>
+
+<!-- ================= 04 DIÁRIO ================= -->
+<figure>
+<div class="phone"><div class="screen">
+  <div class="status"><div class="who"><span class="mini-port"></span>Malenia <span class="lvl">Nv 5</span></div><div class="gold-count"><svg><use href="#i-coin"/></svg>247</div></div>
+  <div class="content">
+    <div class="tabs">
+      <div class="slab tab on">Ativas</div><div class="slab tab">Concluídas</div><div class="slab tab">Notas</div>
+    </div>
+    <div class="parch-wrap" style="flex:1;display:flex"><div class="parch torn journal" style="flex:1">
+      <div class="quest-main">
+        <span class="wax"><svg><use href="#i-ember"/></svg></span>
+        <div class="qtag">Juramento principal</div>
+        <div class="qtitle">A Última Brasa</div>
+        <p class="qdesc">Leve a chama viva até o Santuário do Tigre-Serpente antes que a peste alcance o vale.</p>
+      </div>
+      <ul class="objs">
+        <li class="done">Recuperar a brasa na forja de Tor</li>
+        <li class="done">Atravessar o Pântano de Kaelis</li>
+        <li>Abrir o portão do santuário</li>
+        <li>Acender o altar do Tigre-Serpente</li>
+      </ul>
+      <div class="rule" style="color:rgba(42,31,21,.45)"><b></b></div>
+      <div class="side">
+        <div class="side-q"><b>Ervas para a curandeira</b><span>3 / 5</span></div>
+        <div class="side-q"><b>O lobo de olhos cinzentos</b><span>Nova</span></div>
+      </div>
+      <div class="note"><b>Nota do Mestre</b>O vento muda de direção perto do santuário. Algo respira lá dentro.</div>
+    </div></div>
+  </div>
+  <div class="hud" data-hud data-tab="3"></div>
+</div></div>
+<figcaption><span>04</span>Diário</figcaption>
+</figure>
+
+<!-- ================= 05 COMBATE ================= -->
+<figure>
+<div class="phone"><div class="screen">
+  <div class="status"><div class="who"><span class="mini-port"></span>Malenia <span class="lvl">Nv 5</span></div><div class="gold-count"><svg><use href="#i-coin"/></svg>247</div></div>
+  <div class="content">
+    <div class="slab round"><span class="k">Rodada 3</span><span class="turn">Seu turno</span></div>
+    <div class="init">
+      <div class="tok now"><i style="background:radial-gradient(circle at 50% 35%,#c4d6ea,#3d5878 60%,#101820)"></i>Malenia<span class="hpb"><b style="width:81%"></b></span></div>
+      <div class="tok foe"><i style="background:radial-gradient(circle at 50% 40%,#8a8f96,#3a3d42 60%,#111)"></i>Lobo<span class="hpb"><b style="width:40%"></b></span></div>
+      <div class="tok ally"><i style="background:radial-gradient(circle at 50% 35%,#d6a77a,#7a4a2a 60%,#1e120a)"></i>Tor<span class="hpb"><b style="width:90%"></b></span></div>
+      <div class="tok ally"><i style="background:radial-gradient(circle at 50% 35%,#a9cf8a,#3f6a35 60%,#101a0c)"></i>Kaelis<span class="hpb"><b style="width:65%"></b></span></div>
+      <div class="tok foe"><i style="background:radial-gradient(circle at 50% 40%,#c07a4a,#5a2a14 60%,#140805)"></i>Fera<span class="hpb"><b style="width:100%"></b></span></div>
+    </div>
+    <div class="slab dice">
+      <div class="d20"><svg><use href="#i-d20"/></svg><b>17</b></div>
+      <div>
+        <div class="roll-line">d20 17 + INT 3</div>
+        <div class="roll-total">= 20</div>
+        <span class="verdict">Acerto</span>
+      </div>
+    </div>
+    <div class="actions">
+      <div class="slab act"><svg><use href="#i-swords"/></svg><div>Atacar<small>Foice da Névoa</small></div></div>
+      <div class="slab act"><svg><use href="#i-boot-move"/></svg><div>Mover<small>6 quadrados</small></div></div>
+      <div class="slab act"><svg><use href="#i-book"/></svg><div>Feitiço<small>18 essência</small></div></div>
+      <div class="slab act"><svg><use href="#i-flask"/></svg><div>Item<small>3 poções</small></div></div>
+    </div>
+    <div class="parch-wrap"><div class="parch torn log">
+      <div><b>Tor</b> acertou o Lobo Pestilento <span class="dmg">−8</span></div>
+      <div><b>Lobo</b> mordeu Malenia <span class="dmg">−5</span></div>
+    </div></div>
+    <div class="end-turn">Encerrar turno</div>
+  </div>
+  <div class="hud" data-hud data-tab="4"></div>
+</div></div>
+<figcaption><span>05</span>Combate</figcaption>
+</figure>
+
+</main>
+
+<section class="foot">
+  <h2>Regras do visual</h2>
+  <ul>
+    <li><b>Pedra</b> é a moldura: barras, abas, botões e fundo. Nunca leva texto longo.</li>
+    <li><b>Pergaminho</b> só onde se lê: ficha, descrição de item, feitiços, diário e registro de combate. As bordas são rasgadas.</li>
+    <li><b>Ouro</b> marca o que está ativo: aba aberta, item selecionado e turno atual. O botão dourado cheio aparece uma vez por tela.</li>
+    <li><b>Orbes</b> fixos nos cantos, com vermelho para vida e azul para essência. O nível do líquido é a porcentagem.</li>
+    <li><b>Raridade</b> pela cor da borda do item: cinza para comum, azul para raro, violeta para épico e ouro com brilho para lendário.</li>
+    <li><b>Letras:</b> Cinzel em títulos, números e rótulos curtos, e Garamond nos textos de pergaminho.</li>
+  </ul>
+</section>
+
+<script>
+(function(){
+  // HUD: orbes, cinto e navegação
+  var tabs=[["i-sheet","Ficha"],["i-bag","Mochila"],["i-book","Grimório"],["i-quill","Diário"],["i-swords","Combate"]];
+  var belt=[["i-flask","r-com","1",3],["i-flask","r-rare","2",2],["i-herb","r-com","3",4],["i-scroll","r-epic","4",1]];
+  document.querySelectorAll("[data-hud]").forEach(function(h){
+    var t=+h.dataset.tab;
+    var html='<div class="belt">'+belt.map(function(b){return '<div class="q item '+b[1]+'"><svg><use href="#'+b[0]+'"/></svg><small>'+b[3]+'</small></div>';}).join("")+'</div>';
+    html+='<div class="orb hp" style="--f:.81"><div class="liq"></div><div class="glass"></div><div class="val">34<small>VIDA</small></div></div>';
+    html+='<div class="orb mp" style="--f:.6"><div class="liq"></div><div class="glass"></div><div class="val">18<small>ESSÊNCIA</small></div></div>';
+    html+='<nav class="nav">'+tabs.map(function(x,i){return '<a href="#" class="'+(i===t?"on":"")+'"><svg><use href="#'+x[0]+'"/></svg>'+x[1]+'</a>';}).join("")+'</nav>';
+    h.innerHTML=html;
+  });
+
+  // Inventário 8x4 estilo grade, com itens de vários tamanhos
+  var inv=document.querySelector("[data-inv]");
+  var items=[
+    {c:1,r:1,w:1,h:2,i:"i-bone",k:"r-com"},
+    {c:2,r:1,w:1,h:1,i:"i-flask",k:"r-com",n:3},
+    {c:3,r:1,w:1,h:1,i:"i-flask",k:"r-rare",n:2},
+    {c:4,r:1,w:2,h:2,i:"i-scroll",k:"r-epic"},
+    {c:6,r:1,w:1,h:1,i:"i-gem",k:"r-rare"},
+    {c:7,r:1,w:1,h:1,i:"i-gem",k:"r-leg"},
+    {c:2,r:2,w:1,h:1,i:"i-herb",k:"r-com",n:4},
+    {c:3,r:2,w:1,h:1,i:"i-key",k:"r-com"},
+    {c:6,r:2,w:2,h:1,i:"i-herb",k:"r-rare",n:9},
+    {c:8,r:1,w:1,h:3,i:"i-scythe",k:"r-com"},
+    {c:1,r:3,w:2,h:2,i:"i-armor",k:"r-rare"},
+    {c:3,r:3,w:1,h:1,i:"i-ring",k:"r-epic"},
+    {c:4,r:4,w:1,h:1,i:"i-coin",k:"r-com",n:12}
+  ];
+  var cells="";
+  for(var r=1;r<=4;r++)for(var c=1;c<=8;c++)cells+='<div class="cell" style="grid-area:'+r+'/'+c+'"></div>';
+  items.forEach(function(it){
+    var big=it.w>1||it.h>1;
+    cells+='<div class="item '+it.k+'" style="grid-area:'+it.r+'/'+it.c+'/span '+it.h+'/span '+it.w+'"><svg style="'+(big?"width:30px;height:30px":"")+'"><use href="#'+it.i+'"/></svg>'+(it.n?'<small>'+it.n+'</small>':"")+'</div>';
+  });
+  inv.innerHTML=cells;
+
+  // Bordas rasgadas do pergaminho
+  function rand(seed){return function(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646;};}
+  document.querySelectorAll(".torn").forEach(function(el,idx){
+    var w=el.offsetWidth,h=el.offsetHeight,R=rand(idx*97+13),pts=[],step=9,j=4;
+    for(var x=0;x<=w;x+=step)pts.push(x+"px "+(R()*j)+"px");
+    for(var y=0;y<=h;y+=step)pts.push((w-R()*j)+"px "+y+"px");
+    for(var x2=w;x2>=0;x2-=step)pts.push(x2+"px "+(h-R()*j)+"px");
+    for(var y2=h;y2>=0;y2-=step)pts.push((R()*j)+"px "+y2+"px");
+    el.style.clipPath="polygon("+pts.join(",")+")";
+  });
+
+  // Retrato: silhueta na névoa (placeholder até o retrato real)
+  document.querySelectorAll("[data-portrait]").forEach(function(cv){
+    var x=cv.getContext("2d"),W=cv.width,H=cv.height;
+    var g=x.createRadialGradient(W/2,H*.32,4,W/2,H*.4,H*.8);
+    g.addColorStop(0,"#dfe9f4");g.addColorStop(.35,"#7f9fc2");g.addColorStop(1,"#121a24");
+    x.fillStyle=g;x.fillRect(0,0,W,H);
+    x.fillStyle="#0d1219";
+    x.beginPath();x.ellipse(W/2,H*.38,13,16,0,0,Math.PI*2);x.fill();
+    x.beginPath();x.moveTo(W*.18,H);x.quadraticCurveTo(W*.22,H*.58,W/2,H*.54);x.quadraticCurveTo(W*.78,H*.58,W*.82,H);x.fill();
+    x.strokeStyle="#0d1219";x.lineWidth=2.5;
+    x.beginPath();x.moveTo(W*.86,H*.98);x.lineTo(W*.7,H*.12);x.stroke();
+    x.beginPath();x.moveTo(W*.7,H*.12);x.quadraticCurveTo(W*.42,H*.06,W*.3,H*.2);x.quadraticCurveTo(W*.5,H*.14,W*.68,H*.2);x.fill();
+    for(var i=0;i<26;i++){x.fillStyle="rgba(220,232,244,"+(Math.random()*.12)+")";x.beginPath();x.ellipse(Math.random()*W,H*.6+Math.random()*H*.4,20+Math.random()*30,5+Math.random()*6,0,0,Math.PI*2);x.fill();}
+  });
+})();
+</script>
+</body>
+</html>

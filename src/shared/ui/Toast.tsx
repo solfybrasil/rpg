@@ -33,6 +33,19 @@ export const Toast: React.FC<ToastProps> = ({ title, description, type = 'info',
       className="slab p-3.5 pr-6 relative overflow-hidden flex items-start gap-3 cursor-pointer shadow-2xl max-w-sm border-l-4"
       style={{ borderLeftColor: filletColor }}
     >
+      {/* 1 partícula da cor do evento (SKILL.md Seção 5) */}
+      <m.span
+        initial={{ scale: 0.4, opacity: 0, y: 6 }}
+        animate={{ scale: [0.6, 1.25, 1], opacity: [0, 1, 0.85], y: 0 }}
+        transition={{ duration: 0.45, ease: motionTokens.easeOut }}
+        className="mt-1 w-2 h-2 shrink-0 rotate-45"
+        style={{
+          backgroundColor: filletColor,
+          boxShadow: `0 0 8px ${filletColor}`,
+        }}
+        aria-hidden="true"
+      />
+
       <div className="flex-1">
         <h4 className="font-['Cinzel',serif] text-xs font-bold tracking-wider text-[var(--gold-hi)]">
           {title}

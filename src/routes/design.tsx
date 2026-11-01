@@ -58,37 +58,44 @@ function DesignSystemShowcase() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('feitiços');
+  const [coinsBronze, setCoinsBronze] = useState(24700);
 
   // Estados dos Orbes e Danos
   const [hp, setHp] = useState(38);
   const [focus, setFocus] = useState(16);
   const [isDamaged, setIsDamaged] = useState(false);
   const [isHealing, setIsHealing] = useState(false);
+  const [isSpendingFocus, setIsSpendingFocus] = useState(false);
   const [showVignette, setShowVignette] = useState(false);
   const [floatingItems, setFloatingItems] = useState<FloatingItem[]>([]);
+  const [focusFloatingItems, setFocusFloatingItems] = useState<FloatingItem[]>([]);
 
-  // Momentos Épicos
+  // Momentos Épicos e Eventos de Inventário
   const [epicMoment, setEpicMoment] = useState<'level_up' | 'plague_surge' | 'fallen_hero' | null>(
     null,
   );
   const [missionCompleted, setMissionCompleted] = useState(false);
-  const [showLegendaryHighlight, setShowLegendaryHighlight] = useState(false);
+  const [newItemId, setNewItemId] = useState<string | undefined>(undefined);
+  const [justEquippedSlot, setJustEquippedSlot] = useState<string | undefined>(undefined);
+  const [equippedWeapName, setEquippedWeapName] = useState('Lâmina Rúnica');
+  const [equippedWeapRarity, setEquippedWeapRarity] = useState<'raro' | 'lendario'>('raro');
+  const [rollSeq, setRollSeq] = useState(1);
   const [currentDiceRoll, setCurrentDiceRoll] = useState<{
     tone: 'critico' | 'brilhante' | 'sucesso' | 'desastre';
     total: number;
     kept: number[];
-  } | null>({
+  }>({
     tone: 'brilhante',
     total: 10,
     kept: [5, 4],
   });
 
-  // Simulações (SKILL.md Seção 9 passo 3)
+  // Simulações (SKILL.md Seção 9 passo 3 & Fase 2)
   const handleSimulateDamage = () => {
     setHp((prev) => Math.max(0, prev - 5));
     setIsDamaged(true);
     setShowVignette(true);
-    const id = Date.now().toString();
+    const id = `dmg-${Date.now()}`;
     setFloatingItems((prev) => [...prev, { id, value: 5, type: 'damage' }]);
     setTimeout(() => setIsDamaged(false), 400);
     setTimeout(() => setShowVignette(false), 320);
@@ -97,24 +104,34 @@ function DesignSystemShowcase() {
   const handleSimulateHeal = () => {
     setHp((prev) => Math.min(45, prev + 4));
     setIsHealing(true);
-    const id = Date.now().toString();
+    const id = `heal-${Date.now()}`;
     setFloatingItems((prev) => [...prev, { id, value: 4, type: 'heal' }]);
     setTimeout(() => setIsHealing(false), 600);
   };
 
+  const handleSimulateFocusSpent = () => {
+    setFocus((prev) => Math.max(0, prev - 3));
+    setIsSpendingFocus(true);
+    const id = `foc-${Date.now()}`;
+    setFocusFloatingItems((prev) => [...prev, { id, value: -3, type: 'focus' }]);
+    setTimeout(() => setIsSpendingFocus(false), 420);
+  };
+
   const handleSimulateCritical = () => {
+    setRollSeq((s) => s + 1);
     setCurrentDiceRoll({
       tone: 'critico',
-      total: 12,
+      total: 13,
       kept: [6, 6],
     });
     toast.success('Acerto Crítico! +1 Ponto de Inspiração concedido.');
   };
 
   const handleSimulateDisaster = () => {
+    setRollSeq((s) => s + 1);
     setCurrentDiceRoll({
       tone: 'desastre',
-      total: 2,
+      total: 3,
       kept: [1, 1],
     });
     toast.error('Desastre Rúnico! O fardo do Juramento se intensifica.');
@@ -122,13 +139,22 @@ function DesignSystemShowcase() {
 
   const handleCompleteMission = () => {
     setMissionCompleted(true);
+    setCoinsBronze((c) => c + 1500);
     toast.success('Missão Concluída! Selo carimbado nos anais.');
   };
 
   const handleSimulateLegendary = () => {
-    setShowLegendaryHighlight(true);
-    setTimeout(() => setShowLegendaryHighlight(false), 4000);
+    setNewItemId('5');
+    setTimeout(() => setNewItemId(undefined), 1800);
     toast.info('Item Lendário descoberto nas sombras!');
+  };
+
+  const handleSimulateEquip = () => {
+    setEquippedWeapName('Cinzas de Malenia');
+    setEquippedWeapRarity('lendario');
+    setJustEquippedSlot('weap');
+    setTimeout(() => setJustEquippedSlot(undefined), 900);
+    toast.success('Cinzas de Malenia equipada no slot de Arma!');
   };
 
   const mockGridItems = [
@@ -141,7 +167,7 @@ function DesignSystemShowcase() {
       w: 1,
       h: 1,
       rarity: 'incomum' as const,
-      count: 3,
+      quantity: 3,
     },
     { id: '3', name: 'Gema do Vazio', col: 3, row: 1, w: 1, h: 1, rarity: 'raro' as const },
     {
@@ -165,7 +191,7 @@ function DesignSystemShowcase() {
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--abyss)] text-[var(--text)] pb-40 font-['EB_Garamond',serif] relative selection:bg-[var(--gold-lo)] selection:text-[var(--gold-hi)]">
+    <div className="min-h-screen bg-[var(--abyss)] text-[var(--text)] pb-40 font-['EB_Garamond',serif] relative selection:bg-[var(--gold-lo)] selection:text-[var(--gold-hi)] overflow-y-auto h-screen">
       {/* Vinheta de Dano na Tela */}
       {showVignette && <div className="damage-vignette" />}
 
@@ -178,8 +204,8 @@ function DesignSystemShowcase() {
       />
 
       {/* Campo de Brasas Ambiente no Topo */}
-      <div className="h-32 w-full relative overflow-hidden bg-gradient-to-b from-stone-950 to-transparent">
-        <EmberField particleCount={32} />
+      <div className="h-32 w-full relative overflow-hidden bg-gradient-to-b from-[var(--abyss)] to-transparent">
+        <EmberField count={14} />
         <div className="absolute inset-0 flex items-center justify-center flex-col px-4 text-center z-10">
           <p className="font-['Cinzel',serif] text-xs uppercase tracking-[0.22em] text-[var(--gold)]">
             Design System Oficial • SKILL.md
@@ -194,7 +220,7 @@ function DesignSystemShowcase() {
         {/* =========================================================
             BARRA DE TESTES INTERATIVOS DE ANIMAÇÃO (SKILL.md Seção 9.3)
             ========================================================= */}
-        <section className="slab p-4 border border-[var(--gold-lo)]">
+        <StonePanel className="p-4 border border-[var(--gold-lo)]">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-4 h-4 text-[var(--gold)]" />
             <h2 className="font-['Cinzel',serif] text-xs uppercase tracking-[0.16em] text-[var(--gold-hi)] font-bold">
@@ -203,35 +229,49 @@ function DesignSystemShowcase() {
           </div>
           <p className="text-xs text-[var(--muted)] mb-4">
             Pressione os botões abaixo para disparar as animações calibradas (--t-instant a
-            --t-epic, tremores de dano, partículas de cura, carimbo com ease-heavy e momentos
-            épicos):
+            --t-epic, tremores de dano, partículas de cura, Foco gasto, item lendário, equipar,
+            carimbo com ease-heavy e momentos épicos):
           </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={handleSimulateDamage}
-              className="px-3 py-1.5 slab hover:border-red-600 text-xs text-red-300 font-['Cinzel',serif] tracking-wider active:scale-95"
+              className="px-3 py-1.5 slab hover:border-[var(--blood)] text-xs text-[var(--blood)] font-['Cinzel',serif] tracking-wider active:scale-95"
             >
               Simular Dano (-5)
             </button>
             <button
               type="button"
               onClick={handleSimulateHeal}
-              className="px-3 py-1.5 slab hover:border-green-600 text-xs text-green-300 font-['Cinzel',serif] tracking-wider active:scale-95"
+              className="px-3 py-1.5 slab hover:border-[var(--moss)] text-xs text-[var(--moss)] font-['Cinzel',serif] tracking-wider active:scale-95"
             >
               Simular Cura (+4)
             </button>
             <button
               type="button"
-              onClick={() => setEpicMoment('level_up')}
-              className="px-3 py-1.5 slab border-[var(--gold)] text-xs text-[var(--gold-hi)] font-['Cinzel',serif] font-bold tracking-wider active:scale-95"
+              onClick={handleSimulateFocusSpent}
+              className="px-3 py-1.5 slab hover:border-[var(--mana)] text-xs text-[var(--mist)] font-['Cinzel',serif] tracking-wider active:scale-95"
             >
-              Subir Nível (Épico)
+              Foco Gasto (-3)
+            </button>
+            <button
+              type="button"
+              onClick={handleSimulateLegendary}
+              className="px-3 py-1.5 slab hover:border-[var(--gold)] text-xs text-[var(--gold-hi)] font-['Cinzel',serif] tracking-wider active:scale-95"
+            >
+              Item Lendário
+            </button>
+            <button
+              type="button"
+              onClick={handleSimulateEquip}
+              className="px-3 py-1.5 slab hover:border-[var(--gold)] text-xs text-[var(--gold)] font-['Cinzel',serif] tracking-wider active:scale-95"
+            >
+              Equipar Item
             </button>
             <button
               type="button"
               onClick={handleCompleteMission}
-              className="px-3 py-1.5 slab hover:border-[var(--gold-lo)] text-xs text-stone-200 font-['Cinzel',serif] tracking-wider active:scale-95"
+              className="px-3 py-1.5 slab hover:border-[var(--gold-lo)] text-xs text-[var(--text)] font-['Cinzel',serif] tracking-wider active:scale-95"
             >
               Concluir Missão (Carimbo)
             </button>
@@ -245,16 +285,16 @@ function DesignSystemShowcase() {
             <button
               type="button"
               onClick={handleSimulateDisaster}
-              className="px-3 py-1.5 slab hover:border-red-800 text-xs text-red-400 font-['Cinzel',serif] tracking-wider active:scale-95"
+              className="px-3 py-1.5 slab hover:border-[var(--blood)] text-xs text-[var(--blood)] font-['Cinzel',serif] tracking-wider active:scale-95"
             >
               Rolagem Desastre
             </button>
             <button
               type="button"
-              onClick={handleSimulateLegendary}
-              className="px-3 py-1.5 slab hover:border-[var(--gold)] text-xs text-[var(--gold-hi)] font-['Cinzel',serif] tracking-wider active:scale-95"
+              onClick={() => setEpicMoment('level_up')}
+              className="px-3 py-1.5 slab border-[var(--gold)] text-xs text-[var(--gold-hi)] font-['Cinzel',serif] font-bold tracking-wider active:scale-95"
             >
-              Novo Item Lendário
+              Subir de Nível
             </button>
             <button
               type="button"
@@ -266,12 +306,12 @@ function DesignSystemShowcase() {
             <button
               type="button"
               onClick={() => setEpicMoment('fallen_hero')}
-              className="px-3 py-1.5 slab text-xs text-stone-400 font-['Cinzel',serif] tracking-wider active:scale-95"
+              className="px-3 py-1.5 slab text-xs text-[var(--muted)] font-['Cinzel',serif] tracking-wider active:scale-95"
             >
               Herói Caído
             </button>
           </div>
-        </section>
+        </StonePanel>
 
         {/* =========================================================
             1. PALETA DE MATERIAIS & TOKENS CANÔNICOS
@@ -304,25 +344,27 @@ function DesignSystemShowcase() {
                 <span className="font-['Cinzel',serif] text-xs font-bold text-[var(--text)]">
                   {mat.label}
                 </span>
-                <span className="font-mono text-[10px] text-[var(--muted)]">{mat.hex}</span>
+                <span className="font-['Cinzel',serif] text-[10px] text-[var(--muted)]">
+                  {mat.hex}
+                </span>
               </div>
             ))}
           </div>
         </section>
 
         {/* =========================================================
-            2. HUD DO JOGADOR: STATUS, ORBES & CINTO
+            2. HUD DO JOGADOR: STATUS, ORBES, CINTO & BOTTOMNAV
             ========================================================= */}
         <section className="space-y-4">
           <div className="flex items-center gap-2">
             <span className="text-[var(--gold)] font-serif text-sm">◆</span>
             <h2 className="font-['Cinzel',serif] text-sm uppercase tracking-[0.16em] text-[var(--gold-hi)] font-bold">
-              2. HUD do Jogador: Orbes de Vidro & Cinto de Poções
+              2. HUD do Jogador: StatusBar, Orbes de Vidro, Cinto & BottomNav
             </h2>
           </div>
 
-          <div className="max-w-[480px] mx-auto slab p-4 border border-[var(--gold-lo)]">
-            <StatusBar heroName="Malenia" level={5} coins={247} />
+          <StonePanel className="max-w-[480px] mx-auto p-4 border border-[var(--gold-lo)]">
+            <StatusBar heroName="Malenia" level={5} coinsBronze={coinsBronze} />
 
             {/* Simulação do HUD de 150px */}
             <div className="relative h-[150px] mt-4 recess overflow-hidden">
@@ -339,12 +381,12 @@ function DesignSystemShowcase() {
                 onClick={handleSimulateDamage}
               />
               <Belt
-                potions={[
-                  { id: 'p1', name: 'Poção de Sangue', count: 3 },
-                  { id: 'p2', name: 'Elixir de Foco', count: 1 },
+                items={[
+                  { id: 'p1', name: 'Poção de Sangue', quantity: 3, rarity: 'incomum' },
+                  { id: 'p2', name: 'Elixir de Foco', quantity: 1, rarity: 'raro' },
                 ]}
-                onUsePotion={(id) => {
-                  toast.success(`Consumível ${id} ativado do cinto!`);
+                onItemClick={(item) => {
+                  toast.success(`Consumível ${item.name} ativado do cinto!`);
                   handleSimulateHeal();
                 }}
               />
@@ -352,37 +394,38 @@ function DesignSystemShowcase() {
                 variant="focus"
                 current={focus}
                 max={25}
-                onClick={() => setFocus((prev) => Math.max(0, prev - 2))}
+                isSpendingFocus={isSpendingFocus}
+                floatingItems={focusFloatingItems}
+                onFloatingComplete={(id) =>
+                  setFocusFloatingItems((prev) => prev.filter((i) => i.id !== id))
+                }
+                onClick={handleSimulateFocusSpent}
               />
-              <div className="absolute bottom-0 left-0 right-0 h-[60px] bg-black/60 border-t border-[var(--iron)] flex items-center justify-around text-[10px] font-['Cinzel',serif] text-[var(--muted)] uppercase">
-                <span className="text-[var(--gold-hi)]">Ficha</span>
-                <span>Mochila</span>
-                <span>Grimório</span>
-                <span>Diário</span>
-                <button
-                  type="button"
-                  onClick={() => setMoreSheetOpen(true)}
-                  className="hover:text-[var(--gold-hi)]"
-                >
-                  Mais
-                </button>
-              </div>
+              <BottomNav
+                items={[
+                  { label: 'Ficha', icon: <User size={16} />, to: '/design' },
+                  { label: 'Mochila', icon: <Backpack size={16} />, to: '/jogador/mochila' },
+                  { label: 'Grimório', icon: <Scroll size={16} />, to: '/jogador/grimorio' },
+                  { label: 'Diário', icon: <Flame size={16} />, to: '/jogador/diario' },
+                ]}
+                onMoreClick={() => setMoreSheetOpen(true)}
+              />
             </div>
             <p className="text-[11px] text-center text-[var(--muted)] italic mt-3">
-              Clique no Orbe vermelho para simular dano (-5). Clique no Orbe azul para consumir
-              foco.
+              Clique no Orbe vermelho para simular dano (-5). Clique no Orbe azul para gastar Foco
+              (-3).
             </p>
-          </div>
+          </StonePanel>
         </section>
 
         {/* =========================================================
-            3. TABBAR DE PEDRA COM LOSANGO DESLIZANTE
+            3. TABBAR DE PEDRA, DIVIDER & PÍLULAS DE CONDIÇÃO
             ========================================================= */}
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-[var(--gold)] font-serif text-sm">◆</span>
             <h2 className="font-['Cinzel',serif] text-sm uppercase tracking-[0.16em] text-[var(--gold-hi)] font-bold">
-              3. TabBar de Pedra (Transição Fluida com layoutId)
+              3. TabBar de Pedra, Divider & Pílulas de Condição
             </h2>
           </div>
           <TabBar
@@ -395,6 +438,13 @@ function DesignSystemShowcase() {
             activeTab={activeTab}
             onChange={setActiveTab}
           />
+          <Divider />
+          <div className="flex flex-wrap gap-2">
+            <ConditionPill type="good" label="Juramento Intacto" />
+            <ConditionPill type="good" label="Bênção da Cinza" />
+            <ConditionPill type="bad" label="Envenenado (2t)" />
+            <ConditionPill type="plague" label="Mácula da Peste I" />
+          </div>
         </section>
 
         {/* =========================================================
@@ -417,7 +467,7 @@ function DesignSystemShowcase() {
                   A Peste na Cripta dos Jurados
                 </h3>
               </div>
-              <WaxSeal isStamping={missionCompleted}>
+              <WaxSeal key={missionCompleted ? 'stamped' : 'idle'} isStamping={missionCompleted}>
                 {missionCompleted ? <Check size={20} /> : <Flame size={20} />}
               </WaxSeal>
             </div>
@@ -432,8 +482,8 @@ function DesignSystemShowcase() {
               <span className="text-xs font-bold text-[var(--ink)] block mb-1">Objetivos:</span>
               <ul className="text-xs space-y-1 text-[var(--ink-soft)]">
                 <li
-                  className={`flex items-center gap-2 transition-all ${
-                    missionCompleted ? 'line-through text-stone-500' : ''
+                  className={`flex items-center gap-2 transition-all duration-300 ${
+                    missionCompleted ? 'line-through opacity-65' : ''
                   }`}
                 >
                   <span className="w-1.5 h-1.5 bg-[var(--blood)] rotate-45" />
@@ -455,28 +505,37 @@ function DesignSystemShowcase() {
           <div className="flex items-center gap-2">
             <span className="text-[var(--gold)] font-serif text-sm">◆</span>
             <h2 className="font-['Cinzel',serif] text-sm uppercase tracking-[0.16em] text-[var(--gold-hi)] font-bold">
-              5. Inventário: Grade de 8 Colunas & Boneco de Equipamento
+              5. Inventário: Grade de 8 Colunas, Silhueta & Tooltip
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div className="md:col-span-4 slab p-4 flex flex-col items-center">
+            <StonePanel className="md:col-span-4 p-4 flex flex-col items-center">
               <span className="font-['Cinzel',serif] text-xs font-bold uppercase tracking-wider text-[var(--gold-hi)] mb-3">
                 Silhueta de Equipamento
               </span>
               <EquipDoll
+                justEquippedSlot={justEquippedSlot}
                 equipped={{
-                  head: { id: 'e1', name: 'Elmo de Ferro', rarity: 'incomum' },
-                  mainHand: { id: 'e2', name: 'Lâmina Rúnica', rarity: 'raro' },
-                  armor: { id: 'e3', name: 'Cota de Malha Negra', rarity: 'epico' },
+                  helm: { name: 'Elmo de Ferro', rarity: 'incomum', icon: <Shield size={18} /> },
+                  weap: {
+                    name: equippedWeapName,
+                    rarity: equippedWeapRarity,
+                    icon: <Sword size={22} />,
+                  },
+                  armor: {
+                    name: 'Cota de Malha Negra',
+                    rarity: 'epico',
+                    icon: <Shield size={22} />,
+                  },
                 }}
               />
-            </div>
+            </StonePanel>
 
-            <div className="md:col-span-8 slab p-4 space-y-4">
+            <StonePanel className="md:col-span-8 p-4 space-y-4">
               <span className="font-['Cinzel',serif] text-xs font-bold uppercase tracking-wider text-[var(--gold-hi)]">
                 Mochila do Jurado (Grade 8 Colunas)
               </span>
-              <InventoryGrid items={mockGridItems} />
+              <InventoryGrid items={mockGridItems} newItemId={newItemId} selectedId="5" />
 
               <div className="mt-4 pt-4 border-t border-[var(--iron)]">
                 <span className="text-xs font-['Cinzel',serif] uppercase text-[var(--muted)] tracking-wider block mb-2">
@@ -484,63 +543,73 @@ function DesignSystemShowcase() {
                 </span>
                 <ItemTooltip
                   name="Cinzas de Malenia"
-                  rarity="lendario"
-                  type="Relíquia Sagrada"
+                  rarity="Lendário"
                   effect="Ao cair a 0 de Vida, recupera 15 pontos instantaneamente uma vez por vigília."
-                  weight={0.5}
-                  value={1800}
+                  weightKg={0.5}
+                  valueBronze={1800}
                 />
               </div>
-            </div>
+            </StonePanel>
           </div>
         </section>
 
         {/* =========================================================
-            6. ATRIBUTOS, ESTATÍSTICAS & ROLAGENS
+            6. ATRIBUTOS, ESTATÍSTICAS, INICIATIVA & ROLAGENS 2D6
             ========================================================= */}
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-[var(--gold)] font-serif text-sm">◆</span>
             <h2 className="font-['Cinzel',serif] text-sm uppercase tracking-[0.16em] text-[var(--gold-hi)] font-bold">
-              6. Estatísticas, Atributos & Rolagem 2d6
+              6. Estatísticas, Atributos, Faixa de Iniciativa & Rolagem 2d6
             </h2>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <StatSlab label="Armadura" value="14" />
+            <StatSlab label="Armadura" value={14} />
             <StatSlab label="Iniciativa" value="+3" />
-            <StatSlab label="Movimento" value="6 qd" />
+            <StatSlab label="Movimento" value={6} unit="qd" />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-            <AttrSlab name="Corpo" value={14} modifier={+2} />
-            <AttrSlab name="Vontade" value={16} modifier={+3} />
+            <AttrSlab name="Corpo" value={14} modifier={2} highlight />
+            <AttrSlab name="Vontade" value={16} modifier={3} />
             <AttrSlab name="Astúcia" value={10} modifier={0} />
             <AttrSlab name="Presença" value={8} modifier={-1} />
           </div>
 
+          <div className="mt-3">
+            <InitiativeStrip
+              showTurnBanner
+              tokens={[
+                { id: 't1', name: 'Malenia', hpPercent: 84, type: 'ally', isCurrentTurn: true },
+                { id: 't2', name: 'Corvo', hpPercent: 60, type: 'ally' },
+                { id: 't3', name: 'Carniçal', hpPercent: 45, type: 'foe' },
+                { id: 't4', name: 'Espectro', hpPercent: 90, type: 'foe' },
+              ]}
+            />
+          </div>
+
           <div className="mt-4">
-            {currentDiceRoll && (
-              <DiceResult
-                tone={currentDiceRoll.tone}
-                total={currentDiceRoll.total}
-                peso={8}
-                keptDice={currentDiceRoll.kept}
-                modifier={1}
-                label="Teste de Vontade contra a Podridão"
-              />
-            )}
+            <DiceResult
+              key={`roll-${rollSeq}`}
+              tone={currentDiceRoll.tone}
+              total={currentDiceRoll.total}
+              peso={8}
+              keptDice={currentDiceRoll.kept}
+              modifier={1}
+              label="Teste de Vontade contra a Podridão"
+            />
           </div>
         </section>
 
         {/* =========================================================
-            7. BOTÕES & CONTROLES (OURO MACIÇO & PEDRA)
+            7. BOTÕES, MODAIS & GAVETAS (1 BOTÃO DE OURO POR TELA)
             ========================================================= */}
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-[var(--gold)] font-serif text-sm">◆</span>
             <h2 className="font-['Cinzel',serif] text-sm uppercase tracking-[0.16em] text-[var(--gold-hi)] font-bold">
-              7. Botões & Ações Táticas
+              7. Botões, Modal & Sheet (1 Botão de Ouro por Tela)
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -548,16 +617,16 @@ function DesignSystemShowcase() {
               Finalizar Turno
             </GoldButton>
             <StoneButton
-              title="Golpe Pesado"
-              subtitle="Custo: 2 Foco • Dano 2d6+2"
+              label="Abrir Modal de Pedra"
+              sublabel="Inspecionar relíquia em janela central"
               icon={<Sword />}
-              onClick={() => toast.info('Ação Golpe Pesado executada')}
+              onClick={() => setModalOpen(true)}
             />
             <StoneButton
-              title="Escudo de Fé"
-              subtitle="Reação • +4 Defesa"
+              label="Abrir Sheet Inferior"
+              sublabel="Gaveta deslizante de celular"
               icon={<Shield />}
-              onClick={() => toast.info('Ação Escudo de Fé executada')}
+              onClick={() => setSheetOpen(true)}
             />
           </div>
         </section>
@@ -572,10 +641,13 @@ function DesignSystemShowcase() {
               8. Esqueletos de Carregamento (SKILL.md Seção 5 e 11)
             </h2>
           </div>
-          <div className="space-y-2 max-w-md">
-            <Skeleton variant="parchment" height={24} width="70%" />
-            <Skeleton variant="parchment" height={16} width="100%" />
-            <Skeleton variant="parchment" height={16} width="85%" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Skeleton variant="parchment" height={24} width="70%" />
+              <Skeleton variant="parchment" height={16} width="100%" />
+              <Skeleton variant="parchment" height={16} width="85%" />
+            </div>
+            <StonePanel isLoading />
           </div>
         </section>
 
@@ -586,7 +658,7 @@ function DesignSystemShowcase() {
           <div className="flex items-center gap-2">
             <span className="text-[var(--gold)] font-serif text-sm">◆</span>
             <h2 className="font-['Cinzel',serif] text-sm uppercase tracking-[0.16em] text-[var(--gold-hi)] font-bold">
-              9. Avisos Temáticos (Toast de Pedra com Filete)
+              9. Avisos Temáticos (Toast de Pedra com Filete e Partícula)
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
@@ -603,6 +675,24 @@ function DesignSystemShowcase() {
           </div>
         </section>
       </div>
+
+      {/* Modal de Pedra */}
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Relíquia Consagrada">
+        <Parchment unroll>
+          <p className="text-sm text-[var(--ink)]">
+            Este cálice guarda o último suspiro dos jurados de São Brandão.
+          </p>
+        </Parchment>
+      </Modal>
+
+      {/* Gaveta Inferior (Sheet) */}
+      <Sheet isOpen={sheetOpen} onClose={() => setSheetOpen(false)} title="Detalhes da Ação">
+        <Parchment unroll>
+          <p className="text-sm text-[var(--ink)]">
+            Golpe Pesado consome 2 de Foco e adiciona +2 ao teste de 2d6 contra o Peso.
+          </p>
+        </Parchment>
+      </Sheet>
 
       {/* Menu 'Mais' do Jogador */}
       <MoreSheet

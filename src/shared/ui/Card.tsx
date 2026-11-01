@@ -1,6 +1,9 @@
 import { clsx } from 'clsx';
+import { m } from 'motion/react';
 import React from 'react';
 import { twMerge } from 'tailwind-merge';
+import { spring } from '../styles/motion';
+import { CountUp } from './CountUp';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'sunken' | 'elevated' | 'gold' | 'interactive';
@@ -117,7 +120,7 @@ export const Bar: React.FC<BarProps> = ({
   showNumbers = true,
   className,
 }) => {
-  const pct = Math.max(0, Math.min(100, max > 0 ? (value / max) * 100 : 0));
+  const pct = Math.max(0, Math.min(1, max > 0 ? value / max : 0));
 
   const barColors = {
     vida: 'bg-gradient-to-r from-[#e8584a] via-[#a3291f] to-[#4a0d08]',
@@ -135,15 +138,17 @@ export const Bar: React.FC<BarProps> = ({
           )}
           {showNumbers && (
             <span>
-              {value} / {max}
+              <CountUp value={value} duration={260} /> / {max}
             </span>
           )}
         </div>
       )}
-      <div className="w-full h-2.5 bg-[#0a0908] border border-[var(--iron)] p-0.5 rounded-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.8)]">
-        <div
-          className={twMerge('h-full transition-all duration-300 rounded-none', barColors)}
-          style={{ width: `${pct}%` }}
+      <div className="w-full h-2.5 bg-[#0a0908] border border-[var(--iron)] p-0.5 rounded-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.8)] overflow-hidden">
+        <m.div
+          initial={false}
+          animate={{ scaleX: pct }}
+          transition={spring.soft}
+          className={twMerge('h-full w-full origin-left rounded-none', barColors)}
         />
       </div>
     </div>
@@ -187,16 +192,16 @@ export const Spinner: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: string }
   className,
 }) => {
   const sizeClass = {
-    sm: 'w-4 h-4',
-    md: 'w-6 h-6',
-    lg: 'w-8 h-8',
+    sm: 'w-2.5 h-2.5',
+    md: 'w-3.5 h-3.5',
+    lg: 'w-5 h-5',
   }[size];
 
   return (
     <div className={twMerge('flex items-center justify-center', className)}>
       <div
         className={twMerge(
-          'border-2 border-[var(--iron)] border-t-[var(--gold)] rounded-full animate-spin',
+          'rotate-45 bg-[var(--gold)] border border-[var(--gold-hi)] animate-pulse shadow-[0_0_8px_rgba(201,164,92,0.6)]',
           sizeClass,
         )}
       />

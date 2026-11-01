@@ -41,10 +41,10 @@ export const Belt: React.FC<BeltProps> = ({ items = [], onItemClick, className, 
   };
 
   const defaultIcons = [
-    <FlaskConical key="1" size={18} />,
-    <FlaskConical key="2" size={18} className="text-blue-400" />,
-    <Scroll key="3" size={18} className="text-amber-300" />,
-    <Shield key="4" size={18} className="text-emerald-400" />,
+    <FlaskConical key="1" size={18} className="text-[var(--blood)]" />,
+    <FlaskConical key="2" size={18} className="text-[var(--mist)]" />,
+    <Scroll key="3" size={18} className="text-[var(--gold)]" />,
+    <Shield key="4" size={18} className="text-[var(--moss)]" />,
   ];
 
   const slotKeys = ['belt-slot-1', 'belt-slot-2', 'belt-slot-3', 'belt-slot-4'];

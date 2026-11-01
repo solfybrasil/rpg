@@ -2,7 +2,7 @@ import React from 'react';
 import { twMerge } from 'tailwind-merge';
 
 export interface ConditionPillProps extends React.HTMLAttributes<HTMLSpanElement> {
-  type?: 'good' | 'bad';
+  type?: 'good' | 'bad' | 'plague' | 'blood';
   label: string;
 }
 
@@ -12,13 +12,20 @@ export const ConditionPill: React.FC<ConditionPillProps> = ({
   className,
   ...props
 }) => {
-  const isBad = type === 'bad';
+  const toneClass =
+    type === 'bad'
+      ? 'text-[var(--moss)] border-[var(--moss)]/45'
+      : type === 'plague'
+        ? 'text-[var(--plague)] border-[var(--plague)]/45'
+        : type === 'blood'
+          ? 'text-[var(--blood)] border-[var(--blood)]/50'
+          : 'text-[var(--gold)] border-[var(--gold-lo)]';
 
   return (
     <span
       className={twMerge(
-        'inline-flex items-center gap-1.5 px-2.5 py-1 border font-serif text-[10px] tracking-[0.1em] uppercase bg-black/40',
-        isBad ? 'text-[#7fbf5a] border-[#7fbf5a]/40' : 'text-[var(--gold)] border-[var(--gold-lo)]',
+        "inline-flex items-center gap-1.5 px-2.5 py-1 border font-['Cinzel',serif] text-[10px] tracking-[0.1em] uppercase bg-black/40",
+        toneClass,
         className,
       )}
       {...props}

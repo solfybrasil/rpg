@@ -69,7 +69,7 @@ export const DiceResult: React.FC<DiceResultProps> = ({
     desastre: {
       border: 'border-[var(--blood)]',
       bg: 'bg-[radial-gradient(ellipse_at_top,rgba(163,41,31,0.25),transparent_70%)]',
-      text: 'text-[#e8584a]',
+      text: 'text-[var(--blood)]',
       icon: <AlertOctagon className="w-5 h-5 text-[var(--blood)] animate-pulse" />,
       title: 'Desastre Rúnico (Duplo 1)',
       sealClass: 'border-[var(--blood)] text-[var(--blood)]',
@@ -85,11 +85,49 @@ export const DiceResult: React.FC<DiceResultProps> = ({
         'slab p-4 relative overflow-hidden transition-all select-none',
         configs.border,
         configs.bg,
+        animated && tone === 'critico' && 'dice-crit-shake',
         className,
       )}
       {...props}
     >
-      <div className="flex items-center justify-between gap-4">
+      {/* Crítico: 6 faíscas âmbar (--ember) */}
+      {animated && tone === 'critico' && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <m.span
+              key={`crit-spark-${i}`}
+              initial={{ opacity: 1, x: '50%', y: '50%', scale: 1 }}
+              animate={{
+                opacity: 0,
+                x: `${20 + i * 12}%`,
+                y: `${i % 2 === 0 ? 10 : 85}%`,
+                scale: 0.4,
+              }}
+              transition={{ duration: 0.65, delay: 0.1 + i * 0.04, ease: motionTokens.easeOut }}
+              className="absolute w-1.5 h-1.5 rotate-45 bg-[var(--ember)] shadow-[0_0_6px_var(--ember)]"
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Desastre: Rachadura cinza da Peste na borda */}
+      {tone === 'desastre' && (
+        <svg
+          viewBox="0 0 320 80"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 w-full h-full text-[var(--plague)] opacity-75"
+          aria-hidden="true"
+        >
+          <path
+            d="M0 2 L42 14 L34 28 L68 42 M320 78 L272 62 L284 44 L248 29 M140 0 L152 18 L144 31"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+          />
+        </svg>
+      )}
+
+      <div className="flex items-center justify-between gap-4 relative z-10">
         <div className="flex items-center gap-3">
           {configs.icon}
           <div>
@@ -102,9 +140,22 @@ export const DiceResult: React.FC<DiceResultProps> = ({
               {label || configs.title}
             </div>
             {keptDice && keptDice.length > 0 && (
-              <div className="text-xs text-[var(--muted)] font-mono tabular-nums mt-0.5">
-                Dados: [{keptDice.join(' + ')}]{' '}
-                {modifier !== 0 && `${modifier > 0 ? '+' : ''}${modifier}`} (vs Peso {peso})
+              <div className="flex items-center gap-1.5 text-xs text-[var(--muted)] font-['Cinzel',serif] tabular-nums mt-1">
+                <span>Dados:</span>
+                {keptDice.map((die, idx) => (
+                  <m.span
+                    key={`die-${idx}-${die}`}
+                    initial={animated ? { rotate: -180, scale: 0.5, opacity: 0 } : false}
+                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.4, ease: motionTokens.easeOut, delay: idx * 0.05 }}
+                    className="inline-flex items-center justify-center w-5 h-5 recess border border-[var(--iron)] text-[var(--gold-hi)] font-bold text-[11px]"
+                  >
+                    {die}
+                  </m.span>
+                ))}
+                <span>
+                  {modifier !== 0 && `${modifier > 0 ? '+' : ''}${modifier}`} (vs Peso {peso})
+                </span>
               </div>
             )}
           </div>
@@ -114,20 +165,31 @@ export const DiceResult: React.FC<DiceResultProps> = ({
           <m.div
             initial={animated ? { scale: 0.6, opacity: 0 } : false}
             animate={{ scale: [0.6, 1.08, 1], opacity: 1 }}
-            transition={{ duration: 0.4, ease: motionTokens.easeHeavy, delay: 0.1 }}
+            transition={{
+              duration: 0.4,
+              ease: motionTokens.easeHeavy,
+              delay: animated ? 0.32 : 0,
+            }}
             className={clsx("font-['Cinzel',serif] font-black text-3xl tabular-nums", configs.text)}
           >
             {total}
           </m.div>
 
-          <div
+          <m.div
+            initial={animated ? { scale: 1.35, opacity: 0 } : false}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{
+              duration: motionTokens.tBase,
+              ease: motionTokens.easeHeavy,
+              delay: animated ? 0.52 : 0,
+            }}
             className={clsx(
               "px-2 py-0.5 text-[9px] font-['Cinzel',serif] uppercase tracking-widest border font-bold",
               configs.sealClass,
             )}
           >
             {tone}
-          </div>
+          </m.div>
         </div>
       </div>
     </m.div>

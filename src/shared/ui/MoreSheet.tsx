@@ -59,7 +59,7 @@ export const MoreSheet: React.FC<MoreSheetProps> = ({ isOpen, onClose, items }) 
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{
-                    delay: index * 0.02,
+                    delay: Math.min(index, 10) * 0.02,
                     duration: motionTokens.tBase,
                     ease: motionTokens.easeOut,
                   }}

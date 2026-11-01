@@ -1,5 +1,7 @@
-import React from 'react';
+import { AnimatePresence, m } from 'motion/react';
+import React, { useEffect, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
+import { motionTokens } from '../styles/motion';
 
 export interface CombatToken {
   id: string;
@@ -13,22 +15,50 @@ export interface CombatToken {
 export interface InitiativeStripProps extends React.HTMLAttributes<HTMLDivElement> {
   tokens: CombatToken[];
   onTokenClick?: (token: CombatToken) => void;
+  showTurnBanner?: boolean;
 }
 
 export const InitiativeStrip: React.FC<InitiativeStripProps> = ({
   tokens,
   onTokenClick,
+  showTurnBanner = false,
   className,
   ...props
 }) => {
+  const activeToken = tokens.find((t) => t.isCurrentTurn);
+  const activeId = activeToken?.id;
+  const [bannerVisible, setBannerVisible] = useState(showTurnBanner);
+
+  useEffect(() => {
+    if (!activeId) return;
+    setBannerVisible(true);
+    const timer = setTimeout(() => setBannerVisible(false), 1200);
+    return () => clearTimeout(timer);
+  }, [activeId]);
+
   return (
     <div
       className={twMerge(
-        'init flex justify-between items-center p-2 py-3 w-full bg-black/40 border border-[var(--iron)]',
+        'init relative flex justify-between items-center p-2 py-3 w-full bg-black/40 border border-[var(--iron)] overflow-hidden',
         className,
       )}
       {...props}
     >
+      <AnimatePresence>
+        {bannerVisible && activeToken && (
+          <m.div
+            key={`turn-banner-${activeToken.id}`}
+            initial={{ y: -28, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -28, opacity: 0 }}
+            transition={{ duration: motionTokens.tBase, ease: motionTokens.easeOut }}
+            className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 z-20 px-3 py-0.5 bg-[var(--stone)] border-b border-x border-[var(--gold)] font-['Cinzel',serif] text-[9px] font-bold tracking-[0.22em] uppercase text-[var(--gold-hi)] shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
+          >
+            {activeToken.type === 'ally' ? 'Seu Turno' : `Turno · ${activeToken.name}`}
+          </m.div>
+        )}
+      </AnimatePresence>
+
       {tokens.map((tok) => {
         const isNow = Boolean(tok.isCurrentTurn);
         const isAlly = tok.type === 'ally';
@@ -38,8 +68,10 @@ export const InitiativeStrip: React.FC<InitiativeStripProps> = ({
             type="button"
             key={tok.id}
             onClick={() => onTokenClick?.(tok)}
-            className={`tok flex flex-col items-center gap-1 font-['Cinzel',serif] text-[9px] uppercase tracking-[0.08em] cursor-pointer ${
-              isNow ? 'now text-[var(--gold-hi)] scale-105' : 'text-[var(--muted)]'
+            className={`tok flex flex-col items-center gap-1 font-['Cinzel',serif] text-[9px] uppercase tracking-[0.08em] cursor-pointer transition-all ${
+              isNow
+                ? 'now text-[var(--gold-hi)] scale-105'
+                : 'text-[var(--muted)] opacity-85 brightness-[0.85]'
             }`}
           >
             <i
@@ -52,7 +84,7 @@ export const InitiativeStrip: React.FC<InitiativeStripProps> = ({
               }}
               className={`rounded-full block transition-all ${
                 isNow
-                  ? 'w-[54px] h-[54px] shadow-[0_0_0_2px_#000,0_0_0_4px_var(--gold),0_0_16px_rgba(236,211,149,0.55)]'
+                  ? 'w-[54px] h-[54px] shadow-[0_0_0_2px_#000,0_0_0_4px_var(--gold),0_0_16px_rgba(236,211,149,0.55)] animate-pulse'
                   : isAlly
                     ? 'w-[44px] h-[44px] shadow-[0_0_0_2px_#000,0_0_0_3px_#3e5a3a]'
                     : 'w-[44px] h-[44px] shadow-[0_0_0_2px_#000,0_0_0_3px_#6b1e17]'

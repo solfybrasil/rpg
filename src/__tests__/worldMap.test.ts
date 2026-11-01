@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { KNOWN_CITIES, getCityMapData } from '../features/world-map/data/cityData';
 import { mapRegions } from '../features/world-map/data/mapRegions';
-import { getCityMapData, KNOWN_CITIES } from '../features/world-map/data/cityData';
-import { pointsToCatmullRom, iconSVG, ICONS } from '../features/world-map/engine/mapEngine';
+import { ICONS, iconSVG, pointsToCatmullRom } from '../features/world-map/engine/mapEngine';
 import type { MapPlace } from '../features/world-map/types';
 
 describe('World Map Engine & Data (Prompt 13)', () => {
@@ -39,7 +39,10 @@ describe('World Map Engine & Data (Prompt 13)', () => {
     expect(p1).toBeDefined();
 
     // 2 pontos
-    const p2 = pointsToCatmullRom([[100, 200], [300, 400]]);
+    const p2 = pointsToCatmullRom([
+      [100, 200],
+      [300, 400],
+    ]);
     expect(p2).toBeDefined();
 
     // 5 pontos (curva contínua suave)
@@ -54,7 +57,20 @@ describe('World Map Engine & Data (Prompt 13)', () => {
   });
 
   it('produz SVG válido para todos os 12 tipos de marcadores geográficos', () => {
-    const types = ['cap', 'cid', 'por', 'vil', 'for', 'rui', 'mas', 'tem', 'cov', 'mar', 'tor', 'gui'];
+    const types = [
+      'cap',
+      'cid',
+      'por',
+      'vil',
+      'for',
+      'rui',
+      'mas',
+      'tem',
+      'cov',
+      'mar',
+      'tor',
+      'gui',
+    ];
     for (const t of types) {
       const svg = iconSVG(t);
       expect(svg).toContain('<svg');

@@ -1,5 +1,4 @@
 import { clsx } from 'clsx';
-import { Loader2 } from 'lucide-react';
 import React from 'react';
 import { twMerge } from 'tailwind-merge';
 
@@ -38,9 +37,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       secondary:
         'slab text-[var(--text)] border border-[var(--iron)] hover:border-[var(--gold-lo)] active:scale-[0.99]',
       danger:
-        'bg-[var(--blood)]/20 text-red-300 border border-[var(--blood)] hover:bg-[var(--blood)]/30 active:scale-[0.99]',
+        'bg-[var(--blood)]/20 text-[var(--text)] border border-[var(--blood)] hover:bg-[var(--blood)]/30 active:scale-[0.99]',
       ghost:
-        'bg-transparent text-[var(--muted)] hover:text-white hover:bg-black/40 active:scale-[0.99]',
+        'bg-transparent text-[var(--muted)] hover:text-[var(--text)] hover:bg-black/40 active:scale-[0.99]',
       outline:
         'bg-black/40 text-[var(--gold-hi)] border border-[var(--gold-lo)] hover:border-[var(--gold)] active:scale-[0.99]',
     }[variant];
@@ -60,7 +59,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin text-current" />
+          <span
+            className="mr-1.5 inline-block w-2.5 h-2.5 rotate-45 bg-[var(--gold)] animate-pulse"
+            aria-hidden="true"
+          />
         ) : (
           leftIcon && <span className="shrink-0">{leftIcon}</span>
         )}

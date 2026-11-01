@@ -9,7 +9,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <LazyMotion features={domAnimation}>
-      <div className="h-screen w-screen flex flex-col bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none font-sans">
+      <div className="h-screen w-screen flex flex-col bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none font-['EB_Garamond',serif]">
         <Outlet />
         <Toaster
           theme="dark"
