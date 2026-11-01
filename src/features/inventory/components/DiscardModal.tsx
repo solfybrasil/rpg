@@ -1,7 +1,7 @@
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
 import type { InventoryItemRecord } from '../../../entities/item';
-import { Button, Modal } from '../../../shared/ui';
+import { GoldButton, Modal, Parchment, StoneButton } from '../../../shared/ui';
 
 export interface DiscardModalProps {
   item: InventoryItemRecord | null;
@@ -25,6 +25,7 @@ export const DiscardModal: React.FC<DiscardModalProps> = ({
 
   if (!item) return null;
 
+  const itemName = item.name || (item.item_name as string) || 'Artefato';
   const maxQty = Math.max(1, Number(item.quantity || 1));
 
   const handleIncrement = () => {
@@ -49,23 +50,25 @@ export const DiscardModal: React.FC<DiscardModalProps> = ({
   };
 
   return (
-    <Modal
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Descartar Item"
-      description={`Tem certeza que deseja abandonar "${item.name}"? Esta ação não pode ser desfeita.`}
-    >
+    <Modal open={open} onOpenChange={onOpenChange} title="Descartar Item">
       <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        <Parchment seed={47} unroll className="p-3">
+          <p className="text-xs font-['EB_Garamond',serif] italic text-[var(--ink)] leading-relaxed">
+            Tem certeza que deseja abandonar <strong>"{itemName}"</strong> nas cinzas da estrada?
+            Esta ação é definitiva e o objeto não poderá ser recuperado.
+          </p>
+        </Parchment>
+
         {maxQty > 1 && (
           <div className="space-y-1.5">
             <div className="flex justify-between items-center text-xs font-['Cinzel',serif]">
               <span className="text-[var(--gold-hi)] font-bold uppercase tracking-wider">
                 Quantidade a Descartar
               </span>
-              <span className="text-[var(--muted)]">Disponível: {maxQty}</span>
+              <span className="text-[var(--muted)] tabular-nums">Disponível: {maxQty}</span>
             </div>
 
-            <div className="flex items-center justify-center gap-4 recess border border-black p-2">
+            <div className="flex items-center justify-center gap-4 recess border border-[var(--iron)] p-2">
               <button
                 type="button"
                 onClick={handleDecrement}
@@ -75,7 +78,7 @@ export const DiscardModal: React.FC<DiscardModalProps> = ({
                 <Minus className="w-4 h-4" />
               </button>
 
-              <span className="font-mono text-lg font-bold text-[var(--blood)] w-12 text-center">
+              <span className="font-['Cinzel',serif] tabular-nums text-lg font-bold text-[var(--blood)] w-12 text-center">
                 {quantity}
               </span>
 
@@ -91,24 +94,23 @@ export const DiscardModal: React.FC<DiscardModalProps> = ({
           </div>
         )}
 
+        {/* Ações (Máximo 1 GoldButton) */}
         <div className="flex justify-end gap-2 border-t border-[var(--iron)]/60 pt-4">
-          <Button
+          <StoneButton
             type="button"
-            variant="secondary"
+            title="Cancelar"
             onClick={() => onOpenChange(false)}
             disabled={loading}
-          >
-            Cancelar
-          </Button>
-          <Button
+            className="w-auto px-4 py-2"
+          />
+          <GoldButton
             type="submit"
-            variant="danger"
             disabled={loading}
-            className="flex items-center gap-1.5"
+            className="w-auto px-4 py-2 inline-flex items-center gap-1.5 text-xs font-['Cinzel',serif] font-bold uppercase tracking-wider"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>{loading ? 'Descartando...' : 'Confirmar Descarte'}</span>
-          </Button>
+          </GoldButton>
         </div>
       </form>
     </Modal>

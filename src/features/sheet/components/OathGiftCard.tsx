@@ -1,4 +1,4 @@
-import { Compass, ScrollText, ShieldAlert, Sparkles } from 'lucide-react';
+import { Compass, ScrollText, Sparkles } from 'lucide-react';
 import React from 'react';
 import { Divider } from '../../../shared/ui/Divider';
 import { Parchment } from '../../../shared/ui/Parchment';
@@ -121,7 +121,7 @@ export const OathGiftCard: React.FC<OathGiftCardProps> = ({
                   {st.stage}. {st.title}
                 </div>
                 <div className="text-[9px] font-['EB_Garamond',serif] italic mt-0.5">
-                  Nível {st.reqLevel}+
+                  Nível {st.reqLevel}+ — {st.desc}
                 </div>
               </div>
             );

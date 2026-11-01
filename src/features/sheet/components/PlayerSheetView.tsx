@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { calcDefesa, calcFocoMax, calcVidaMax } from '../../../entities/hero';
+import { calcDefesa, calcFocoMax } from '../../../entities/hero';
 import { useHero, useHeroes } from '../../../shared/hooks/baseHooks';
 import { useSessionStore } from '../../../shared/stores/session';
+import { Skeleton } from '../../../shared/ui/Skeleton';
+import { StonePanel } from '../../../shared/ui/StonePanel';
 import { AttributesGrid } from './AttributesGrid';
 import { BiographyCard, type BioData } from './BiographyCard';
 import { EffectDetailModal } from './EffectDetailModal';
@@ -32,23 +34,43 @@ export const PlayerSheetView: React.FC = () => {
 
   if ((isLoading && !hero) || (isLoadingHeroes && !hero)) {
     return (
-      <main className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-8 w-8 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
-          <span className="text-xs uppercase font-cinzel text-[var(--gold-dim)] tracking-widest">
-            Invocando Ficha do Jurado...
-          </span>
+      <main
+        className="flex flex-col gap-4 max-w-5xl mx-auto w-full pb-16 px-3 sm:px-4 pt-2"
+        aria-busy="true"
+      >
+        <div className="flex items-center justify-between slab p-2.5">
+          <Skeleton variant="stone" height={24} width="35%" />
+          <Skeleton variant="stone" height={24} width="25%" />
         </div>
+        <div className="p-4 border border-[var(--iron)] bg-[var(--stone)] space-y-3">
+          <Skeleton variant="parchment" height={96} width="100%" />
+          <Skeleton variant="parchment" height={20} width="70%" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Skeleton variant="stone" height={64} width="100%" />
+          <Skeleton variant="stone" height={64} width="100%" />
+          <Skeleton variant="stone" height={64} width="100%" />
+          <Skeleton variant="stone" height={64} width="100%" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Skeleton variant="stone" height={68} width="100%" />
+          <Skeleton variant="stone" height={68} width="100%" />
+          <Skeleton variant="stone" height={68} width="100%" />
+        </div>
+        <Skeleton variant="parchment" height={160} width="100%" />
+        <span className="text-xs uppercase font-['Cinzel',serif] text-[var(--gold)] tracking-widest text-center mt-2">
+          Invocando Ficha do Jurado...
+        </span>
       </main>
     );
   }
 
   if (!hero) {
     return (
-      <main className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center text-xs text-[var(--text-3)] font-cinzel">
+      <main className="flex items-center justify-center min-h-[60vh] px-4">
+        <StonePanel className="p-6 text-center text-xs text-[var(--muted)] font-['Cinzel',serif] uppercase tracking-widest">
           Nenhum herói encontrado na mesa.
-        </div>
+        </StonePanel>
       </main>
     );
   }

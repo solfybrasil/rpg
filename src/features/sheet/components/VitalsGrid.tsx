@@ -1,6 +1,8 @@
-import { Heart, Info, Shield, Utensils, Zap } from 'lucide-react';
-import React, { useState } from 'react';
+import { Heart, Shield, Utensils, Zap } from 'lucide-react';
+import { m } from 'motion/react';
+import React from 'react';
 import type { CharacterRow } from '../../../shared/hooks/baseHooks';
+import { spring } from '../../../shared/styles/motion';
 import { ConditionPill } from '../../../shared/ui/ConditionPill';
 import { CountUp } from '../../../shared/ui/CountUp';
 import { StatSlab } from '../../../shared/ui/StatSlab';
@@ -13,8 +15,6 @@ interface VitalsGridProps {
 }
 
 export const VitalsGrid: React.FC<VitalsGridProps> = ({ hero, defense, onOpenEffectModal }) => {
-  const [showDefenseBreakdown, setShowDefenseBreakdown] = useState(false);
-
   const hp = hero.health ?? 10;
   const maxHp = hero.max_health ?? 10;
   const foco = hero.focus ?? 3;
@@ -23,6 +23,9 @@ export const VitalsGrid: React.FC<VitalsGridProps> = ({ hero, defense, onOpenEff
   const hungerInt = Math.round(hunger);
   const vidaMaxFome = hero.vida_max_fome ?? 0;
   const conditions = Array.isArray(hero.conditions) ? hero.conditions : [];
+
+  const hpRatio = maxHp > 0 ? Math.min(1, Math.max(0, hp / maxHp)) : 0;
+  const focoRatio = maxFoco > 0 ? Math.min(1, Math.max(0, foco / maxFoco)) : 0;
 
   // Estado da Fome
   const hungerStatus = React.useMemo(() => {
@@ -59,65 +62,88 @@ export const VitalsGrid: React.FC<VitalsGridProps> = ({ hero, defense, onOpenEff
       {/* 3 Quick vital cards: Vida, Foco, Defesa */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Vida (Carne) */}
-        <StonePanel className="p-3 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-1">
-            <span className="flex items-center gap-1.5 text-xs font-['Cinzel',serif] uppercase tracking-wider text-[var(--blood)] font-bold">
-              <Heart className="h-4 w-4 text-[var(--blood)]" />
-              Vitalidade
-            </span>
-            <div className="text-sm font-bold font-['Cinzel',serif] tabular-nums">
-              <span className={hp <= 3 ? 'text-red-400 animate-pulse' : 'text-[var(--gold-hi)]'}>
-                <CountUp value={hp} />
+        <m.div
+          key={`hp-${hp}`}
+          initial={{ scale: 0.98 }}
+          animate={{ scale: 1 }}
+          transition={spring.soft}
+        >
+          <StonePanel className="p-3 flex flex-col justify-between h-full">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="flex items-center gap-1.5 text-xs font-['Cinzel',serif] uppercase tracking-wider text-[var(--blood)] font-bold">
+                <Heart className="h-4 w-4 text-[var(--blood)]" />
+                Vitalidade / Carne
               </span>
-              <span className="text-[var(--muted)] text-xs font-normal"> / {maxHp}</span>
-              {vidaMaxFome > 0 && (
-                <span className="text-[10px] text-red-400 font-normal ml-1">(-{vidaMaxFome})</span>
-              )}
+              <div className="text-sm font-bold font-['Cinzel',serif] tabular-nums">
+                <span
+                  className={hp <= 3 ? 'text-[var(--blood)] animate-pulse' : 'text-[var(--gold-hi)]'}
+                >
+                  <CountUp value={hp} />
+                </span>
+                <span className="text-[var(--muted)] text-xs font-normal">
+                  {' '}
+                  / <CountUp value={maxHp} />
+                </span>
+                {vidaMaxFome > 0 && (
+                  <span className="text-[10px] text-[var(--blood)] font-normal ml-1">
+                    (-{vidaMaxFome})
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="h-2 w-full recess overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-red-950 via-[var(--blood)] to-red-500 transition-all duration-400"
-              style={{ width: `${Math.min(100, Math.max(0, (hp / maxHp) * 100))}%` }}
-            />
-          </div>
-        </StonePanel>
+            <div className="h-2 w-full recess overflow-hidden">
+              <m.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: hpRatio }}
+                transition={spring.soft}
+                className="h-full w-full origin-left bg-gradient-to-r from-[var(--blood)] via-[var(--blood)] to-[var(--ember)]"
+              />
+            </div>
+          </StonePanel>
+        </m.div>
 
         {/* Foco (Mana) */}
-        <StonePanel className="p-3 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-1">
-            <span className="flex items-center gap-1.5 text-xs font-['Cinzel',serif] uppercase tracking-wider text-[var(--mist)] font-bold">
-              <Zap className="h-4 w-4 text-[var(--mana)]" />
-              Foco Solene
-            </span>
-            <div className="text-sm font-bold font-['Cinzel',serif] tabular-nums text-[var(--mist)]">
-              <CountUp value={foco} />
-              <span className="text-[var(--muted)] text-xs font-normal"> / {maxFoco}</span>
+        <m.div
+          key={`foco-${foco}`}
+          initial={{ scale: 0.98 }}
+          animate={{ scale: 1 }}
+          transition={spring.soft}
+        >
+          <StonePanel className="p-3 flex flex-col justify-between h-full">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="flex items-center gap-1.5 text-xs font-['Cinzel',serif] uppercase tracking-wider text-[var(--mana)] font-bold">
+                <Zap className="h-4 w-4 text-[var(--mana)]" />
+                Foco Místico
+              </span>
+              <div className="text-sm font-bold font-['Cinzel',serif] tabular-nums text-[var(--gold-hi)]">
+                <CountUp value={foco} />
+                <span className="text-[var(--muted)] text-xs font-normal">
+                  {' '}
+                  / <CountUp value={maxFoco} />
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="h-2 w-full recess overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-950 via-[var(--mana)] to-[var(--mist)] transition-all duration-400"
-              style={{ width: `${Math.min(100, Math.max(0, (foco / maxFoco) * 100))}%` }}
-            />
-          </div>
-        </StonePanel>
+            <div className="h-2 w-full recess overflow-hidden">
+              <m.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: focoRatio }}
+                transition={spring.soft}
+                className="h-full w-full origin-left bg-gradient-to-r from-[var(--mana)] via-[var(--mana)] to-[var(--gold-lo)]"
+              />
+            </div>
+          </StonePanel>
+        </m.div>
 
-        {/* Defesa Canônica */}
-        <StonePanel className="p-3 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-1.5 text-xs font-['Cinzel',serif] uppercase tracking-wider text-[var(--gold)] font-bold">
-              <Shield className="h-4 w-4 text-[var(--gold)]" />
-              Defesa Canônica
-            </div>
-            <p className="text-[10px] text-[var(--muted)] font-['EB_Garamond',serif] italic mt-0.5">
-              10 + Armadura + Astúcia
-            </p>
-          </div>
-          <div className="text-2xl font-bold font-['Cinzel',serif] text-[var(--gold-hi)] tabular-nums">
-            {defense}
-          </div>
-        </StonePanel>
+        {/* Defesa Canônica em StatSlab */}
+        <div className="relative flex items-center">
+          <StatSlab
+            label="Defesa"
+            value={defense}
+            unit="10 + Arm. + Ast."
+            className="w-full h-full flex flex-col justify-center"
+          />
+          <Shield className="h-4 w-4 text-[var(--gold)] absolute top-2.5 left-3 pointer-events-none opacity-80" />
+        </div>
       </div>
 
       {/* Saciedade & Fome (10 Pips Grid) */}
@@ -132,7 +158,8 @@ export const VitalsGrid: React.FC<VitalsGridProps> = ({ hero, defense, onOpenEff
               <span
                 className={`text-[10px] uppercase font-bold tracking-wider font-['Cinzel',serif] ${hungerStatus.color}`}
               >
-                {hungerStatus.label} ({hungerInt}/10)
+                {hungerStatus.label} (<CountUp value={hungerInt} />
+                /10)
               </span>
             </div>
             <p className="text-[11px] text-[var(--muted)] font-['EB_Garamond',serif] italic mt-0.5">
@@ -151,7 +178,7 @@ export const VitalsGrid: React.FC<VitalsGridProps> = ({ hero, defense, onOpenEff
                 className={`h-3 w-4 sm:w-5 border transition-all ${
                   isFilled
                     ? 'bg-[var(--gold)] border-[var(--gold-hi)] shadow-[0_0_6px_rgba(201,164,92,0.4)]'
-                    : 'bg-[#0d0b0a] border-[var(--iron)] opacity-40'
+                    : 'recess border-[var(--iron)] opacity-40'
                 }`}
                 title={`Saciedade ${pip}/10`}
               />

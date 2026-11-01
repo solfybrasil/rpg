@@ -24,28 +24,39 @@ export const JogadorLayout: React.FC = () => {
   const isBattleLive = activeBattleMap?.status === 'ao_vivo';
   const isMesaRoute = currentPath.includes('/jogador/mesa');
 
-  // Estados de Realtime e Animações
+  // Estados de Realtime e Animações (SKILL.md Seção 5)
   const [isDamaged, setIsDamaged] = useState(false);
   const [isHealing, setIsHealing] = useState(false);
+  const [isSpendingFocus, setIsSpendingFocus] = useState(false);
   const [showVignette, setShowVignette] = useState(false);
   const [floatingItems, setFloatingItems] = useState<FloatingItem[]>([]);
-  const [epicMoment, setEpicMoment] = useState<'level_up' | null>(null);
+  const [focusFloatingItems, setFocusFloatingItems] = useState<FloatingItem[]>([]);
+  const [epicQueue, setEpicQueue] = useState<Array<'level_up' | 'plague_surge' | 'fallen_hero'>>(
+    [],
+  );
 
   const prevHealthRef = useRef<number | null>(null);
+  const prevFocusRef = useRef<number | null>(null);
   const prevLevelRef = useRef<number | null>(null);
+  const prevPlagueRef = useRef<number | null>(null);
   const previousStatusRef = useRef<string | null | undefined>(undefined);
 
-  // Reatividade em tempo real aos eventos do herói (SKILL.md Seção 9.5)
+  const currentEpicMoment = epicQueue[0] ?? null;
+  const isFallen = hero ? (hero.health ?? 20) <= 0 : false;
+
+  // Reatividade em tempo real aos eventos do herói (SKILL.md Seções 5 e 9.5)
   useEffect(() => {
     if (!hero) return;
 
     const currentHealth = hero.health ?? 20;
+    const currentFocus = hero.focus ?? 5;
     const currentLevel = hero.level ?? 1;
+    const currentPlague = hero.plague_stage ?? 0;
 
-    // Detecta Dano ou Cura do Mestre
+    // 1. Detecta Dano, Cura ou Herói Caído
     if (prevHealthRef.current !== null && prevHealthRef.current !== currentHealth) {
       const diff = currentHealth - prevHealthRef.current;
-      const id = Date.now().toString();
+      const id = `hp-${Date.now()}`;
 
       if (diff < 0) {
         setIsDamaged(true);
@@ -53,6 +64,10 @@ export const JogadorLayout: React.FC = () => {
         setFloatingItems((prev) => [...prev, { id, value: Math.abs(diff), type: 'damage' }]);
         setTimeout(() => setIsDamaged(false), 400);
         setTimeout(() => setShowVignette(false), 320);
+
+        if (currentHealth <= 0 && prevHealthRef.current > 0) {
+          setEpicQueue((q) => [...q, 'fallen_hero']);
+        }
       } else if (diff > 0) {
         setIsHealing(true);
         setFloatingItems((prev) => [...prev, { id, value: diff, type: 'heal' }]);
@@ -61,11 +76,29 @@ export const JogadorLayout: React.FC = () => {
     }
     prevHealthRef.current = currentHealth;
 
-    // Detecta Subida de Nível
+    // 2. Detecta Foco Gasto (azul escurece por um instante)
+    if (prevFocusRef.current !== null && prevFocusRef.current !== currentFocus) {
+      const diff = currentFocus - prevFocusRef.current;
+      if (diff < 0) {
+        const id = `foc-${Date.now()}`;
+        setIsSpendingFocus(true);
+        setFocusFloatingItems((prev) => [...prev, { id, value: diff, type: 'focus' }]);
+        setTimeout(() => setIsSpendingFocus(false), 420);
+      }
+    }
+    prevFocusRef.current = currentFocus;
+
+    // 3. Detecta Subida de Nível (Fila única epicQueue)
     if (prevLevelRef.current !== null && currentLevel > prevLevelRef.current) {
-      setEpicMoment('level_up');
+      setEpicQueue((q) => [...q, 'level_up']);
     }
     prevLevelRef.current = currentLevel;
+
+    // 4. Detecta Avanço da Peste (Fila única epicQueue)
+    if (prevPlagueRef.current !== null && currentPlague > prevPlagueRef.current) {
+      setEpicQueue((q) => [...q, 'plague_surge']);
+    }
+    prevPlagueRef.current = currentPlague;
   }, [hero]);
 
   // Abre sozinha quando a mesa liga (transição para 'ao_vivo')
@@ -92,16 +125,20 @@ export const JogadorLayout: React.FC = () => {
   }, [inventory]);
 
   return (
-    <div className="flex-1 flex flex-col h-full w-full bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none font-sans">
+    <div
+      className={`flex-1 flex flex-col h-full w-full bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none font-['EB_Garamond',serif] ${
+        isFallen ? 'hero-fallen-filter' : ''
+      }`}
+    >
       {/* Vinheta de Dano na Tela */}
       {showVignette && <div className="damage-vignette" />}
 
-      {/* Momento Épico: Subida de Nível */}
+      {/* Fila Única de Momentos Épicos: Subida de Nível, Avanço da Peste, Herói Caído */}
       <EpicMoment
-        type={epicMoment}
+        type={currentEpicMoment}
         level={hero?.level || 2}
         heroName={hero?.name || 'Jurado'}
-        onClose={() => setEpicMoment(null)}
+        onClose={() => setEpicQueue((q) => q.slice(1))}
       />
 
       {/* Contêiner centralizado no PC (máx 480px), tela cheia no Celular */}
@@ -177,6 +214,11 @@ export const JogadorLayout: React.FC = () => {
               current={hero?.focus ?? 5}
               max={hero?.max_focus ?? 5}
               label="FOCO"
+              isSpendingFocus={isSpendingFocus}
+              floatingItems={focusFloatingItems}
+              onFloatingComplete={(id) =>
+                setFocusFloatingItems((prev) => prev.filter((i) => i.id !== id))
+              }
             />
 
             {/* 5 Abas: Ficha, Mochila, Grimório, Diário, Mais */}
