@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Showcase — Telas do Jogador (Pedra e Pergaminho)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   DESIGN SYSTEM: PEDRA & PERGAMINHO (CANÔNICO) + EMIL KOWALSKI MOBILE
+   ========================================================================== */
+:root {
+  color-scheme: dark;
+  --abyss: #070605;
+  --stone: #151311;
+  --stone-2: #1e1b18;
+  --iron: #3a342d;
+  --gold: #c9a45c;
+  --gold-hi: #ecd395;
+  --gold-lo: #6e5528;
+  --parch: #d6c9aa;
+  --parch-2: #bfae88;
+  --ink: #2a1f15;
+  --ink-soft: #5a4632;
+  --blood: #a3291f;
+  --mana: #2c5fb8;
+  --mist: #7fa6cf;
+  --violet: #9c7bd1;
+  --moss: #7fa36b;
+  --ember: #e08a3c;
+  --plague: #8a8f96;
+  --text: #e7dcc6;
+  --muted: #958a78;
+
+  --display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --body: "EB Garamond", Garamond, Georgia, serif;
+
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --mottle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.018' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.4 0 0 0 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E");
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  background: var(--abyss);
+  color: var(--text);
+  font-family: var(--body);
+  min-height: 100%;
+}
+
+body {
+  background: radial-gradient(ellipse at 50% 0%, rgba(201,164,92,0.12), transparent 70%),
+              var(--noise),
+              var(--abyss);
+  padding: 32px 16px 80px;
+}
+
+/* Tipografia */
+h1, h2, h3, h4, h5 { font-family: var(--display); letter-spacing: 0.08em; }
+
+/* Cabeçalho do Showcase */
+.showcase-header {
+  max-width: 1400px;
+  margin: 0 auto 36px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.eyebrow {
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.showcase-header h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--gold-hi);
+  text-shadow: 0 2px 0 #000, 0 0 24px rgba(201,164,92,0.3);
+}
+.showcase-header p {
+  max-width: 70ch;
+  font-size: 17px;
+  color: var(--text);
+  line-height: 1.5;
+}
+.showcase-header p em { color: var(--gold); font-style: normal; }
+
+/* Barra de Controles e Modos */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  padding: 10px 16px;
+  background: var(--stone);
+  border: 1px solid var(--iron);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+}
+.toolbar-btn {
+  background: var(--stone-2);
+  border: 1px solid var(--iron);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 100ms ease, background 150ms ease, border-color 150ms ease;
+}
+.toolbar-btn:hover { border-color: var(--gold); color: var(--gold-hi); }
+.toolbar-btn:active { transform: scale(0.96); }
+.toolbar-btn.active {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold-hi);
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(201,164,92,0.5);
+}
+.toolbar-divider { width: 1px; height: 24px; background: var(--iron); margin: 0 4px; }
+
+/* ---------- Galeria de Celulares ---------- */
+.gallery {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 40px 30px;
+}
+figure {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+figcaption {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold-hi);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+figcaption span { color: var(--muted); }
+
+/* Moldura do Celular (iPhone Frame Elegante) */
+.phone {
+  width: 375px;
+  height: 812px;
+  padding: 10px;
+  border-radius: 46px;
+  background: linear-gradient(160deg, #2a2622, #0b0a09 45%, #1a1714);
+  box-shadow: 0 0 0 1px #000, 0 30px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1);
+  position: relative;
+  user-select: none;
+}
+.screen {
+  position: relative;
+  width: 355px;
+  height: 792px;
+  border-radius: 36px;
+  overflow: hidden;
+  background: var(--mottle), var(--noise), var(--stone);
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top Notch / Ilha */
+.screen::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 20px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 999;
+}
+
+/* 1. Status Bar do Topo (52px) */
+.status {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 0;
+  background: linear-gradient(#0d0c0b, var(--stone-2));
+  border-bottom: 1px solid #000;
+  box-shadow: 0 1px 0 var(--gold-lo), 0 6px 14px rgba(0,0,0,0.6);
+  position: relative;
+  z-index: 10;
+  shrink-0: 0;
+}
+.who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--gold-hi);
+  font-weight: 700;
+}
+.who .lvl { font-size: 10px; color: var(--muted); letter-spacing: 0.14em; font-weight: normal; }
+.mini-port {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--gold);
+  background: radial-gradient(circle at 50% 35%, #a9c4e0, #3d5878 60%, #101820);
+  box-shadow: 0 0 0 1px #000;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+}
+.gold-count {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--display);
+  font-size: 13px;
+  color: var(--gold-hi);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* 2. Área Central Rolável */
+.content {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  right: 0;
+  bottom: 148px;
+  padding: 12px 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.content::-webkit-scrollbar { width: 4px; }
+.content::-webkit-scrollbar-thumb { background: var(--iron); }
+
+/* 3. HUD Inferior (148px) */
+.hud {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 148px;
+  z-index: 10;
+  pointer-events: none;
+}
+.hud * { pointer-events: auto; }
+
+/* Cinto de Poções */
+.belt {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 10px;
+  height: 72px;
+  background: var(--mottle), var(--noise), linear-gradient(#1a1714, #0e0d0c);
+  border-top: 1px solid #000;
+  box-shadow: 0 -1px 0 var(--gold-lo), 0 -10px 20px rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 0 88px;
+}
+.belt .q {
+  width: 32px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: #090807;
+  border: 1px solid #000;
+  cursor: pointer;
+  transition: transform 100ms ease, filter 150ms ease;
+}
+.belt .q:active { transform: scale(0.94); }
+.belt .q.r-unc { border-color: #2f6b48; background: radial-gradient(circle, rgba(47,107,72,0.3), #0d1410 75%); color: var(--moss); }
+.belt .q.r-rare { border-color: #2f5d8f; background: radial-gradient(circle, rgba(44,95,184,0.3), #121318 75%); color: var(--mist); }
+.belt .q.r-epic { border-color: #5d4589; background: radial-gradient(circle, rgba(156,123,209,0.3), #15121b 75%); color: var(--violet); }
+.belt .q.r-leg { border-color: var(--gold); background: radial-gradient(circle, rgba(201,164,92,0.4), #18140c 75%); color: var(--gold-hi); box-shadow: 0 0 8px rgba(201,164,92,0.4); }
+.belt .q small {
+  position: absolute;
+  right: 2px;
+  bottom: 0px;
+  font-family: var(--display);
+  font-size: 8px;
+  color: var(--muted);
+}
+
+/* Orbes de Vidro (82px adaptados para celular) */
+.orb {
+  position: absolute;
+  top: 6px;
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, #1a1212, #030303 70%);
+  box-shadow: 0 0 0 3px #0a0908, 0 0 0 4px var(--gold-lo), 0 0 0 5px #000, 0 0 0 7px #24201b, 0 0 0 8px #000, 0 8px 18px rgba(0,0,0,0.8), inset 0 0 20px #000;
+  cursor: pointer;
+  transition: transform 100ms ease;
+}
+.orb:active { transform: scale(0.97); }
+.orb.hp { left: 6px; }
+.orb.mp { right: 6px; }
+.orb .liq {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--f, 0.85) * 100%);
+  transition: height 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.orb.hp .liq { background: radial-gradient(circle at 35% 10%, #e8584a, #a3291f 45%, #4a0d08 95%); }
+.orb.mp .liq { background: radial-gradient(circle at 35% 10%, #6d9ae6, #2c5fb8 45%, #0d1f45 95%); }
+.orb .liq::before {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: -4px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.22);
+  filter: blur(1px);
+  animation: slosh 4s ease-in-out infinite;
+}
+@keyframes slosh { 50% { transform: translateY(2px) scaleX(1.05); } }
+.orb .glass {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 24%, rgba(255,255,255,0.55) 0 5%, rgba(255,255,255,0.12) 6% 18%, transparent 34%),
+              radial-gradient(circle at 62% 70%, rgba(255,255,255,0.08), transparent 30%),
+              radial-gradient(circle, transparent 58%, rgba(0,0,0,0.65) 100%);
+  pointer-events: none;
+}
+.orb .val {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  text-shadow: 0 1px 2px #000, 0 0 8px #000;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.orb .val small {
+  display: block;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.75);
+  margin-top: 2px;
+}
+
+/* Barra de Navegação Inferior (5 abas) */
+.nav-stone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 60px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: linear-gradient(#0e0d0c, #060505);
+  border-top: 1px solid #2a2520;
+  padding-bottom: 6px;
+}
+.nav-stone a, .nav-stone button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  color: var(--muted);
+  text-decoration: none;
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 100ms ease, color 150ms ease;
+  position: relative;
+}
+.nav-stone a:active, .nav-stone button:active { transform: scale(0.95); }
+.nav-stone a.on, .nav-stone button.on {
+  color: var(--gold-hi);
+  text-shadow: 0 0 8px rgba(236,211,149,0.5);
+}
+.nav-stone a.on::before, .nav-stone button.on::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  box-shadow: 0 0 6px rgba(236,211,149,0.8);
+}
+.nav-stone svg { width: 18px; height: 18px; }
+
+/* Materiais e Utilitários */
+.slab {
+  background: var(--noise), linear-gradient(#1d1a17, #121010);
+  border: 1px solid #2d2823;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -3px 8px rgba(0,0,0,0.55), 0 0 0 1px #050404;
+  position: relative;
+}
+.recess {
+  background: var(--noise), #0c0b0a;
+  border: 1px solid #000;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.04);
+}
+.parch {
+  position: relative;
+  color: var(--ink);
+  background: radial-gradient(ellipse at 22% 18%, rgba(140,100,40,0.22), transparent 55%),
+              radial-gradient(ellipse at 85% 88%, rgba(100,65,25,0.32), transparent 50%),
+              radial-gradient(ellipse at 70% 30%, rgba(255,250,235,0.35), transparent 45%),
+              var(--noise), var(--parch);
+  box-shadow: inset 0 0 34px rgba(70,45,15,0.55);
+}
+.parch-wrap {
+  filter: drop-shadow(0 3px 0 #000) drop-shadow(0 8px 12px rgba(0,0,0,0.6));
+}
+
+/* Divisor com Losango Central (◆) */
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gold-lo);
+  margin: 4px 0;
+}
+.rule::before, .rule::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+}
+.rule b {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  transform: rotate(45deg);
+  box-shadow: 0 0 4px rgba(201,164,92,0.4);
+}
+
+/* Botão de Ouro Maciço (.end-turn) */
+.btn-gold-macico {
+  height: 40px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #ecd395, #c9a45c 40%, #7e5c26);
+  color: #1a1208;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: 1px solid #ffe8b5;
+  box-shadow: 0 0 0 1px #000, 0 4px 14px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.6);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 100ms ease, filter 150ms ease;
+}
+.btn-gold-macico:active { transform: scale(0.97); }
+
+/* Selo de Cera Carmim */
+.wax-seal {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d43b2f, #a3291f 60%, #4a0d08);
+  border: 1px solid var(--gold-lo);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.3);
+  display: grid;
+  place-items: center;
+  color: var(--gold-hi);
+  font-size: 12px;
+}
+
+/* Floating Damage & Heal Numbers */
+.floating-num {
+  position: absolute;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 900;
+  pointer-events: none;
+  animation: floatUp 1s ease-out forwards;
+  z-index: 999;
+}
+.floating-num.dmg { color: #ff453a; text-shadow: 0 0 8px rgba(255,69,58,0.8), 0 2px 4px #000; }
+.floating-num.heal { color: #30d158; text-shadow: 0 0 8px rgba(48,209,88,0.8), 0 2px 4px #000; }
+@keyframes floatUp {
+  0% { opacity: 0; transform: translateY(0) scale(0.8); }
+  20% { opacity: 1; transform: translateY(-12px) scale(1.15); }
+  100% { opacity: 0; transform: translateY(-40px) scale(0.9); }
+}
+
+/* Vinheta de Dano */
+.damage-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 990;
+  box-shadow: inset 0 0 60px 15px rgba(163,41,31,0.7);
+  animation: flashPulse 300ms ease-out forwards;
+}
+@keyframes flashPulse { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+
+/* Visualização Individual do Celular (Interativo) */
+.single-view {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  min-height: 840px;
+}
+body.mode-single .gallery { display: none; }
+body.mode-single .single-view { display: flex; }
+</style>
+</head>
+<body>
+
+<!-- Header do Showcase -->
+<header class="showcase-header">
+  <div class="eyebrow">Compêndio de Interface · Lote 2 Concluído</div>
+  <h1>Telas do Jogador — Pedra e Pergaminho</h1>
+  <p>
+    Design canônico inspirado em ARPG sombrio medieval com textura de pedra rúnica, pergaminho rasgado, orbes táteis e física responsiva móvel (<em>Emil Kowalski &amp; Mobile-Native</em>).
+  </p>
+
+  <!-- Barra de Ferramentas / Alternador de Modos -->
+  <div class="toolbar">
+    <button class="toolbar-btn active" id="btnModeGallery" onclick="setMode('gallery')">Modo Galeria (9 Telas)</button>
+    <button class="toolbar-btn" id="btnModeSingle" onclick="setMode('single')">Simulador Interativo</button>
+    <div class="toolbar-divider"></div>
+    <button class="toolbar-btn" onclick="triggerDano()">💥 Simular Dano (-5)</button>
+    <button class="toolbar-btn" onclick="triggerCura()">🌿 Simular Cura (+4)</button>
+    <button class="toolbar-btn" onclick="triggerNivel()">⚜ Momento Épico (Nível)</button>
+  </div>
+</header>
+
+<!-- ========================================================================
+     MODO 1: GALERIA COMPLETA (9 TELAS LADO A LADO)
+     ======================================================================== -->
+<main class="gallery" id="galleryContainer">
+
+  <!-- ==================== TELA 1: FICHA DO JURADO ==================== -->
+  <figure id="fig-ficha">
+    <figcaption><span>01 ·</span> Ficha do Jurado</figcaption>
+    <div class="phone">
+      <div class="screen" id="screen-ficha">
+        <!-- Status Bar -->
+        <div class="status">
+          <div class="who">
+            <div class="mini-port">⚜</div>
+            <div>Tor-Bjorn <span class="lvl">LVL 4</span></div>
+          </div>
+          <div class="gold-count">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M18 8a6 6 0 0 1-6 6"/><circle cx="16" cy="16" r="6"/></svg>
+            <span>2.850b</span>
+          </div>
+        </div>
+
+        <!-- Conteúdo Ficha -->
+        <div class="content">
+          <!-- Hero Header Pergaminho -->
+          <div class="parch-wrap">
+            <div class="parch" style="padding: 10px 12px; clip-path: polygon(0% 2px, 2% 0px, 98% 1px, 100% 3px, 99% 98%, 97% 100%, 3% 99%, 0% 97%);">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="width: 44px; height: 44px; border: 2px solid var(--gold); background: #000; box-shadow: 0 0 6px rgba(0,0,0,0.5); display: grid; place-items: center; font-size: 20px;">🛡</div>
+                <div style="flex: 1;">
+                  <h3 style="font-size: 14px; font-weight: 700; color: var(--ink);">Tor-Bjorn Sangue-Fiel</h3>
+                  <div style="font-size: 10px; color: var(--ink-soft); font-style: italic;">"A carne apodrece antes que a honra se curve."</div>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                    <div style="flex: 1; height: 5px; background: rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.3);">
+                      <div style="width: 65%; height: 100%; background: var(--gold-lo);"></div>
+                    </div>
+                    <span style="font-family: var(--display); font-size: 9px; font-weight: 700; color: var(--ink);">XP 650/1000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Atributos 4 Blocos em Pedra com Losango a 45º -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+            <div class="slab" style="padding: 6px 2px; text-align: center;">
+              <span style="font-family: var(--display); font-size: 8px; letter-spacing: 0.1em; color: var(--muted); display: block;">CORPO</span>
+              <span style="font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--gold-hi);">+3</span>
+              <div style="width: 14px; height: 14px; background: var(--gold); transform: rotate(45deg); margin: 3px auto 0; display: grid; place-items: center;">
+                <span style="transform: rotate(-45deg); font-size: 7px; font-weight: 700; color: #000;">16</span>
+              </div>
+            </div>
+            <div class="slab" style="padding: 6px 2px; text-align: center;">
+              <span style="font-family: var(--display); font-size: 8px; letter-spacing: 0.1em; color: var(--muted); display: block;">VONTADE</span>
+              <span style="font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--gold-hi);">+2</span>
+              <div style="width: 14px; height: 14px; background: var(--gold); transform: rotate(45deg); margin: 3px auto 0; display: grid; place-items: center;">
+                <span style="transform: rotate(-45deg); font-size: 7px; font-weight: 700; color: #000;">14</span>
+              </div>
+            </div>
+            <div class="slab" style="padding: 6px 2px; text-align: center;">
+              <span style="font-family: var(--display); font-size: 8px; letter-spacing: 0.1em; color: var(--muted); display: block;">ASTÚCIA</span>
+              <span style="font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--gold-hi);">+1</span>
+              <div style="width: 14px; height: 14px; background: var(--gold); transform: rotate(45deg); margin: 3px auto 0; display: grid; place-items: center;">
+                <span style="transform: rotate(-45deg); font-size: 7px; font-weight: 700; color: #000;">12</span>
+              </div>
+            </div>
+            <div class="slab" style="padding: 6px 2px; text-align: center;">
+              <span style="font-family: var(--display); font-size: 8px; letter-spacing: 0.1em; color: var(--muted); display: block;">PRESENÇA</span>
+              <span style="font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--gold-hi);">0</span>
+              <div style="width: 14px; height: 14px; background: var(--iron); transform: rotate(45deg); margin: 3px auto 0; display: grid; place-items: center;">
+                <span style="transform: rotate(-45deg); font-size: 7px; font-weight: 700; color: #fff;">10</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vitais Secundários: Defesa e Saciedade -->
+          <div class="slab" style="padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-family: var(--display); font-size: 9px; color: var(--muted);">DEFESA:</span>
+              <span style="font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--gold-hi);">14</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="font-family: var(--display); font-size: 9px; color: var(--muted);">SACIEDADE:</span>
+              <div style="display: flex; gap: 3px;">
+                <span style="width: 6px; height: 6px; background: var(--gold); transform: rotate(45deg);"></span>
+                <span style="width: 6px; height: 6px; background: var(--gold); transform: rotate(45deg);"></span>
+                <span style="width: 6px; height: 6px; background: var(--iron); transform: rotate(45deg);"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rastreador de Peste do Juramento -->
+          <div class="slab" style="padding: 8px 10px;">
+            <div style="display: flex; justify-content: space-between; font-family: var(--display); font-size: 9px; color: var(--muted); margin-bottom: 4px;">
+              <span>PESTE DO JURAMENTO</span>
+              <span style="color: var(--blood); font-weight: 700;">ESTÁGIO I (2/10)</span>
+            </div>
+            <div style="height: 6px; background: #000; border: 1px solid var(--iron); display: flex;">
+              <div style="width: 20%; background: linear-gradient(90deg, var(--gold-lo), var(--blood));"></div>
+            </div>
+          </div>
+
+          <!-- Perícias em Pedra com Pontos Dourados -->
+          <div class="slab" style="padding: 8px 10px;">
+            <div style="font-family: var(--display); font-size: 9px; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 6px;">PERÍCIAS CONSAGRADAS</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span>Atletismo</span> <span style="color: var(--gold);">●●○ +3</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Intimidação</span> <span style="color: var(--gold);">●●● +4</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Sobrevivência</span> <span style="color: var(--gold);">●○○ +1</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Forja Ancestral</span> <span style="color: var(--gold);">●●○ +2</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Biografia em Pergaminho -->
+          <div class="parch-wrap">
+            <div class="parch" style="padding: 10px 12px; font-size: 11px; line-height: 1.4;">
+              <div class="rule"><b style="background: var(--ink);"></b></div>
+              <p style="font-style: italic; text-align: center; color: var(--ink);">
+                "Voto de Ferro prestado sobre a tumba do Senhor de Aldrenor. A lâmina jamais repousa enquanto a Peste respirar."
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- HUD Canônico Fixo -->
+        <div class="hud">
+          <div class="belt">
+            <div class="q r-unc">🧪<small>3</small></div>
+            <div class="q r-rare">📜<small>1</small></div>
+            <div class="q r-epic">💎<small>1</small></div>
+            <div class="q">·</div>
+          </div>
+          <div class="orb hp" onclick="triggerDano()">
+            <div class="liq" style="--f: 0.75;"></div>
+            <div class="glass"></div>
+            <div class="val">18/24<small>VIDA</small></div>
+          </div>
+          <div class="orb mp" onclick="triggerCura()">
+            <div class="liq" style="--f: 0.8;"></div>
+            <div class="glass"></div>
+            <div class="val">4/5<small>FOCO</small></div>
+          </div>
+          <nav class="nav-stone">
+            <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Ficha</span></button>
+            <button onclick="switchScreen('mochila')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Mochila</span></button>
+            <button onclick="switchScreen('grimorio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/></svg><span>Grimório</span></button>
+            <button onclick="switchScreen('diario')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/></svg><span>Diário</span></button>
+            <button onclick="switchScreen('oficina')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Mais</span></button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- ==================== TELA 2: MOCHILA & EQUIPAMENTO ==================== -->
+  <figure id="fig-mochila">
+    <figcaption><span>02 ·</span> Mochila &amp; Equipamento</figcaption>
+    <div class="phone">
+      <div class="screen" id="screen-mochila">
+        <div class="status">
+          <div class="who"><div class="mini-port">🎒</div>Mochila de Viagem</div>
+          <div class="gold-count"><span>22/40 Slots</span></div>
+        </div>
+        <div class="content">
+          <!-- Silhueta de Equipamento (8 Slots Canônicos) -->
+          <div class="slab" style="padding: 8px 10px;">
+            <div style="font-family: var(--display); font-size: 9px; letter-spacing: 0.1em; color: var(--gold); text-align: center; margin-bottom: 6px;">EQUIPAMENTO VESTIDO</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+              <div class="recess r-rare" style="height: 40px; display: grid; place-items: center; font-size: 14px; position: relative;" title="Elmo de Ferro Batido">🪖<small style="position: absolute; right: 2px; bottom: 0; font-size: 7px; color: var(--muted);">CAB</small></div>
+              <div class="recess r-epic" style="height: 40px; display: grid; place-items: center; font-size: 14px; position: relative;" title="Cota de Malha Ancestral">🛡<small style="position: absolute; right: 2px; bottom: 0; font-size: 7px; color: var(--muted);">TRC</small></div>
+              <div class="recess r-leg" style="height: 40px; display: grid; place-items: center; font-size: 14px; position: relative;" title="Espada do Juramento">⚔️<small style="position: absolute; right: 2px; bottom: 0; font-size: 7px; color: var(--gold);">MAO1</small></div>
+              <div class="recess r-unc" style="height: 40px; display: grid; place-items: center; font-size: 14px; position: relative;" title="Escudo de Carvalho">🛡<small style="position: absolute; right: 2px; bottom: 0; font-size: 7px; color: var(--muted);">MAO2</small></div>
+              <div class="recess" style="height: 40px; display: grid; place-items: center; font-size: 14px; position: relative;" title="Luvas de Caça">🧤<small style="position: absolute; right: 2px; bottom: 0; font-size: 7px; color: var(--muted);">MAOS</small></div>
+              <div class="recess" style="height: 40px; display: grid; place-items: center; font-size: 14px; position: relative;" title="Botas de Couro">🥾<small style="position: absolute; right: 2px; bottom: 0; font-size: 7px; color: var(--muted);">PES</small></div>
+              <div class="recess r-rare" style="height: 40px; display: grid; place-items: center; font-size: 14px; position: relative;" title="Anel de Cinzas">💍<small style="position: absolute; right: 2px; bottom: 0; font-size: 7px; color: var(--muted);">ANL</small></div>
+              <div class="recess r-unc" style="height: 40px; display: grid; place-items: center; font-size: 14px; position: relative;" title="Amuleto do Corvo">📿<small style="position: absolute; right: 2px; bottom: 0; font-size: 7px; color: var(--muted);">AML</small></div>
+            </div>
+          </div>
+
+          <!-- Grade da Mochila de 40 Slots (8 colunas) -->
+          <div class="slab" style="padding: 8px 6px; flex: 1;">
+            <div style="display: flex; justify-content: space-between; font-family: var(--display); font-size: 9px; color: var(--muted); margin-bottom: 6px;">
+              <span>COMPARTIMENTOS</span>
+              <span>CARGA: 14 / 20</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px;">
+              <div class="recess r-rare" style="height: 32px; display: grid; place-items: center; font-size: 12px;">🧪</div>
+              <div class="recess r-rare" style="height: 32px; display: grid; place-items: center; font-size: 12px;">🧪</div>
+              <div class="recess r-unc" style="height: 32px; display: grid; place-items: center; font-size: 12px;">📜</div>
+              <div class="recess r-leg" style="height: 32px; display: grid; place-items: center; font-size: 12px;">💎</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 12px;">🍞</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 12px;">🍖</div>
+              <div class="recess r-unc" style="height: 32px; display: grid; place-items: center; font-size: 12px;">🪵</div>
+              <div class="recess r-unc" style="height: 32px; display: grid; place-items: center; font-size: 12px;">⛏</div>
+              <!-- Linhas 2, 3, 4 com slots vazios afundados -->
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 32px; display: grid; place-items: center; font-size: 10px; color: rgba(255,255,255,0.1);">·</div>
+            </div>
+          </div>
+
+          <!-- Tooltip de Detalhes do Item em Pergaminho -->
+          <div class="parch-wrap">
+            <div class="parch" style="padding: 8px 10px; font-size: 10px;">
+              <div style="display: flex; justify-content: space-between; font-weight: 700; color: var(--ink);">
+                <span>Espada do Juramento</span> <span style="color: #6e5528;">LENDÁRIO</span>
+              </div>
+              <div style="color: var(--ink-soft); font-style: italic;">Dano: 2d6 + 3 · Corte e Fogo · Peso 3</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="belt">
+            <div class="q r-unc">🧪<small>3</small></div>
+            <div class="q r-rare">📜<small>1</small></div>
+            <div class="q r-epic">💎<small>1</small></div>
+            <div class="q">·</div>
+          </div>
+          <div class="orb hp"><div class="liq" style="--f: 0.75;"></div><div class="glass"></div><div class="val">18/24<small>VIDA</small></div></div>
+          <div class="orb mp"><div class="liq" style="--f: 0.8;"></div><div class="glass"></div><div class="val">4/5<small>FOCO</small></div></div>
+          <nav class="nav-stone">
+            <button onclick="switchScreen('ficha')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Ficha</span></button>
+            <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Mochila</span></button>
+            <button onclick="switchScreen('grimorio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/></svg><span>Grimório</span></button>
+            <button onclick="switchScreen('diario')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/></svg><span>Diário</span></button>
+            <button onclick="switchScreen('oficina')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Mais</span></button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- ==================== TELA 3: GRIMÓRIO MÍSTICO ==================== -->
+  <figure id="fig-grimorio">
+    <figcaption><span>03 ·</span> Grimório Místico</figcaption>
+    <div class="phone">
+      <div class="screen" id="screen-grimorio">
+        <div class="status">
+          <div class="who"><div class="mini-port">📖</div>Grimório Arcano</div>
+          <div class="gold-count"><span>Foco: 4/5</span></div>
+        </div>
+        <div class="content">
+          <!-- Abas Minhas Magias / Aprender -->
+          <div style="display: flex; gap: 6px;">
+            <button class="slab on" style="flex: 1; padding: 6px; font-family: var(--display); font-size: 9px; font-weight: 700; color: var(--gold-hi);">MINHAS (6)</button>
+            <button class="slab" style="flex: 1; padding: 6px; font-family: var(--display); font-size: 9px; color: var(--muted);">APRENDER (12)</button>
+          </div>
+
+          <!-- Card de Magia: Brasas de Aldrenor -->
+          <div class="slab" style="padding: 8px 10px; border-left: 3px solid var(--ember);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-family: var(--display); font-size: 12px; font-weight: 700; color: var(--gold-hi);">Brasas de Aldrenor</span>
+              <span style="font-family: var(--display); font-size: 9px; color: var(--ember); border: 1px solid var(--ember); padding: 1px 4px;">CÍRCULO 1</span>
+            </div>
+            <div style="font-size: 10px; color: var(--muted); font-style: italic; margin-top: 2px;">
+              Custo: 1 Foco · Alcance Médio · 2d6 Dano Ígneo
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+              <button class="btn-gold-macico" style="height: 26px; padding: 0 12px; font-size: 9px;">Conjurar</button>
+            </div>
+          </div>
+
+          <!-- Card de Magia: Manto de Névoa -->
+          <div class="slab" style="padding: 8px 10px; border-left: 3px solid var(--mist);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-family: var(--display); font-size: 12px; font-weight: 700; color: var(--gold-hi);">Manto de Névoa</span>
+              <span style="font-family: var(--display); font-size: 9px; color: var(--mist); border: 1px solid var(--mist); padding: 1px 4px;">CÍRCULO 2</span>
+            </div>
+            <div style="font-size: 10px; color: var(--muted); font-style: italic; margin-top: 2px;">
+              Custo: 2 Foco · Defesa +3 contra projéteis · 3 Rodadas
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+              <button class="btn-gold-macico" style="height: 26px; padding: 0 12px; font-size: 9px;">Conjurar</button>
+            </div>
+          </div>
+
+          <!-- Card de Magia: Praga do Sangue Negro -->
+          <div class="slab" style="padding: 8px 10px; border-left: 3px solid var(--blood);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-family: var(--display); font-size: 12px; font-weight: 700; color: var(--blood);">Praga do Sangue Negro</span>
+              <span style="font-family: var(--display); font-size: 9px; color: var(--blood); border: 1px solid var(--blood); padding: 1px 4px;">PROIBIDA</span>
+            </div>
+            <div style="font-size: 10px; color: var(--muted); font-style: italic; margin-top: 2px;">
+              Risco: +1 Peste · Drena 4 de Vida do alvo para curar o conjurador.
+            </div>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="belt">
+            <div class="q r-unc">🧪<small>3</small></div>
+            <div class="q r-rare">📜<small>1</small></div>
+            <div class="q r-epic">💎<small>1</small></div>
+            <div class="q">·</div>
+          </div>
+          <div class="orb hp"><div class="liq" style="--f: 0.75;"></div><div class="glass"></div><div class="val">18/24<small>VIDA</small></div></div>
+          <div class="orb mp"><div class="liq" style="--f: 0.8;"></div><div class="glass"></div><div class="val">4/5<small>FOCO</small></div></div>
+          <nav class="nav-stone">
+            <button onclick="switchScreen('ficha')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Ficha</span></button>
+            <button onclick="switchScreen('mochila')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Mochila</span></button>
+            <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/></svg><span>Grimório</span></button>
+            <button onclick="switchScreen('diario')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/></svg><span>Diário</span></button>
+            <button onclick="switchScreen('oficina')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Mais</span></button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- ==================== TELA 4: DIÁRIO DE CAMPANHA ==================== -->
+  <figure id="fig-diario">
+    <figcaption><span>04 ·</span> Diário de Campanha</figcaption>
+    <div class="phone">
+      <div class="screen" id="screen-diario">
+        <div class="status">
+          <div class="who"><div class="mini-port">📜</div>Crônicas da Peste</div>
+          <div class="gold-count"><span>Ato II</span></div>
+        </div>
+        <div class="content">
+          <!-- Quest Concluída com Carimbo em Pergaminho -->
+          <div class="parch-wrap">
+            <div class="parch" style="padding: 12px; position: relative; overflow: hidden;">
+              <div style="position: absolute; right: 10px; top: 10px; transform: rotate(-12deg); border: 2px solid var(--blood); color: var(--blood); font-family: var(--display); font-size: 10px; font-weight: 900; padding: 2px 6px; letter-spacing: 0.15em;">CONCLUÍDA</div>
+              <h4 style="font-size: 13px; font-weight: 700; color: var(--ink);">O Sino de Corvo-Negro</h4>
+              <p style="font-size: 11px; color: var(--ink-soft); font-style: italic; margin-top: 4px;">
+                Os três fragmentos foram forjados sob juramento. O sino tocou na catedral arruinada e os mortos recuaram.
+              </p>
+              <div style="font-size: 9px; color: var(--ink); margin-top: 6px; font-weight: 700;">Recompensa: +300 XP · 50 Moedas de Ouro</div>
+            </div>
+          </div>
+
+          <!-- Quest Ativa em Pergaminho -->
+          <div class="parch-wrap">
+            <div class="parch" style="padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="font-size: 13px; font-weight: 700; color: var(--ink);">As Cinzas do Confessor</h4>
+                <div class="wax-seal" style="width: 24px; height: 24px; font-size: 9px;">⚜</div>
+              </div>
+              <p style="font-size: 11px; color: var(--ink-soft); font-style: italic; margin-top: 4px;">
+                Investigar o subterrâneo do mosteiro e descobrir quem rompeu o lacre da tumba de São Valério.
+              </p>
+              <div style="display: flex; gap: 4px; align-items: center; margin-top: 8px; font-size: 10px; color: var(--ink);">
+                <span style="color: var(--gold-lo);">◆</span> <span>Restam 2 dias antes do toque da Peste</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="belt"><div class="q r-unc">🧪<small>3</small></div><div class="q r-rare">📜<small>1</small></div><div class="q r-epic">💎<small>1</small></div><div class="q">·</div></div>
+          <div class="orb hp"><div class="liq" style="--f: 0.75;"></div><div class="glass"></div><div class="val">18/24<small>VIDA</small></div></div>
+          <div class="orb mp"><div class="liq" style="--f: 0.8;"></div><div class="glass"></div><div class="val">4/5<small>FOCO</small></div></div>
+          <nav class="nav-stone">
+            <button onclick="switchScreen('ficha')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Ficha</span></button>
+            <button onclick="switchScreen('mochila')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Mochila</span></button>
+            <button onclick="switchScreen('grimorio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/></svg><span>Grimório</span></button>
+            <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/></svg><span>Diário</span></button>
+            <button onclick="switchScreen('oficina')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Mais</span></button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- ==================== TELA 5: OFICINA & FORJA ==================== -->
+  <figure id="fig-oficina">
+    <figcaption><span>05 ·</span> Oficina &amp; Forja</figcaption>
+    <div class="phone">
+      <div class="screen" id="screen-oficina">
+        <div class="status">
+          <div class="who"><div class="mini-port">⚒</div>Bancada de Manufatura</div>
+          <div class="gold-count"><span>Estação: Forja</span></div>
+        </div>
+        <div class="content">
+          <!-- Seletor de Bancada -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
+            <button class="slab on" style="padding: 6px 2px; font-family: var(--display); font-size: 8px; font-weight: 700; color: var(--gold-hi);">FORJA</button>
+            <button class="slab" style="padding: 6px 2px; font-family: var(--display); font-size: 8px; color: var(--muted);">ALQUIMIA</button>
+            <button class="slab" style="padding: 6px 2px; font-family: var(--display); font-size: 8px; color: var(--muted);">COZINHA</button>
+          </div>
+
+          <!-- Grade 3x3 de Montagem na Pedra -->
+          <div class="slab" style="padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <div style="font-family: var(--display); font-size: 9px; color: var(--gold); letter-spacing: 0.1em;">MATRIZ ANCESTRAL 3×3</div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 180px;">
+              <div class="recess r-unc" style="height: 52px; display: grid; place-items: center; font-size: 16px;">⛏</div>
+              <div class="recess r-rare" style="height: 52px; display: grid; place-items: center; font-size: 16px;">🔥</div>
+              <div class="recess" style="height: 52px; display: grid; place-items: center; font-size: 12px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 52px; display: grid; place-items: center; font-size: 12px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess r-unc" style="height: 52px; display: grid; place-items: center; font-size: 16px;">🪵</div>
+              <div class="recess" style="height: 52px; display: grid; place-items: center; font-size: 12px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 52px; display: grid; place-items: center; font-size: 12px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 52px; display: grid; place-items: center; font-size: 12px; color: rgba(255,255,255,0.1);">·</div>
+              <div class="recess" style="height: 52px; display: grid; place-items: center; font-size: 12px; color: rgba(255,255,255,0.1);">·</div>
+            </div>
+            <button class="btn-gold-macico" style="width: 100%; margin-top: 4px;">Martelar e Forjar</button>
+          </div>
+
+          <!-- Receita Rápida Conhecida -->
+          <div class="slab" style="padding: 8px 10px;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--gold-hi);">
+              <span>Lâmina de Aço Negro</span>
+              <span style="color: var(--moss); font-size: 9px;">PODE MONTAR</span>
+            </div>
+            <div style="font-size: 9px; color: var(--muted); margin-top: 2px;">Materiais: 2x Lingote de Ferro · 1x Brasa · 1x Cabo</div>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="belt"><div class="q r-unc">🧪<small>3</small></div><div class="q r-rare">📜<small>1</small></div><div class="q r-epic">💎<small>1</small></div><div class="q">·</div></div>
+          <div class="orb hp"><div class="liq" style="--f: 0.75;"></div><div class="glass"></div><div class="val">18/24<small>VIDA</small></div></div>
+          <div class="orb mp"><div class="liq" style="--f: 0.8;"></div><div class="glass"></div><div class="val">4/5<small>FOCO</small></div></div>
+          <nav class="nav-stone">
+            <button onclick="switchScreen('ficha')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Ficha</span></button>
+            <button onclick="switchScreen('mochila')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Mochila</span></button>
+            <button onclick="switchScreen('grimorio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/></svg><span>Grimório</span></button>
+            <button onclick="switchScreen('diario')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/></svg><span>Diário</span></button>
+            <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Mais</span></button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- ==================== TELA 6: DADOS RÚNICOS ==================== -->
+  <figure id="fig-dados">
+    <figcaption><span>06 ·</span> Dados Rúnicos</figcaption>
+    <div class="phone">
+      <div class="screen" id="screen-dados">
+        <div class="status">
+          <div class="who"><div class="mini-port">🎲</div>Rolador de Aldrenor</div>
+          <div class="gold-count"><span>Peso: 8</span></div>
+        </div>
+        <div class="content" style="align-items: center; justify-content: center; gap: 14px;">
+          <!-- 2 Dados Rúnicos Centrais Grandes -->
+          <div style="display: flex; gap: 16px; margin: 10px 0;">
+            <div class="slab" style="width: 76px; height: 76px; border: 2px solid var(--gold); display: grid; place-items: center; font-family: var(--display); font-size: 36px; font-weight: 700; color: var(--gold-hi); box-shadow: 0 0 16px rgba(201,164,92,0.3);">
+              5
+            </div>
+            <div class="slab" style="width: 76px; height: 76px; border: 2px solid var(--gold); display: grid; place-items: center; font-family: var(--display); font-size: 36px; font-weight: 700; color: var(--gold-hi); box-shadow: 0 0 16px rgba(201,164,92,0.3);">
+              4
+            </div>
+          </div>
+
+          <!-- Botão Rolar Dourado Maciço -->
+          <button class="btn-gold-macico" style="width: 100%; max-width: 260px; height: 44px; font-size: 13px;" onclick="rolarDadosFake(this)">
+            🎲 Rolar 2d6 + Bônus
+          </button>
+
+          <!-- Card de Resultado Canônico -->
+          <div class="slab" style="width: 100%; padding: 10px; border-left: 3px solid var(--moss);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-family: var(--display); font-size: 12px; font-weight: 700; color: var(--gold-hi);">SUCESSO PLENO</span>
+              <span style="font-family: var(--display); font-size: 16px; font-weight: 900; color: var(--moss);">12 ≥ 8</span>
+            </div>
+            <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">
+              Dados: [5 + 4] + Corpo (+3) = 12 contra Peso 8
+            </div>
+          </div>
+
+          <!-- Seletores de Atributo -->
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; width: 100%;">
+            <div class="slab on" style="padding: 6px; text-align: center; font-family: var(--display); font-size: 10px; font-weight: 700; color: var(--gold-hi);">CORPO (+3)</div>
+            <div class="slab" style="padding: 6px; text-align: center; font-family: var(--display); font-size: 10px; color: var(--muted);">VONTADE (+2)</div>
+            <div class="slab" style="padding: 6px; text-align: center; font-family: var(--display); font-size: 10px; color: var(--muted);">ASTÚCIA (+1)</div>
+            <div class="slab" style="padding: 6px; text-align: center; font-family: var(--display); font-size: 10px; color: var(--muted);">PRESENÇA (0)</div>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="belt"><div class="q r-unc">🧪<small>3</small></div><div class="q r-rare">📜<small>1</small></div><div class="q r-epic">💎<small>1</small></div><div class="q">·</div></div>
+          <div class="orb hp"><div class="liq" style="--f: 0.75;"></div><div class="glass"></div><div class="val">18/24<small>VIDA</small></div></div>
+          <div class="orb mp"><div class="liq" style="--f: 0.8;"></div><div class="glass"></div><div class="val">4/5<small>FOCO</small></div></div>
+          <nav class="nav-stone">
+            <button onclick="switchScreen('ficha')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Ficha</span></button>
+            <button onclick="switchScreen('mochila')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Mochila</span></button>
+            <button onclick="switchScreen('grimorio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/></svg><span>Grimório</span></button>
+            <button onclick="switchScreen('diario')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/></svg><span>Diário</span></button>
+            <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Mais</span></button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- ==================== TELA 7: MISSIVAS DO CONFESSOR ==================== -->
+  <figure id="fig-missivas">
+    <figcaption><span>07 ·</span> Missivas Sagradas</figcaption>
+    <div class="phone">
+      <div class="screen" id="screen-missivas">
+        <div class="status">
+          <div class="who"><div class="mini-port">✉</div>Missivas da Mesa</div>
+          <div class="gold-count"><span>3 Novas</span></div>
+        </div>
+        <div class="content">
+          <!-- Lista de Cartas em Pedra com Selo de Cera -->
+          <div class="slab" style="padding: 8px 10px; display: flex; align-items: center; gap: 8px; border-left: 2px solid var(--gold);">
+            <div class="wax-seal" style="width: 22px; height: 22px; font-size: 8px;">⚜</div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--gold-hi);">
+                <span>CONFESSOR DA MESA</span> <span style="color: var(--muted); font-size: 9px;">20:15</span>
+              </div>
+              <div style="font-size: 10px; color: var(--muted); font-style: italic;">"A névoa rasteja além das colinas. Estejam preparados..."</div>
+            </div>
+          </div>
+
+          <!-- Carta Aberta em Pergaminho com Selo Real -->
+          <div class="parch-wrap">
+            <div class="parch" style="padding: 16px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+              <div class="wax-seal" style="width: 36px; height: 36px; font-size: 14px;">⚜</div>
+              <div style="font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: var(--ink);">PALAVRA OFICIAL DO CONFESSOR</div>
+              <div class="rule" style="width: 100%; color: var(--ink-soft);"><b style="background: var(--ink-soft);"></b></div>
+              <p style="font-style: italic; font-size: 12px; line-height: 1.5; color: var(--ink); text-align: center;">
+                "Jurados de Aldrenor: o terceiro sino ressoou no vale profanado. Vossas promessas agora são a única barreira contra a podridão."
+              </p>
+              <div style="font-size: 9px; color: var(--ink-soft); font-style: italic; margin-top: 6px;">Lacre Sagrado Rompido · Mesa Principal</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="belt"><div class="q r-unc">🧪<small>3</small></div><div class="q r-rare">📜<small>1</small></div><div class="q r-epic">💎<small>1</small></div><div class="q">·</div></div>
+          <div class="orb hp"><div class="liq" style="--f: 0.75;"></div><div class="glass"></div><div class="val">18/24<small>VIDA</small></div></div>
+          <div class="orb mp"><div class="liq" style="--f: 0.8;"></div><div class="glass"></div><div class="val">4/5<small>FOCO</small></div></div>
+          <nav class="nav-stone">
+            <button onclick="switchScreen('ficha')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Ficha</span></button>
+            <button onclick="switchScreen('mochila')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Mochila</span></button>
+            <button onclick="switchScreen('grimorio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/></svg><span>Grimório</span></button>
+            <button onclick="switchScreen('diario')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/></svg><span>Diário</span></button>
+            <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Mais</span></button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- ==================== TELA 8: MERCADO DA FULIGEM (LOJA) ==================== -->
+  <figure id="fig-loja">
+    <figcaption><span>08 ·</span> Mercado da Fuligem</figcaption>
+    <div class="phone">
+      <div class="screen" id="screen-loja">
+        <div class="status">
+          <div class="who"><div class="mini-port">🏪</div>Empório Sagrado</div>
+          <div class="gold-count"><span>2.850b</span></div>
+        </div>
+        <div class="content">
+          <!-- Abas Comprar / Vender -->
+          <div style="display: flex; gap: 6px;">
+            <button class="slab on" style="flex: 1; padding: 6px; font-family: var(--display); font-size: 9px; font-weight: 700; color: var(--gold-hi);">COMPRAR (8)</button>
+            <button class="slab" style="flex: 1; padding: 6px; font-family: var(--display); font-size: 9px; color: var(--muted);">VENDER</button>
+          </div>
+
+          <!-- Artigo 1: Poção de Sangue Sagrado -->
+          <div class="slab" style="padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="recess r-rare" style="width: 32px; height: 32px; display: grid; place-items: center; font-size: 14px;">🧪</div>
+              <div>
+                <div style="font-family: var(--display); font-size: 11px; font-weight: 700; color: var(--gold-hi);">Elixir de Vida</div>
+                <div style="font-size: 9px; color: var(--muted);">Recupera +8 HP imediatamente</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-family: var(--display); font-size: 11px; font-weight: 700; color: var(--gold);">120b</div>
+              <button class="btn-gold-macico" style="height: 22px; padding: 0 8px; font-size: 8px; margin-top: 2px;">Comprar</button>
+            </div>
+          </div>
+
+          <!-- Artigo 2: Escudo de Ferro Negro -->
+          <div class="slab" style="padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="recess r-epic" style="width: 32px; height: 32px; display: grid; place-items: center; font-size: 14px;">🛡</div>
+              <div>
+                <div style="font-family: var(--display); font-size: 11px; font-weight: 700; color: var(--gold-hi);">Broquel de Ferro</div>
+                <div style="font-size: 9px; color: var(--muted);">Defesa +2 · Peso 2</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-family: var(--display); font-size: 11px; font-weight: 700; color: var(--gold);">450b</div>
+              <button class="btn-gold-macico" style="height: 22px; padding: 0 8px; font-size: 8px; margin-top: 2px;">Comprar</button>
+            </div>
+          </div>
+
+          <!-- Artigo 3: Tomo de Oração Antiga -->
+          <div class="slab" style="padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="recess r-leg" style="width: 32px; height: 32px; display: grid; place-items: center; font-size: 14px;">📖</div>
+              <div>
+                <div style="font-family: var(--display); font-size: 11px; font-weight: 700; color: var(--gold-hi);">Tomo Sagrado</div>
+                <div style="font-size: 9px; color: var(--muted);">Ensina 1 Milagre do Voto</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-family: var(--display); font-size: 11px; font-weight: 700; color: var(--gold);">1.500b</div>
+              <button class="btn-gold-macico" style="height: 22px; padding: 0 8px; font-size: 8px; margin-top: 2px;">Comprar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="belt"><div class="q r-unc">🧪<small>3</small></div><div class="q r-rare">📜<small>1</small></div><div class="q r-epic">💎<small>1</small></div><div class="q">·</div></div>
+          <div class="orb hp"><div class="liq" style="--f: 0.75;"></div><div class="glass"></div><div class="val">18/24<small>VIDA</small></div></div>
+          <div class="orb mp"><div class="liq" style="--f: 0.8;"></div><div class="glass"></div><div class="val">4/5<small>FOCO</small></div></div>
+          <nav class="nav-stone">
+            <button onclick="switchScreen('ficha')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Ficha</span></button>
+            <button onclick="switchScreen('mochila')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Mochila</span></button>
+            <button onclick="switchScreen('grimorio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/></svg><span>Grimório</span></button>
+            <button onclick="switchScreen('diario')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/></svg><span>Diário</span></button>
+            <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Mais</span></button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- ==================== TELA 9: ÁRVORE DO JURAMENTO ==================== -->
+  <figure id="fig-arvore">
+    <figcaption><span>09 ·</span> Árvore do Juramento</figcaption>
+    <div class="phone">
+      <div class="screen" id="screen-arvore">
+        <div class="status">
+          <div class="who"><div class="mini-port">✨</div>Árvore de Bênçãos</div>
+          <div class="gold-count"><span>2 Pontos</span></div>
+        </div>
+        <div class="content" style="align-items: center; justify-content: center;">
+          <!-- Visualização da Constelação de Talentos -->
+          <div class="slab" style="width: 100%; height: 320px; position: relative; overflow: hidden; display: grid; place-items: center;">
+            <svg width="280" height="280" viewBox="0 0 280 280" style="position: absolute;">
+              <!-- Linhas de conexão douradas -->
+              <line x1="140" y1="40" x2="70" y2="120" stroke="var(--gold-lo)" stroke-width="2" />
+              <line x1="140" y1="40" x2="210" y2="120" stroke="var(--gold-lo)" stroke-width="2" />
+              <line x1="70" y1="120" x2="70" y2="200" stroke="var(--gold-lo)" stroke-width="2" />
+              <line x1="210" y1="120" x2="210" y2="200" stroke="var(--iron)" stroke-width="1" stroke-dasharray="3,3" />
+
+              <!-- Nós de Bênçãos -->
+              <circle cx="140" cy="40" r="16" fill="var(--gold)" stroke="#000" stroke-width="2" />
+              <circle cx="70" cy="120" r="14" fill="var(--gold-lo)" stroke="#000" stroke-width="2" />
+              <circle cx="210" cy="120" r="14" fill="var(--gold-lo)" stroke="#000" stroke-width="2" />
+              <circle cx="70" cy="200" r="14" fill="var(--stone-2)" stroke="var(--gold)" stroke-width="2" />
+              <circle cx="210" cy="200" r="14" fill="#000" stroke="var(--iron)" stroke-width="1" />
+            </svg>
+
+            <!-- Detalhe da Bênção Ativa Selecionada -->
+            <div class="parch-wrap" style="position: absolute; bottom: 8px; left: 8px; right: 8px;">
+              <div class="parch" style="padding: 8px 10px; font-size: 10px;">
+                <div style="font-weight: 700; color: var(--ink);">Bênção do Aço Inquebrável</div>
+                <div style="color: var(--ink-soft); font-style: italic;">Sua armadura ganha +1 de Defesa passiva contra dano contundente.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="belt"><div class="q r-unc">🧪<small>3</small></div><div class="q r-rare">📜<small>1</small></div><div class="q r-epic">💎<small>1</small></div><div class="q">·</div></div>
+          <div class="orb hp"><div class="liq" style="--f: 0.75;"></div><div class="glass"></div><div class="val">18/24<small>VIDA</small></div></div>
+          <div class="orb mp"><div class="liq" style="--f: 0.8;"></div><div class="glass"></div><div class="val">4/5<small>FOCO</small></div></div>
+          <nav class="nav-stone">
+            <button onclick="switchScreen('ficha')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Ficha</span></button>
+            <button onclick="switchScreen('mochila')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Mochila</span></button>
+            <button onclick="switchScreen('grimorio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/></svg><span>Grimório</span></button>
+            <button onclick="switchScreen('diario')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/></svg><span>Diário</span></button>
+            <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Mais</span></button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+</main>
+
+<!-- ========================================================================
+     MODO 2: SIMULADOR INTERATIVO (CELULAR ÚNICO CENTRADO)
+     ======================================================================== -->
+<section class="single-view" id="singleContainer">
+  <div class="phone" id="interactivePhone">
+    <!-- O conteúdo da tela ativa é injetado ou espelhado dinamicamente -->
+  </div>
+</section>
+
+<!-- Script Interativo com Física de Toque & Efeitos -->
+<script>
+let currentActiveScreenId = 'screen-ficha';
+
+function setMode(mode) {
+  document.getElementById('btnModeGallery').classList.toggle('active', mode === 'gallery');
+  document.getElementById('btnModeSingle').classList.toggle('active', mode === 'single');
+  document.body.classList.toggle('mode-single', mode === 'single');
+
+  if (mode === 'single') {
+    renderSingleScreen(currentActiveScreenId);
+  }
+}
+
+function renderSingleScreen(screenId) {
+  const sourceScreen = document.getElementById(screenId);
+  const target = document.getElementById('interactivePhone');
+  if (sourceScreen && target) {
+    target.innerHTML = sourceScreen.outerHTML;
+  }
+}
+
+function switchScreen(name) {
+  const targetId = 'screen-' + name;
+  currentActiveScreenId = targetId;
+
+  if (document.body.classList.contains('mode-single')) {
+    renderSingleScreen(targetId);
+  } else {
+    const el = document.getElementById('fig-' + name);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+}
+
+// Simula Dano com Balanço, Vinheta Vermelha e Número Flutuante
+function triggerDano() {
+  const screens = document.querySelectorAll('.screen');
+  screens.forEach(s => {
+    // Vinheta
+    const v = document.createElement('div');
+    v.className = 'damage-flash';
+    s.appendChild(v);
+    setTimeout(() => v.remove(), 350);
+
+    // Número -5
+    const num = document.createElement('div');
+    num.className = 'floating-num dmg';
+    num.innerText = '-5';
+    num.style.left = '45px';
+    num.style.bottom = '130px';
+    s.appendChild(num);
+    setTimeout(() => num.remove(), 1000);
+
+    // Balanço do Orbe
+    const orb = s.querySelector('.orb.hp');
+    if (orb) {
+      orb.style.transform = 'scale(0.92) rotate(-5deg)';
+      setTimeout(() => { orb.style.transform = ''; }, 160);
+    }
+  });
+}
+
+// Simula Cura com Partículas Verdes e Número Flutuante
+function triggerCura() {
+  const screens = document.querySelectorAll('.screen');
+  screens.forEach(s => {
+    const num = document.createElement('div');
+    num.className = 'floating-num heal';
+    num.innerText = '+4';
+    num.style.left = '45px';
+    num.style.bottom = '130px';
+    s.appendChild(num);
+    setTimeout(() => num.remove(), 1000);
+
+    const orb = s.querySelector('.orb.hp');
+    if (orb) {
+      orb.style.transform = 'scale(1.08)';
+      setTimeout(() => { orb.style.transform = ''; }, 200);
+    }
+  });
+}
+
+// Simula Momento Épico (Subida de Nível)
+function triggerNivel() {
+  alert("⚜ MOMENTO ÉPICO: CONSAGRAÇÃO DE NÍVEL!\n\nSeus juramentos expandem os limites do seu ser.\nVida Máxima +4 · Foco Renovado · Aumento de Atributo.");
+}
+
+// Rolar Dados Interativo
+function rolarDadosFake(btn) {
+  btn.innerText = "Rolando...";
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.innerText = "🎲 Rolar 2d6 + Bônus";
+    btn.disabled = false;
+    triggerCura();
+  }, 400);
+}
+</script>
+
+</body>
+</html>

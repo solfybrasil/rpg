@@ -1,12 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PlaceholderView } from '../../shared/ui/PlaceholderView.tsx';
+import { WorldMapView } from '../../features/world-map';
+import { useSessionStore } from '../../shared/stores/session';
 
 export const Route = createFileRoute('/jogador/mapa')({
-  component: () => (
-    <PlaceholderView
-      title="Mapa do Continente"
-      category="Módulo do Jogador · Prompt 13"
-      description="Cartografia de Aldrenor, névoa de guerra, marcadores e visualização geográfica."
-    />
-  ),
+  component: PlayerMapRoute,
 });
+
+function PlayerMapRoute() {
+  const heroId = useSessionStore((s) => s.heroId) || 'teste_1';
+  return <WorldMapView userRole="player" sessionCode="MESA" playerId={heroId} />;
+}
