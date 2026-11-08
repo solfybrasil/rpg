@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { queryKeys, subscribeRealtime, supabase } from '../../../shared/supabase';
 import {
@@ -25,8 +25,6 @@ export function useDmDashboard() {
       if (error) throw error;
       return data || [];
     },
-    staleTime: 30_000,
-    gcTime: 5 * 60_000,
   });
 
   // 2. Realtime em 'characters'
@@ -47,7 +45,9 @@ export function useDmDashboard() {
       if (error) return [];
       return data || [];
     },
-    refetchInterval: 10000,
+    // A presença chega pelo realtime abaixo; o refetch é só uma rede de segurança.
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
   });
 
   // 4. Realtime em 'players'
@@ -91,6 +91,13 @@ export function useDmDashboard() {
     },
   });
 
+  // `useMutation` devolve um objeto novo a cada render; guardamos `mutate` num ref
+  // para que os callbacks abaixo fiquem estáveis e os cards memoizados não re-renderizem.
+  const mutateRef = useRef(vitalsMutation.mutate);
+  mutateRef.current = vitalsMutation.mutate;
+  const mutateAsyncRef = useRef(vitalsMutation.mutateAsync);
+  mutateAsyncRef.current = vitalsMutation.mutateAsync;
+
   // Atalhos rápidos
   const modifyHealth = useCallback(
     (heroId: string, delta: number) => {
@@ -102,12 +109,12 @@ export function useDmDashboard() {
       const next = Math.max(0, Math.min(max, current + delta));
       if (next === current) return;
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { health: next, alive: next > 0 },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const modifyFocus = useCallback(
@@ -120,12 +127,12 @@ export function useDmDashboard() {
       const next = Math.max(0, Math.min(max, current + delta));
       if (next === current) return;
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { focus: next },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const modifyPlague = useCallback(
@@ -137,12 +144,12 @@ export function useDmDashboard() {
       const next = Math.max(0, Math.min(10, current + delta));
       if (next === current) return;
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { plague: next },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const modifySaciedade = useCallback(
@@ -154,12 +161,12 @@ export function useDmDashboard() {
       const next = Math.max(0, Math.min(10, current + delta));
       if (next === current) return;
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { saciedade: next },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const modifyInspiration = useCallback(
@@ -171,12 +178,12 @@ export function useDmDashboard() {
       const next = Math.max(0, Math.min(2, current + delta));
       if (next === current) return;
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { inspiration: next },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const toggleExausto = useCallback(
@@ -186,12 +193,12 @@ export function useDmDashboard() {
       if (!hero) return;
       const current = Boolean(hero.exausto);
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { exausto: !current },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const applyCondition = useCallback(
@@ -236,64 +243,21 @@ export function useDmDashboard() {
     [queryClient],
   );
 
-  // Mapeamento normalizado dos heróis para exibição nos cards (memoizado para evitar re-render em cascata)
-  const heroesList: HeroDashboardItem[] = useMemo(() => {
-    return (heroesQuery.data || []).map((c) => {
-      const onlinePlayer = (playersQuery.data || []).find(
-        (p) => p.character_id === c.id || p.id === c.id,
-      );
-      const isOnline = Boolean(onlinePlayer?.is_online || c.active);
-
-      const rawAttributes = (c.attributes as Record<string, number>) || {};
-      const attributes = {
-        corpo: Number(rawAttributes.corpo ?? 0),
-        astucia: Number(rawAttributes.astucia ?? 0),
-        vontade: Number(rawAttributes.vontade ?? 0),
-        presenca: Number(rawAttributes.presenca ?? 0),
-      };
-
-      const conditions = Array.isArray(c.conditions)
-        ? (c.conditions as string[])
-        : [];
-
-      const skills = Array.isArray(c.skills)
-        ? (c.skills as Array<{ name: string; bonus: number; nivel?: number }>)
-        : [];
-
-      return {
-        id: c.id,
-        name: c.name,
-        race: c.race || 'Jurado',
-        caminho: c.caminho || 'Sem Caminho',
-        epithet: c.title || undefined,
-        avatarIcon: c.avatar_icon || null,
-        portraitUrl: c.avatar_icon || null,
-        health: Number(c.health ?? 10),
-        maxHealth: Number(c.max_health ?? 10),
-        plague: Number(c.plague ?? 0),
-        focus: Number(c.focus ?? 3),
-        maxFocus: Number(c.max_focus ?? 3),
-        inspiration: Math.min(2, Math.max(0, Number(c.inspiration ?? 0))),
-        saciedade: Number(c.saciedade ?? 8),
-        coinsBronze: Number(c.coins_bronze ?? 0),
-        defense: Number(c.defense ?? 8),
-        exausto: Boolean(c.exausto),
-        conditions,
-        isOnline,
-        attributes,
-        skills,
-        oath: c.oath || undefined,
-        oathType: c.oath_type || undefined,
-        oathPower: c.oath_power || undefined,
-        oathItem: c.oath_item || undefined,
-        gift: c.gift || undefined,
-        racialTrait: c.racial_trait || undefined,
-        backstory: c.backstory || undefined,
-        connection: c.connection || undefined,
-        raw: c,
-      };
-    });
+  // Mapeamento normalizado dos heróis para exibição nos cards
+  const heroesList = useMemo<HeroDashboardItem[]>(() => {
+    const onlineIds = new Set<string>();
+    for (const p of playersQuery.data || []) {
+      if (!p.is_online) continue;
+      if (p.character_id) onlineIds.add(p.character_id);
+      if (p.id) onlineIds.add(p.id);
+    }
+    return (heroesQuery.data || []).map((c) => toDashboardItem(c, onlineIds.has(c.id)));
   }, [heroesQuery.data, playersQuery.data]);
+
+  const updateVitals = useCallback(
+    (heroId: string, patch: Partial<CharacterRow>) => mutateAsyncRef.current({ heroId, patch }),
+    [],
+  );
 
   return {
     heroes: heroesList,
@@ -308,7 +272,59 @@ export function useDmDashboard() {
     removeCondition,
     giveItem,
     removeItem,
-    updateHeroVitals: (heroId: string, patch: Partial<CharacterRow>) =>
-      vitalsMutation.mutateAsync({ heroId, patch }),
+    updateHeroVitals: updateVitals,
   };
+}
+
+function toDashboardItem(c: CharacterRow, onlineByPresence: boolean): HeroDashboardItem {
+    const isOnline = Boolean(onlineByPresence || c.active);
+
+    const rawAttributes = (c.attributes as Record<string, number>) || {};
+    const attributes = {
+      corpo: Number(rawAttributes.corpo ?? 0),
+      astucia: Number(rawAttributes.astucia ?? 0),
+      vontade: Number(rawAttributes.vontade ?? 0),
+      presenca: Number(rawAttributes.presenca ?? 0),
+    };
+
+    const conditions = Array.isArray(c.conditions)
+      ? (c.conditions as string[])
+      : [];
+
+    const skills = Array.isArray(c.skills)
+      ? (c.skills as Array<{ name: string; bonus: number; nivel?: number }>)
+      : [];
+
+    return {
+      id: c.id,
+      name: c.name,
+      race: c.race || 'Jurado',
+      caminho: c.caminho || 'Sem Caminho',
+      epithet: c.title || undefined,
+      avatarIcon: c.avatar_icon || null,
+      portraitUrl: c.avatar_icon || null,
+      health: Number(c.health ?? 10),
+      maxHealth: Number(c.max_health ?? 10),
+      plague: Number(c.plague ?? 0),
+      focus: Number(c.focus ?? 3),
+      maxFocus: Number(c.max_focus ?? 3),
+      inspiration: Math.min(2, Math.max(0, Number(c.inspiration ?? 0))),
+      saciedade: Number(c.saciedade ?? 8),
+      coinsBronze: Number(c.coins_bronze ?? 0),
+      defense: Number(c.defense ?? 8),
+      exausto: Boolean(c.exausto),
+      conditions,
+      isOnline,
+      attributes,
+      skills,
+      oath: c.oath || undefined,
+      oathType: c.oath_type || undefined,
+      oathPower: c.oath_power || undefined,
+      oathItem: c.oath_item || undefined,
+      gift: c.gift || undefined,
+      racialTrait: c.racial_trait || undefined,
+      backstory: c.backstory || undefined,
+      connection: c.connection || undefined,
+      raw: c,
+    };
 }

@@ -728,7 +728,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
       );
     });
     await pMD.goto('/mestre/bestiario');
-    await expect(pMD.getByRole('heading', { name: /Bestiário de Aldrenor/i })).toBeVisible();
+    await expect(pMD.getByRole('heading', { name: 'Bestiário', exact: true })).toBeVisible();
     await pMD.waitForTimeout(600);
     await pMD.screenshot({ path: path.join(outDir, 'bestiario_mobile_dark.png'), fullPage: true });
     await mobDark.close();
@@ -747,7 +747,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     });
     await pMP.goto('/mestre/bestiario');
     await pMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
-    await expect(pMP.getByRole('heading', { name: /Bestiário de Aldrenor/i })).toBeVisible();
+    await expect(pMP.getByRole('heading', { name: 'Bestiário', exact: true })).toBeVisible();
     await pMP.waitForTimeout(600);
     await pMP.screenshot({ path: path.join(outDir, 'bestiario_mobile_parchment.png'), fullPage: true });
     await mobParch.close();
@@ -765,7 +765,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
       );
     });
     await pPD.goto('/mestre/bestiario');
-    await expect(pPD.getByRole('heading', { name: /Bestiário de Aldrenor/i })).toBeVisible();
+    await expect(pPD.getByRole('heading', { name: 'Bestiário', exact: true })).toBeVisible();
     await pPD.waitForTimeout(600);
     await pPD.screenshot({ path: path.join(outDir, 'bestiario_pc_dark.png') });
     await pcDark.close();
@@ -784,7 +784,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     });
     await pPP.goto('/mestre/bestiario');
     await pPP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
-    await expect(pPP.getByRole('heading', { name: /Bestiário de Aldrenor/i })).toBeVisible();
+    await expect(pPP.getByRole('heading', { name: 'Bestiário', exact: true })).toBeVisible();
     await pPP.waitForTimeout(600);
     await pPP.screenshot({ path: path.join(outDir, 'bestiario_pc_parchment.png') });
     await pcParch.close();
@@ -804,7 +804,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
       );
     });
     await pMD.goto('/mestre/itens');
-    await expect(pMD.getByRole('heading', { name: /Catálogo de Artigos & Tesouros/i })).toBeVisible();
+    await expect(pMD.getByRole('heading', { name: 'Itens', exact: true })).toBeVisible();
     await pMD.waitForTimeout(800);
     await pMD.screenshot({ path: path.join(outDir, 'itens_mobile_dark.png'), fullPage: true });
     await mobDark.close();
@@ -823,7 +823,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     });
     await pMP.goto('/mestre/itens');
     await pMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
-    await expect(pMP.getByRole('heading', { name: /Catálogo de Artigos & Tesouros/i })).toBeVisible();
+    await expect(pMP.getByRole('heading', { name: 'Itens', exact: true })).toBeVisible();
     await pMP.waitForTimeout(800);
     await pMP.screenshot({ path: path.join(outDir, 'itens_mobile_parchment.png'), fullPage: true });
     await mobParch.close();
@@ -841,7 +841,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
       );
     });
     await pPD.goto('/mestre/itens');
-    await expect(pPD.getByRole('heading', { name: /Catálogo de Artigos & Tesouros/i })).toBeVisible();
+    await expect(pPD.getByRole('heading', { name: 'Itens', exact: true })).toBeVisible();
     await pPD.waitForTimeout(800);
     await pPD.screenshot({ path: path.join(outDir, 'itens_pc_dark.png') });
     await pcDark.close();
@@ -860,7 +860,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     });
     await pPP.goto('/mestre/itens');
     await pPP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
-    await expect(pPP.getByRole('heading', { name: /Catálogo de Artigos & Tesouros/i })).toBeVisible();
+    await expect(pPP.getByRole('heading', { name: 'Itens', exact: true })).toBeVisible();
     await pPP.waitForTimeout(800);
     await pPP.screenshot({ path: path.join(outDir, 'itens_pc_parchment.png') });
     await pcParch.close();
@@ -880,7 +880,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
       );
     });
     await pMD.goto('/mestre/oficina');
-    await expect(pMD.getByRole('heading', { name: /Oficina, Receitas & Mercado/i })).toBeVisible();
+    await expect(pMD.getByRole('heading', { name: 'Oficina', exact: true })).toBeVisible();
     await pMD.waitForTimeout(800);
     await pMD.screenshot({ path: path.join(outDir, 'oficina_mestre_mobile_dark.png'), fullPage: true });
     await mobDark.close();
@@ -899,7 +899,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     });
     await pMP.goto('/mestre/oficina');
     await pMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
-    await expect(pMP.getByRole('heading', { name: /Oficina, Receitas & Mercado/i })).toBeVisible();
+    await expect(pMP.getByRole('heading', { name: 'Oficina', exact: true })).toBeVisible();
     await pMP.waitForTimeout(800);
     await pMP.screenshot({ path: path.join(outDir, 'oficina_mestre_mobile_parchment.png'), fullPage: true });
     await mobParch.close();
@@ -917,7 +917,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
       );
     });
     await pPD.goto('/mestre/oficina');
-    await expect(pPD.getByRole('heading', { name: /Oficina, Receitas & Mercado/i })).toBeVisible();
+    await expect(pPD.getByRole('heading', { name: 'Oficina', exact: true })).toBeVisible();
     await pPD.waitForTimeout(800);
     await pPD.screenshot({ path: path.join(outDir, 'oficina_mestre_pc_dark.png') });
     await pcDark.close();
@@ -936,7 +936,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     });
     await pPP.goto('/mestre/oficina');
     await pPP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
-    await expect(pPP.getByRole('heading', { name: /Oficina, Receitas & Mercado/i })).toBeVisible();
+    await expect(pPP.getByRole('heading', { name: 'Oficina', exact: true })).toBeVisible();
     await pPP.waitForTimeout(800);
     await pPP.screenshot({ path: path.join(outDir, 'oficina_mestre_pc_parchment.png') });
     await pcParch.close();
@@ -957,7 +957,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
       );
     });
     await pMD.goto('/mestre/grimorio');
-    await expect(pMD.getByRole('heading', { name: /Grimórios, Provações & Árvores/i })).toBeVisible();
+    await expect(pMD.getByRole('heading', { name: 'Grimórios', exact: true })).toBeVisible();
     await pMD.waitForTimeout(400);
     await pMD.screenshot({ path: path.join(outDir, 'grimorio_mestre_mobile_dark.png'), fullPage: true });
     await mobDark.close();
@@ -976,7 +976,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     });
     await pMP.goto('/mestre/grimorio');
     await pMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
-    await expect(pMP.getByRole('heading', { name: /Grimórios, Provações & Árvores/i })).toBeVisible();
+    await expect(pMP.getByRole('heading', { name: 'Grimórios', exact: true })).toBeVisible();
     await pMP.waitForTimeout(400);
     await pMP.screenshot({ path: path.join(outDir, 'grimorio_mestre_mobile_parchment.png'), fullPage: true });
     await mobParch.close();
@@ -994,7 +994,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
       );
     });
     await pPD.goto('/mestre/grimorio');
-    await expect(pPD.getByRole('heading', { name: /Grimórios, Provações & Árvores/i })).toBeVisible();
+    await expect(pPD.getByRole('heading', { name: 'Grimórios', exact: true })).toBeVisible();
     await pPD.waitForTimeout(400);
     await pPD.screenshot({ path: path.join(outDir, 'grimorio_mestre_pc_dark.png') });
     await pcDark.close();
@@ -1013,7 +1013,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     });
     await pPP.goto('/mestre/grimorio');
     await pPP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
-    await expect(pPP.getByRole('heading', { name: /Grimórios, Provações & Árvores/i })).toBeVisible();
+    await expect(pPP.getByRole('heading', { name: 'Grimórios', exact: true })).toBeVisible();
     await pPP.waitForTimeout(400);
     await pPP.screenshot({ path: path.join(outDir, 'grimorio_mestre_pc_parchment.png') });
     await pcParch.close();
@@ -1035,7 +1035,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
       );
     });
     await pMD.goto('/mestre/sistema');
-    await expect(pMD.getByRole('heading', { name: /Sons, Códice & Ajustes/i })).toBeVisible();
+    await expect(pMD.getByRole('heading', { name: 'Sistema', exact: true })).toBeVisible();
     await pMD.waitForTimeout(400);
     await pMD.screenshot({ path: path.join(outDir, 'sistema_mestre_mobile_dark.png'), fullPage: true });
     await mobDark.close();
@@ -1054,7 +1054,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     });
     await pMP.goto('/mestre/sistema');
     await pMP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
-    await expect(pMP.getByRole('heading', { name: /Sons, Códice & Ajustes/i })).toBeVisible();
+    await expect(pMP.getByRole('heading', { name: 'Sistema', exact: true })).toBeVisible();
     await pMP.waitForTimeout(400);
     await pMP.screenshot({ path: path.join(outDir, 'sistema_mestre_mobile_parchment.png'), fullPage: true });
     await mobParch.close();
@@ -1072,7 +1072,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
       );
     });
     await pPD.goto('/mestre/sistema');
-    await expect(pPD.getByRole('heading', { name: /Sons, Códice & Ajustes/i })).toBeVisible();
+    await expect(pPD.getByRole('heading', { name: 'Sistema', exact: true })).toBeVisible();
     await pPD.waitForTimeout(400);
     await pPD.screenshot({ path: path.join(outDir, 'sistema_mestre_pc_dark.png') });
     await pcDark.close();
@@ -1091,7 +1091,7 @@ test.describe('Captura Visual: Screenshots de Design', () => {
     });
     await pPP.goto('/mestre/sistema');
     await pPP.evaluate(() => document.documentElement.classList.add('theme-parchment'));
-    await expect(pPP.getByRole('heading', { name: /Sons, Códice & Ajustes/i })).toBeVisible();
+    await expect(pPP.getByRole('heading', { name: 'Sistema', exact: true })).toBeVisible();
     await pPP.waitForTimeout(400);
     await pPP.screenshot({ path: path.join(outDir, 'sistema_mestre_pc_parchment.png') });
     await pcParch.close();

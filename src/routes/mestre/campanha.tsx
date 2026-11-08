@@ -1,6 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { DMCampanhaView } from '../../features/dm-dashboard/components/DMCampanhaView';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
+// Crônicas ainda não têm armazenamento real; a rota antiga leva ao painel de jogadores.
 export const Route = createFileRoute('/mestre/campanha')({
-  component: DMCampanhaView,
+  beforeLoad: () => {
+    throw redirect({ to: '/mestre/jogadores' });
+  },
 });

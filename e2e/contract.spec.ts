@@ -993,7 +993,7 @@ test.describe
       });
 
       await page.goto('/mestre/bestiario');
-      await expect(page.getByRole('heading', { name: /Bestiário de Aldrenor/i })).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'Bestiário', exact: true })).toBeVisible({
         timeout: 10000,
       });
 
@@ -1069,7 +1069,7 @@ test.describe
 
       // 1. Validar cabeçalho principal
       await expect(
-        page.getByRole('heading', { name: /Catálogo de Artigos & Tesouros/i }),
+        page.getByRole('heading', { name: 'Itens', exact: true }),
       ).toBeVisible();
 
       // 2. Busca e filtros no servidor
@@ -1087,7 +1087,7 @@ test.describe
       await page.waitForTimeout(400);
 
       // 4. Abrir formulário de criação com prévia ao vivo
-      await page.getByTestId('create-item-btn').click();
+      await page.getByTestId('filter-create-item-btn').click();
       const nameInput = page.getByTestId('item-form-name');
       await expect(nameInput).toBeVisible();
       await nameInput.fill('Adaga Obscura E2E');
@@ -1132,7 +1132,7 @@ test.describe
 
       // 1. Validar cabeçalho da oficina
       await expect(
-        page.getByRole('heading', { name: /Oficina, Receitas & Mercado/i }),
+        page.getByRole('heading', { name: 'Oficina', exact: true }),
       ).toBeVisible();
 
       // 2. Tab 1: Bancadas & Controle (Switches de Forja e Alquimia)
@@ -1199,7 +1199,7 @@ test.describe
 
       // 1. Validar cabeçalho principal
       await expect(
-        page.getByRole('heading', { name: /Grimórios, Provações & Árvores/i }),
+        page.getByRole('heading', { name: 'Grimórios', exact: true }),
       ).toBeVisible();
 
       // 2. Tab 1: Grimório dos Heróis
@@ -1259,7 +1259,7 @@ test.describe
 
       // 1. Validar cabeçalho principal
       await expect(
-        page.getByRole('heading', { name: /Sons, Códice & Ajustes/i }),
+        page.getByRole('heading', { name: 'Sistema', exact: true }),
       ).toBeVisible();
 
       // 2. Tab 1: Soundboard

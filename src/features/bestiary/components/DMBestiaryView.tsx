@@ -17,6 +17,7 @@ import { BestiaryFilterBar } from './BestiaryFilterBar.tsx';
 import { BestiaryTableView } from './BestiaryTableView.tsx';
 import { CreatureDetailSheet } from './CreatureDetailSheet.tsx';
 import { CreatureFormModal } from './CreatureFormModal.tsx';
+import { DMPageHeader, DM_PAGE_CLASS } from '../../../shared/ui/DMPage';
 
 export const DMBestiaryView: React.FC = memo(() => {
   const queryClient = useQueryClient();
@@ -176,33 +177,20 @@ export const DMBestiaryView: React.FC = memo(() => {
   const totalPages = data?.totalPages || 1;
 
   return (
-    <div className="min-h-screen bg-[#08080a] text-[#ebe6d6] p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-      {/* Top Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Skull className="h-6 w-6 text-[#f5b65b]" />
-            <h1 className="font-cinzel text-2xl sm:text-3xl font-bold tracking-tight text-[#f5b65b] uppercase">
-              Bestiário de Aldrenor
-            </h1>
-          </div>
-          <p className="font-serif italic text-xs sm:text-sm text-white/60 mt-1 max-w-2xl">
-            Catálogo completo de feras, horrores da peste e abominações. Busca veloz no servidor,
-            ficha tática em gaveta lateral, integração de vídeo idle e envio direto para a mesa.
-          </p>
-        </div>
-
-        {/* Quick Stats & View Mode Toggle */}
-        <div className="flex items-center gap-3 self-start sm:self-auto">
-          <div className="flex items-center rounded-xl border border-[#423326] bg-[#14110e] p-1">
+    <div className={DM_PAGE_CLASS}>
+      <DMPageHeader
+        title="Bestiário"
+        subtitle={`${totalCount} ${totalCount === 1 ? 'criatura' : 'criaturas'} no catálogo`}
+        actions={
+          <div className="flex items-center border border-[var(--iron)] bg-[var(--stone)]">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
               title="Exibição em Grade"
-              className={`p-1.5 rounded-lg transition-colors ${
+              className={`p-1.5 cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-[#c5a36a] text-[#100e0c]'
-                  : 'text-[#a99a82] hover:text-[#e2d5bd]'
+                  ? 'bg-[var(--stone-2)] text-[var(--gold-hi)]'
+                  : 'text-[var(--muted)] hover:text-[var(--text)]'
               }`}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -211,22 +199,17 @@ export const DMBestiaryView: React.FC = memo(() => {
               type="button"
               onClick={() => setViewMode('table')}
               title="Exibição em Lista"
-              className={`p-1.5 rounded-lg transition-colors ${
+              className={`p-1.5 cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-[#c5a36a] text-[#100e0c]'
-                  : 'text-[#a99a82] hover:text-[#e2d5bd]'
+                  ? 'bg-[var(--stone-2)] text-[var(--gold-hi)]'
+                  : 'text-[var(--muted)] hover:text-[var(--text)]'
               }`}
             >
               <List className="h-4 w-4" />
             </button>
           </div>
-
-          <div className="flex items-center gap-2 bg-[#191512] border border-[#423326] rounded-xl px-3 py-1.5 text-xs font-mono text-[#a99a82]">
-            <BookOpen className="h-3.5 w-3.5 text-[#c5a36a]" />
-            <span><strong className="text-[#e4c894]">{totalCount}</strong> criaturas</span>
-          </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Filter Bar */}
       <BestiaryFilterBar
