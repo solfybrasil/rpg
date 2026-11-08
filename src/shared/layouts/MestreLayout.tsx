@@ -1,89 +1,170 @@
 import { Link, Outlet, useRouterState } from '@tanstack/react-router';
 import {
   BookOpen,
-  ChevronLeft,
-  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Grid,
+  type LucideIcon,
   Package,
-  Scroll,
   Settings,
-  Shield,
   Skull,
   Sparkles,
   Users,
 } from 'lucide-react';
-import type React from 'react';
 import { useState } from 'react';
 
-export const MestreLayout: React.FC = () => {
-  const routerState = useRouterState();
-  const currentPath = routerState.location.pathname;
-  const [collapsed, setCollapsed] = useState(false);
+interface NavItem {
+  label: string;
+  path: string;
+  icon: LucideIcon;
+}
 
-  const dmSections = [
-    { label: 'Painel dos Jogadores', path: '/mestre/jogadores', icon: Users },
-    { label: 'Editor da Mesa', path: '/mestre/mesa', icon: Grid },
-    { label: 'Bestiário', path: '/mestre/bestiario', icon: Skull },
-    { label: 'Catálogo de Itens', path: '/mestre/itens', icon: Package },
-    { label: 'Oficina & Receitas', path: '/mestre/oficina', icon: Sparkles },
-    { label: 'Grimórios & Árvores', path: '/mestre/grimorio', icon: BookOpen },
-    { label: 'Campanha & Crônicas', path: '/mestre/campanha', icon: Scroll },
-    { label: 'Sistema & Códice', path: '/mestre/sistema', icon: Settings },
-  ];
+const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
+  {
+    title: 'Sessão',
+    items: [
+      { label: 'Jogadores', path: '/mestre/jogadores', icon: Users },
+      { label: 'Mesa', path: '/mestre/mesa', icon: Grid },
+    ],
+  },
+  {
+    title: 'Conteúdo',
+    items: [
+      { label: 'Bestiário', path: '/mestre/bestiario', icon: Skull },
+      { label: 'Itens', path: '/mestre/itens', icon: Package },
+      { label: 'Oficina', path: '/mestre/oficina', icon: Sparkles },
+      { label: 'Grimórios', path: '/mestre/grimorio', icon: BookOpen },
+    ],
+  },
+  {
+    title: 'Ajustes',
+    items: [{ label: 'Sistema', path: '/mestre/sistema', icon: Settings }],
+  },
+];
+
+const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+const COLLAPSE_KEY = 'mestre.sidebar.collapsed';
+
+function isActive(currentPath: string, itemPath: string) {
+  // "/mestre" (índice) mostra o painel de jogadores.
+  if (itemPath === '/mestre/jogadores' && (currentPath === '/mestre' || currentPath === '/mestre/'))
+    return true;
+  return currentPath.startsWith(itemPath);
+}
+
+export const MestreLayout = () => {
+  const currentPath = useRouterState({ select: (s) => s.location.pathname });
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(COLLAPSE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      try {
+        localStorage.setItem(COLLAPSE_KEY, c ? '0' : '1');
+      } catch {
+        // armazenamento indisponível: só não persiste
+      }
+      return !c;
+    });
+  };
 
   return (
-    <div className="flex-1 flex h-full w-full bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none">
-      {/* Sidebar Lateral de Pedra do Mestre */}
+    <div className="flex-1 flex flex-col md:flex-row h-full w-full min-h-0 bg-[var(--abyss)] text-[var(--text)] overflow-hidden">
+      {/* Navegação lateral (desktop/tablet) */}
       <aside
-        className={`border-r border-[var(--iron)] bg-[var(--stone)] flex flex-col transition-all duration-200 shrink-0 ${
-          collapsed ? 'w-16' : 'w-64'
+        className={`hidden md:flex flex-col shrink-0 border-r border-[var(--iron)] bg-[var(--stone)] transition-[width] duration-200 ${
+          collapsed ? 'w-14' : 'w-52'
         }`}
       >
-        {/* Topo do Mestre */}
-        <div className="h-14 border-b border-[var(--iron)] bg-[var(--stone-2)] px-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <Shield className="w-5 h-5 text-[var(--gold)] shrink-0" />
-            {!collapsed && (
-              <span className="font-['Cinzel',serif] font-bold text-sm tracking-[0.16em] uppercase text-[var(--gold-hi)] truncate">
-                CONFESSÓRIO
-              </span>
-            )}
-          </div>
+        <div
+          className={`h-12 flex items-center px-3 border-b border-[var(--iron)] ${
+            collapsed ? 'justify-center' : 'justify-between'
+          }`}
+        >
+          {!collapsed && (
+            <span className="font-['Cinzel',serif] text-xs font-bold tracking-[0.2em] uppercase text-[var(--gold-hi)]">
+              Mestre
+            </span>
+          )}
           <button
             type="button"
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-1 rounded-none hover:bg-black/40 text-[var(--muted)] hover:text-white cursor-pointer"
+            onClick={toggleCollapsed}
+            className="p-1 text-[var(--muted)] hover:text-[var(--text)] cursor-pointer"
+            aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
           >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {collapsed ? (
+              <ChevronsRight className="w-4 h-4" />
+            ) : (
+              <ChevronsLeft className="w-4 h-4" />
+            )}
           </button>
         </div>
 
-        {/* Links de navegação em Pedra */}
-        <nav className="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5">
-          {dmSections.map((s) => {
-            const Icon = s.icon;
-            const active = currentPath.startsWith(s.path);
-            return (
-              <Link
-                key={s.path}
-                to={s.path}
-                className={`flex items-center gap-3 px-3 py-2 text-xs font-['Cinzel',serif] tracking-[0.08em] uppercase transition-all rounded-none ${
-                  active
-                    ? 'slab on text-[var(--gold-hi)] border-[var(--gold-lo)]'
-                    : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-black/30'
-                }`}
-                title={collapsed ? s.label : undefined}
-              >
-                <Icon className="w-4 h-4 shrink-0 text-[var(--gold)]" />
-                {!collapsed && <span className="truncate">{s.label}</span>}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto py-2">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.title} className="mb-3">
+              {!collapsed && (
+                <p className="px-4 pb-1 font-['Cinzel',serif] text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]/70">
+                  {group.title}
+                </p>
+              )}
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(currentPath, item.path);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    title={collapsed ? item.label : undefined}
+                    className={`relative flex items-center gap-3 h-9 text-[13px] ${
+                      collapsed ? 'justify-center' : 'px-4'
+                    } ${
+                      active
+                        ? 'bg-[var(--stone-2)] text-[var(--gold-hi)]'
+                        : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-black/25'
+                    }`}
+                  >
+                    {active && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[var(--gold)]" />
+                    )}
+                    <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-[var(--gold)]' : ''}`} />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </aside>
 
-      {/* Conteúdo Central do Mestre */}
-      <main className="flex-1 overflow-y-auto flex flex-col relative bg-[var(--abyss)]">
+      {/* Navegação superior (celular) */}
+      <nav className="md:hidden flex shrink-0 overflow-x-auto border-b border-[var(--iron)] bg-[var(--stone)]">
+        {ALL_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(currentPath, item.path);
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex flex-col items-center justify-center gap-0.5 min-w-[4.5rem] h-12 px-2 text-[10px] ${
+                active
+                  ? 'text-[var(--gold-hi)] shadow-[inset_0_-2px_0_var(--gold)]'
+                  : 'text-[var(--muted)]'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <main className="flex-1 min-h-0 overflow-y-auto flex flex-col relative">
         <Outlet />
       </main>
     </div>

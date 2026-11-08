@@ -16,6 +16,7 @@ import { BestiaryFilterBar } from './BestiaryFilterBar.tsx';
 import { BestiaryTableView } from './BestiaryTableView.tsx';
 import { CreatureDetailSheet } from './CreatureDetailSheet.tsx';
 import { CreatureFormModal } from './CreatureFormModal.tsx';
+import { DMPageHeader, DM_PAGE_CLASS } from '../../../shared/ui/DMPage';
 
 export const DMBestiaryView: React.FC = () => {
   const queryClient = useQueryClient();
@@ -174,31 +175,11 @@ export const DMBestiaryView: React.FC = () => {
   const totalPages = data?.totalPages || 1;
 
   return (
-    <div className="min-h-screen bg-[#08080a] text-[#ebe6d6] p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-      {/* Top Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Skull className="h-6 w-6 text-[#f5b65b]" />
-            <h1 className="font-cinzel text-2xl sm:text-3xl font-bold tracking-tight text-[#f5b65b] uppercase">
-              Bestiário de Aldrenor
-            </h1>
-          </div>
-          <p className="font-serif italic text-xs sm:text-sm text-white/60 mt-1 max-w-2xl">
-            Catálogo completo de feras, horrores da peste e abominações. Busca veloz no servidor,
-            ficha tática em gaveta lateral, integração de vídeo idle e envio direto para a mesa.
-          </p>
-        </div>
-
-        {/* Quick Stats Pill */}
-        <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-2 self-start sm:self-auto">
-          <BookOpen className="h-4 w-4 text-[#f5b65b]" />
-          <div className="text-xs font-mono">
-            <span className="text-white/40">Total Catálogo:</span>{' '}
-            <b className="text-[#f5b65b] tabular-nums">{totalCount}</b> feras
-          </div>
-        </div>
-      </header>
+    <div className={DM_PAGE_CLASS}>
+      <DMPageHeader
+        title="Bestiário"
+        subtitle={`${totalCount} ${totalCount === 1 ? 'criatura' : 'criaturas'} no catálogo`}
+      />
 
       {/* Filter Bar */}
       <BestiaryFilterBar

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { queryKeys, subscribeRealtime, supabase } from '../../../shared/supabase';
 import {
@@ -45,7 +45,9 @@ export function useDmDashboard() {
       if (error) return [];
       return data || [];
     },
-    refetchInterval: 10000,
+    // A presença chega pelo realtime abaixo; o refetch é só uma rede de segurança.
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
   });
 
   // 4. Realtime em 'players'
@@ -89,6 +91,13 @@ export function useDmDashboard() {
     },
   });
 
+  // `useMutation` devolve um objeto novo a cada render; guardamos `mutate` num ref
+  // para que os callbacks abaixo fiquem estáveis e os cards memoizados não re-renderizem.
+  const mutateRef = useRef(vitalsMutation.mutate);
+  mutateRef.current = vitalsMutation.mutate;
+  const mutateAsyncRef = useRef(vitalsMutation.mutateAsync);
+  mutateAsyncRef.current = vitalsMutation.mutateAsync;
+
   // Atalhos rápidos
   const modifyHealth = useCallback(
     (heroId: string, delta: number) => {
@@ -100,12 +109,12 @@ export function useDmDashboard() {
       const next = Math.max(0, Math.min(max, current + delta));
       if (next === current) return;
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { health: next, alive: next > 0 },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const modifyFocus = useCallback(
@@ -118,12 +127,12 @@ export function useDmDashboard() {
       const next = Math.max(0, Math.min(max, current + delta));
       if (next === current) return;
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { focus: next },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const modifyPlague = useCallback(
@@ -135,12 +144,12 @@ export function useDmDashboard() {
       const next = Math.max(0, Math.min(10, current + delta));
       if (next === current) return;
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { plague: next },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const modifySaciedade = useCallback(
@@ -152,12 +161,12 @@ export function useDmDashboard() {
       const next = Math.max(0, Math.min(10, current + delta));
       if (next === current) return;
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { saciedade: next },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const modifyInspiration = useCallback(
@@ -169,12 +178,12 @@ export function useDmDashboard() {
       const next = Math.max(0, Math.min(2, current + delta));
       if (next === current) return;
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { inspiration: next },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const toggleExausto = useCallback(
@@ -184,12 +193,12 @@ export function useDmDashboard() {
       if (!hero) return;
       const current = Boolean(hero.exausto);
 
-      vitalsMutation.mutate({
+      mutateRef.current({
         heroId,
         patch: { exausto: !current },
       });
     },
-    [queryClient, vitalsMutation],
+    [queryClient],
   );
 
   const applyCondition = useCallback(
@@ -235,11 +244,40 @@ export function useDmDashboard() {
   );
 
   // Mapeamento normalizado dos heróis para exibição nos cards
-  const heroesList: HeroDashboardItem[] = (heroesQuery.data || []).map((c) => {
-    const onlinePlayer = (playersQuery.data || []).find(
-      (p) => p.character_id === c.id || p.id === c.id,
-    );
-    const isOnline = Boolean(onlinePlayer?.is_online || c.active);
+  const heroesList = useMemo<HeroDashboardItem[]>(() => {
+    const onlineIds = new Set<string>();
+    for (const p of playersQuery.data || []) {
+      if (!p.is_online) continue;
+      if (p.character_id) onlineIds.add(p.character_id);
+      if (p.id) onlineIds.add(p.id);
+    }
+    return (heroesQuery.data || []).map((c) => toDashboardItem(c, onlineIds.has(c.id)));
+  }, [heroesQuery.data, playersQuery.data]);
+
+  const updateVitals = useCallback(
+    (heroId: string, patch: Partial<CharacterRow>) => mutateAsyncRef.current({ heroId, patch }),
+    [],
+  );
+
+  return {
+    heroes: heroesList,
+    isLoading: heroesQuery.isLoading,
+    modifyHealth,
+    modifyFocus,
+    modifyPlague,
+    modifySaciedade,
+    modifyInspiration,
+    toggleExausto,
+    applyCondition,
+    removeCondition,
+    giveItem,
+    removeItem,
+    updateHeroVitals: updateVitals,
+  };
+}
+
+function toDashboardItem(c: CharacterRow, onlineByPresence: boolean): HeroDashboardItem {
+    const isOnline = Boolean(onlineByPresence || c.active);
 
     const rawAttributes = (c.attributes as Record<string, number>) || {};
     const attributes = {
@@ -289,22 +327,4 @@ export function useDmDashboard() {
       connection: c.connection || undefined,
       raw: c,
     };
-  });
-
-  return {
-    heroes: heroesList,
-    isLoading: heroesQuery.isLoading,
-    modifyHealth,
-    modifyFocus,
-    modifyPlague,
-    modifySaciedade,
-    modifyInspiration,
-    toggleExausto,
-    applyCondition,
-    removeCondition,
-    giveItem,
-    removeItem,
-    updateHeroVitals: (heroId: string, patch: Partial<CharacterRow>) =>
-      vitalsMutation.mutateAsync({ heroId, patch }),
-  };
 }

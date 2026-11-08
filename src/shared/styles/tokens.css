@@ -277,6 +277,45 @@ body {
   padding: 0 112px;
 }
 
+/* HUD fixo na base da tela do jogador: cinto + orbes + navegação.
+   (Faltava no app: sem ele os orbes subiam para o topo e cobriam o cabeçalho.) */
+.hud {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(150px + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  pointer-events: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+/* Barra de status no topo da tela do jogador */
+.status {
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background: linear-gradient(#0d0c0b, var(--stone-2));
+  border-bottom: 1px solid #000;
+  box-shadow: 0 1px 0 var(--gold-lo), 0 6px 14px rgba(0, 0, 0, 0.6);
+  position: relative;
+  z-index: 10;
+}
+
+.mini-port {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--gold);
+  background: radial-gradient(circle at 50% 35%, #3a342d, #151311 70%);
+  box-shadow: 0 0 0 1px #000;
+}
+
 /* Barra de Navegação */
 .nav-stone {
   position: absolute;
