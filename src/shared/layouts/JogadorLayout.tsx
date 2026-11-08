@@ -105,7 +105,9 @@ export const JogadorLayout: React.FC = () => {
       />
 
       {/* Contêiner centralizado no PC (máx 480px), tela cheia no Celular */}
-      <div className="w-full max-w-[480px] mx-auto flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--stone)] border-x border-[var(--iron)]/40 shadow-2xl">
+      <div
+        className={`w-full ${isMesaRoute ? '' : 'max-w-[480px]'} mx-auto flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--stone)] border-x border-[var(--iron)]/40 shadow-2xl`}
+      >
         {/* 1. StatusBar no topo (52px) */}
         <StatusBar
           heroName={hero?.name || 'Jurado de Aldrenor'}

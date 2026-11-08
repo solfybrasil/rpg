@@ -1,27 +1,41 @@
-import {
-  type CellCoord,
-  buildGrid,
-  cellKey,
-  center,
-  diamond,
-  pick,
-  toCell,
-} from './IsometricGrid.ts';
-import {
-  bfs,
-  computeReach,
-  reconstructCoordPath,
-  reconstructPath,
-} from './Pathfinding.ts';
+import { buildGrid, cellKey, center, diamond, gridDistance, pick } from './IsometricGrid.ts';
+import { bfs, computeReach, reconstructCoordPath, reconstructPath } from './Pathfinding.ts';
 import { VideoChromaPool } from './VideoChromaPool.ts';
 import type {
   BattleEngineOptions,
   BattleMap,
+  BattlePing,
   BattleToken,
   CameraView,
+  CellCoord,
   ChromaMode,
   Point,
 } from './types.ts';
+
+/**
+ * Paleta do canvas. Espelha os tokens de `src/shared/styles/tokens.css`
+ * (o canvas não lê variáveis CSS).
+ */
+const C = {
+  abyss: '#070605',
+  gold: '#C9A45C',
+  goldHi: '#ECD395',
+  blood: '#A3291F',
+  bloodHi: '#D2493C',
+  moss: '#7FA36B',
+  mana: '#2C5FB8',
+  mist: '#7FA6CF',
+  text: '#E7DCC6',
+  goldA: (a: number) => `rgba(201, 164, 92, ${a})`,
+  bloodA: (a: number) => `rgba(163, 41, 31, ${a})`,
+  textA: (a: number) => `rgba(231, 220, 198, ${a})`,
+};
+
+const PING_MS = 1600;
+const LONG_PRESS_MS = 450;
+const DRAG_THRESHOLD = 8;
+/** Limite de pixels da camada estática em cache (fundo + grade). */
+const LAYER_MAX_PIXELS = 8_000_000;
 
 interface LocalTokenState {
   token: BattleToken;
@@ -41,12 +55,24 @@ interface LocalTokenState {
   kind: string;
 }
 
+interface ActivePing extends BattlePing {
+  start: number;
+}
+
+/**
+ * Motor da mesa de batalha isométrica (Mestre, Jogador e TV).
+ *
+ * Desempenho:
+ * - fundo + grade ficam numa camada em cache (1 drawImage por quadro);
+ * - o loop só roda quando algo muda (peça andando, vídeo, ping) e para com a aba oculta;
+ * - se o aparelho não sustenta ~40 fps, a resolução do canvas cai sozinha (lowFx).
+ */
 export class BattleEngine {
   private cv: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private options: BattleEngineOptions;
 
-  // Dimensões do mapa e grade
+  // Mapa e grade
   private imgW = 1376;
   private imgH = 768;
   private TW = 86;
@@ -54,8 +80,8 @@ export class BattleEngine {
   private OX = 690;
   private OY = 418;
   private moveLimit = 6;
-  private speed = 4.2;
-
+  private showGrid = true;
+  private readonly speed = 4.2;
   private valid = new Set<string>();
   private blocked = new Set<string>();
 
@@ -64,53 +90,63 @@ export class BattleEngine {
   private base = 1;
   private scale = 1;
   private readonly ZMIN = 1;
-  private readonly ZMAX = 4;
+  private readonly ZMAX = 5;
+  private needsInitialView = true;
+  private mapId: string | null = null;
 
-  // Imagem de fundo e mídias
+  // Mídia
   private bgImg: HTMLImageElement;
   private currentBgUrl = '';
   private bgLoaded = false;
   private pool: VideoChromaPool;
 
-  // Estado dos tokens
-  private mapData: BattleMap | null = null;
-  private tokens: BattleToken[] = [];
+  // Camada estática (fundo + grade)
+  private layer: HTMLCanvasElement | null = null;
+  private layerScale = 0;
+  private layerDirty = true;
+  private layerTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Peças
   private tokenStates = new Map<string, LocalTokenState>();
 
-  // Pathfinding e seleção
+  // Movimento do herói do jogador
   private hover: CellCoord | null = null;
   private prevPath: string[] | null = null;
   private reach = new Map<string, number>();
-  private graph: { dist: Map<string, number>; prev: Map<string, string> } | null =
-    null;
-
-  // Cache de Caminhos Prontos (Hardware-Accelerated Path2D)
-  private gridPath: Path2D | null = null;
+  private graph: { dist: Map<string, number>; prev: Map<string, string> } | null = null;
   private blockedPath: Path2D | null = null;
   private reachPath: Path2D | null = null;
+
+  // Régua e pings
+  private measureFrom: CellCoord | null = null;
+  private measureTo: CellCoord | null = null;
+  private pings: ActivePing[] = [];
+
+  // Loop
+  private rafId: number | null = null;
+  private lastTime = 0;
+  private dirty = true;
+  private destroyed = false;
+  private resizeObserver: ResizeObserver | null = null;
   private lastVideoLimitsCheck = 0;
 
-  // Render loop
-  private rafId: number | null = null;
-  private lastTime = performance.now();
-  private dirty = true;
-  private resizeObserver: ResizeObserver | null = null;
-
-  // Métricas de FPS e JS frame time
+  // Métricas / qualidade adaptativa
   private frameCount = 0;
-  private fpsTimer = performance.now();
-  private currentFps = 60;
-  private currentJsMs = 0;
+  private fpsTimer = 0;
+  private slowWindows = 0;
+  private lowFx = false;
 
-  // Gestos e ponteiro
+  // Gestos
   private pts = new Map<number, Point>();
   private pressStart: { pt: Point; client: Point; time: number } | null = null;
   private isDragging = false;
   private pinchDist0 = 0;
   private pinchZ0 = 1;
   private panView0: CameraView | null = null;
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  private longPressFired = false;
 
-  // Estados do Editor DM
+  // Editor do Mestre
   private isPaintingBlock = false;
   private isErasingBlock = false;
   private draggedTokenId: string | null = null;
@@ -118,67 +154,203 @@ export class BattleEngine {
 
   constructor(canvas: HTMLCanvasElement, options: BattleEngineOptions) {
     this.cv = canvas;
-    const context =
-      canvas.getContext('2d', { alpha: false, desynchronized: true }) ||
-      canvas.getContext('2d', { alpha: false });
+    const context = canvas.getContext('2d', { alpha: false });
     if (!context) throw new Error('Could not get 2D context from canvas');
     this.ctx = context;
-    this.ctx.imageSmoothingQuality = 'medium';
     this.options = options;
 
     this.pool = new VideoChromaPool();
-    this.pool.onDirty = () => {
-      this.dirty = true;
-    };
+    this.pool.onDirty = () => this.invalidate();
     this.bgImg = new Image();
     this.bgImg.crossOrigin = 'anonymous';
+    this.bgImg.decoding = 'async';
 
-    this.bindEvents();
-    this.init();
-  }
-
-  private bindEvents(): void {
     this.step = this.step.bind(this);
     this.handleResize = this.handleResize.bind(this);
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handlePointerMove = this.handlePointerMove.bind(this);
     this.handlePointerUp = this.handlePointerUp.bind(this);
+    this.handlePointerLeave = this.handlePointerLeave.bind(this);
     this.handleWheel = this.handleWheel.bind(this);
-  }
+    this.handleDblClick = this.handleDblClick.bind(this);
+    this.handleVisibility = this.handleVisibility.bind(this);
+    this.preventContextMenu = this.preventContextMenu.bind(this);
 
-  private init(): void {
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(this.handleResize);
       this.resizeObserver.observe(this.cv);
     }
     this.handleResize();
 
-    this.cv.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.cv.addEventListener('contextmenu', this.preventContextMenu);
     this.cv.addEventListener('pointerdown', this.handlePointerDown);
     this.cv.addEventListener('pointermove', this.handlePointerMove);
     this.cv.addEventListener('pointerup', this.handlePointerUp);
     this.cv.addEventListener('pointercancel', this.handlePointerUp);
+    this.cv.addEventListener('pointerleave', this.handlePointerLeave);
     this.cv.addEventListener('wheel', this.handleWheel, { passive: false });
+    this.cv.addEventListener('dblclick', this.handleDblClick);
+    document.addEventListener('visibilitychange', this.handleVisibility);
 
+    this.invalidate();
+  }
+
+  // ───────────────────────── Loop ─────────────────────────
+
+  /** Pede um novo quadro. O loop dorme sozinho quando nada mais muda. */
+  public invalidate(): void {
+    this.dirty = true;
+    this.wake();
+  }
+
+  private wake(): void {
+    if (this.destroyed || this.rafId !== null) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    this.lastTime = performance.now();
     this.rafId = requestAnimationFrame(this.step);
   }
+
+  private handleVisibility(): void {
+    if (document.hidden) {
+      if (this.rafId !== null) cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    } else {
+      this.invalidate();
+    }
+  }
+
+  private hasVisibleVideo(): boolean {
+    for (const s of this.tokenStates.values()) {
+      if (!this.isTokenShown(s)) continue;
+      if (this.pool.get(s.mediaUrl, s.chromaMode)?.type === 'video') return true;
+    }
+    return false;
+  }
+
+  private step(now: number): void {
+    this.rafId = null;
+    if (this.destroyed) return;
+    const frameStart = performance.now();
+    const dt = Math.min(0.05, (now - this.lastTime) / 1000);
+    this.lastTime = now;
+
+    // 1. Peças andando
+    let anyMoving = false;
+    for (const s of this.tokenStates.values()) {
+      if (s.path.length === 0) continue;
+      anyMoving = true;
+      s.moving = true;
+      const [tc, tr] = s.path[0];
+      const p = center(tc, tr, this.OX, this.OY, this.TW, this.TH);
+      const dx = p.x - s.x;
+      const dy = p.y - s.y;
+      const dist = Math.hypot(dx, dy);
+      const sp = this.speed * Math.hypot(this.TW / 2, this.TH / 2) * dt;
+      if (Math.abs(dx) > 1) s.facing = dx < 0 ? -1 : 1;
+      if (dist <= sp) {
+        s.x = p.x;
+        s.y = p.y;
+        s.c = tc;
+        s.r = tr;
+        s.path.shift();
+      } else {
+        s.x += (dx / dist) * sp;
+        s.y += (dy / dist) * sp;
+      }
+      if (s.path.length === 0) {
+        s.moving = false;
+        this.recomputeReach();
+        this.updateHover(this.hover);
+      }
+    }
+    if (anyMoving) this.dirty = true;
+
+    // 2. Quadros de vídeo (1 atualização por URL)
+    const visibleUrls = new Set<string>();
+    for (const s of this.tokenStates.values()) {
+      if (!this.isTokenShown(s) || !s.mediaUrl || visibleUrls.has(s.mediaUrl)) continue;
+      visibleUrls.add(s.mediaUrl);
+      const entry = this.pool.get(s.mediaUrl, s.chromaMode);
+      if (entry && this.pool.updateFrame(entry, now)) this.dirty = true;
+    }
+    if (now - this.lastVideoLimitsCheck > 1000) {
+      this.lastVideoLimitsCheck = now;
+      this.pool.applyVideoLimits(visibleUrls);
+    }
+
+    // 3. Pings expirando
+    if (this.pings.length > 0) {
+      this.pings = this.pings.filter((p) => now - p.start < PING_MS);
+      this.dirty = true;
+    }
+
+    if (this.activePulse()) this.dirty = true;
+
+    if (this.dirty) {
+      this.draw(now);
+      this.dirty = false;
+    }
+
+    // 4. Métricas e qualidade adaptativa (só conta quadros de loop contínuo)
+    this.trackFps(now, performance.now() - frameStart);
+
+    const keepRunning =
+      anyMoving || this.pings.length > 0 || this.activePulse() || this.hasVisibleVideo();
+    if (keepRunning || this.dirty) {
+      this.rafId = requestAnimationFrame(this.step);
+    }
+  }
+
+  /** O anel do turno ativo pulsa, então precisa de quadros contínuos. */
+  private activePulse(): boolean {
+    const id = this.options.activeTokenId;
+    if (!id) return false;
+    const s = this.tokenStates.get(id);
+    return Boolean(s && this.isTokenShown(s));
+  }
+
+  private trackFps(now: number, jsMs: number): void {
+    if (!this.fpsTimer) this.fpsTimer = now;
+    this.frameCount++;
+    const elapsed = now - this.fpsTimer;
+    if (elapsed < 500) return;
+    const fps = Math.round((this.frameCount * 1000) / elapsed);
+    this.frameCount = 0;
+    this.fpsTimer = now;
+    this.options.onFpsUpdate?.(fps, jsMs);
+
+    // Considera só janelas em que o loop estava ocupado (≥ 10 quadros).
+    if (fps >= 10 && fps < 40) this.slowWindows++;
+    else this.slowWindows = 0;
+    if (!this.lowFx && this.slowWindows >= 4) {
+      this.lowFx = true;
+      this.handleResize();
+    }
+  }
+
+  // ───────────────────────── Configuração ─────────────────────────
 
   private handleResize(): void {
     const rc = this.cv.getBoundingClientRect();
     if (!rc.width || !rc.height) return;
-    const dpr = Math.min(
-      window.innerWidth < 900 ? 1.5 : 2,
-      window.devicePixelRatio || 1,
-    );
+    const cap = this.lowFx ? 1 : window.innerWidth < 900 ? 1.5 : 2;
+    const dpr = Math.min(cap, window.devicePixelRatio || 1);
     this.cv.width = Math.round(rc.width * dpr);
     this.cv.height = Math.round(rc.height * dpr);
-    this.base = this.cv.width / (this.imgW || 1376);
-    this.dirty = true;
+    this.base = this.containScale(this.cv.width, this.cv.height);
+    if (this.needsInitialView && this.valid.size > 0) this.applyInitialView();
+    else this.clampView();
+    this.scheduleLayerRebuild(0);
   }
 
   public setMap(mapData: BattleMap | null): void {
     if (!mapData) return;
-    this.mapData = mapData;
+    // Mesa nova: refaz o enquadramento inicial (ajustes de grade não mexem na câmera).
+    if (mapData.id !== this.mapId) {
+      this.mapId = mapData.id;
+      this.needsInitialView = true;
+    }
+    const prevGeom = `${this.imgW}|${this.imgH}|${this.TW}|${this.OX}|${this.OY}`;
     this.imgW = Number(mapData.img_w) || 1376;
     this.imgH = Number(mapData.img_h) || 768;
     this.TW = Number(mapData.tile_size) || 86;
@@ -186,119 +358,96 @@ export class BattleEngine {
     this.OX = Number(mapData.origin_x ?? 690);
     this.OY = Number(mapData.origin_y ?? 418);
     this.moveLimit = Number(mapData.move_limit ?? 6);
+    const grid = mapData.show_grid !== false;
+    const geom = `${this.imgW}|${this.imgH}|${this.TW}|${this.OX}|${this.OY}`;
 
-    const bList = Array.isArray(mapData.blocked) ? mapData.blocked : [];
-    this.blocked = new Set(bList);
+    if (geom !== prevGeom || this.valid.size === 0) {
+      this.valid = buildGridSafe(this.imgW, this.imgH, this.OX, this.OY, this.TW, this.TH);
+      this.base = this.containScale(this.cv.width, this.cv.height);
+      this.layerDirty = true;
+      // Reposiciona peças paradas na nova geometria
+      for (const s of this.tokenStates.values()) {
+        if (s.moving) continue;
+        const p = center(s.c, s.r, this.OX, this.OY, this.TW, this.TH);
+        s.x = p.x;
+        s.y = p.y;
+      }
+    }
+    if (grid !== this.showGrid) {
+      this.showGrid = grid;
+      this.layerDirty = true;
+    }
 
-    this.valid = buildGrid(
-      this.imgW,
-      this.imgH,
-      this.OX,
-      this.OY,
-      this.TW,
-      this.TH,
-    );
-
-    this.rebuildGridPath();
-    this.rebuildBlockedPath();
+    this.setBlocked(Array.isArray(mapData.blocked) ? mapData.blocked : []);
 
     const bgUrl = mapData.background_url || '/batalha/santuario.jpg';
     if (this.currentBgUrl !== bgUrl) {
       this.currentBgUrl = bgUrl;
       this.bgLoaded = false;
+      this.bgImg.crossOrigin = 'anonymous';
       this.bgImg.onload = () => {
         this.bgLoaded = true;
-        this.dirty = true;
+        this.layerDirty = true;
+        this.invalidate();
       };
       this.bgImg.onerror = () => {
-        console.warn('[BattleEngine] Falha ao carregar background_url:', bgUrl);
+        // Alguns servidores não mandam CORS: tenta de novo sem crossOrigin.
         if (this.bgImg.crossOrigin) {
           this.bgImg.crossOrigin = null;
           this.bgImg.src = bgUrl;
         }
       };
       this.bgImg.src = bgUrl;
-      if (this.bgImg.complete && this.bgImg.naturalWidth) {
-        this.bgLoaded = true;
-      }
-    } else if (this.bgImg.complete && this.bgImg.naturalWidth) {
-      this.bgLoaded = true;
     }
 
+    if (this.needsInitialView) this.applyInitialView();
     this.recomputeReach();
-    this.dirty = true;
+    this.invalidate();
   }
 
-  private resolveTokenMedia(token: BattleToken): {
-    url: string;
-    chroma: ChromaMode;
-  } {
-    let url =
-      token.media_url ||
-      token.idle_webm_url ||
-      token.idle_mp4_url ||
-      token.poster_url ||
-      '';
-    let chroma: ChromaMode = (token.chroma as ChromaMode) || 'verde';
-
-    if (!url) {
-      const name = (token.name || token.hero_id || '').toLowerCase();
-      if (name.includes('tor')) {
-        url = '/batalha/tor_idle.webm';
-        chroma = 'verde';
-      } else if (name.includes('kaelis')) {
-        url = '/batalha/kaelis_idle.webm';
-        chroma = 'magenta';
-      } else if (name.includes('malenia')) {
-        url = '/batalha/malenia_idle.webm';
-        chroma = 'verde';
-      } else {
-        url = '/batalha/fera_idle.webm';
-        chroma = 'verde';
-      }
-    }
-
-    if (
-      (token.hero_id || token.name || '')
-        .toLowerCase()
-        .includes('kaelis')
-    ) {
-      chroma = 'magenta';
-    }
-
-    return { url, chroma };
+  private setBlocked(list: string[]): void {
+    const same = list.length === this.blocked.size && list.every((k) => this.blocked.has(k));
+    if (same && this.blockedPath) return;
+    this.blocked = new Set(list);
+    this.blockedPath = this.cellsPath(this.blocked);
   }
 
   public setOptions(opts: Partial<BattleEngineOptions>): void {
+    const toolChanged = opts.tool !== undefined && opts.tool !== this.options.tool;
     this.options = { ...this.options, ...opts };
+    if (toolChanged && opts.tool !== 'measure') this.clearMeasure();
     this.recomputeReach();
-    this.dirty = true;
+    this.invalidate();
+  }
+
+  private resolveTokenMedia(token: BattleToken): { url: string; chroma: ChromaMode } {
+    let url = token.media_url || token.idle_webm_url || token.idle_mp4_url || token.poster_url || '';
+    let chroma: ChromaMode = (token.chroma as ChromaMode) || 'verde';
+    const ident = (token.hero_id || token.name || '').toLowerCase();
+    if (!url) {
+      if (ident.includes('tor')) url = '/batalha/tor_idle.webm';
+      else if (ident.includes('kaelis')) url = '/batalha/kaelis_idle.webm';
+      else if (ident.includes('malenia')) url = '/batalha/malenia_idle.webm';
+      else url = '/batalha/fera_idle.webm';
+    }
+    if (ident.includes('kaelis') && url.includes('kaelis')) chroma = 'magenta';
+    return { url, chroma };
   }
 
   public setTokens(tokens: BattleToken[]): void {
-    this.tokens = tokens;
     const currentIds = new Set<string>();
 
     for (const token of tokens) {
       currentIds.add(token.id);
-      let state = this.tokenStates.get(token.id);
-
       const targetC = token.c ?? 0;
       const targetR = token.r ?? 0;
-      const targetPos = center(
-        targetC,
-        targetR,
-        this.OX,
-        this.OY,
-        this.TW,
-        this.TH,
-      );
+      const targetPos = center(targetC, targetR, this.OX, this.OY, this.TW, this.TH);
+      let s = this.tokenStates.get(token.id);
 
-      if (!state) {
+      if (!s) {
         const { url, chroma } = this.resolveTokenMedia(token);
         this.pool.get(url, chroma);
-
-        state = {
+        s = {
           token,
           x: targetPos.x,
           y: targetPos.y,
@@ -315,49 +464,54 @@ export class BattleEngine {
           size: token.size ?? 160,
           kind: token.kind,
         };
-        this.tokenStates.set(token.id, state);
-      } else {
-        state.token = token;
-        state.movesLeft = token.moves_left ?? this.moveLimit;
-        state.size = token.size ?? state.size;
-        state.anchorX = token.anchor_x ?? state.anchorX;
-        state.anchorY = token.anchor_y ?? state.anchorY;
+        this.tokenStates.set(token.id, s);
+        continue;
+      }
 
-        // Se posição remota mudou e o token não está animando movimento local
-        if (
-          !state.moving &&
-          (state.c !== targetC || state.r !== targetR)
-        ) {
-          // Se recebeu caminho para percorrer
-          if (Array.isArray(token.path) && token.path.length > 0) {
-            state.path = (token.path as any).map((p: any) =>
-              Array.isArray(p)
-                ? [Number(p[0]), Number(p[1])]
-                : [Number(p.split(',')[0]), Number(p.split(',')[1])],
-            );
-          } else {
-            state.c = targetC;
-            state.r = targetR;
-            state.x = targetPos.x;
-            state.y = targetPos.y;
-          }
+      s.token = token;
+      s.kind = token.kind;
+      s.movesLeft = token.moves_left ?? this.moveLimit;
+      s.size = token.size ?? s.size;
+      s.anchorX = token.anchor_x ?? s.anchorX;
+      s.anchorY = token.anchor_y ?? s.anchorY;
+      if (!s.moving) s.facing = token.facing ?? s.facing;
+
+      const { url, chroma } = this.resolveTokenMedia(token);
+      if (url !== s.mediaUrl || chroma !== s.chromaMode) {
+        this.pool.release(s.mediaUrl);
+        this.pool.get(url, chroma);
+        s.mediaUrl = url;
+        s.chromaMode = chroma;
+      }
+
+      const beingDragged = this.isDraggingToken && this.draggedTokenId === token.id;
+      if (!s.moving && !beingDragged && (s.c !== targetC || s.r !== targetR)) {
+        const path = normalizePath(token.path);
+        const last = path[path.length - 1];
+        if (path.length > 0 && last && last[0] === targetC && last[1] === targetR) {
+          s.path = path;
+        } else {
+          s.c = targetC;
+          s.r = targetR;
+          s.x = targetPos.x;
+          s.y = targetPos.y;
         }
       }
     }
 
-    // Cleanup de tokens removidos
-    for (const [id, state] of this.tokenStates.entries()) {
+    for (const [id, s] of this.tokenStates) {
       if (!currentIds.has(id)) {
-        this.pool.release(state.mediaUrl);
+        this.pool.release(s.mediaUrl);
         this.tokenStates.delete(id);
       }
     }
 
     this.recomputeReach();
-    this.dirty = true;
+    this.invalidate();
   }
 
   public getMyHeroToken(): LocalTokenState | null {
+    if (this.options.mode !== 'player') return null;
     if (this.options.myHeroTokenId) {
       const s = this.tokenStates.get(this.options.myHeroTokenId);
       if (s) return s;
@@ -367,18 +521,19 @@ export class BattleEngine {
         if (s.token.hero_id === this.options.myHeroId) return s;
       }
     }
-    // Fallback: primeiro herói da lista
-    for (const s of this.tokenStates.values()) {
-      if (s.kind === 'heroi') return s;
-    }
     return null;
   }
 
-  private isCellBlocked(k: string, currentTokenId?: string): boolean {
+  /** O Mestre vê peças ocultas (translúcidas); jogador e TV não. */
+  private isTokenShown(s: LocalTokenState): boolean {
+    return s.token.visible !== false || this.options.mode === 'dm';
+  }
+
+  private isCellBlocked(k: string, ignoreId?: string): boolean {
     if (this.blocked.has(k)) return true;
     for (const s of this.tokenStates.values()) {
-      if (s.token.id !== currentTokenId && s.token.visible !== false) {
-        if (cellKey(s.c, s.r) === k) return true;
+      if (s.token.id !== ignoreId && s.token.visible !== false && cellKey(s.c, s.r) === k) {
+        return true;
       }
     }
     return false;
@@ -386,956 +541,717 @@ export class BattleEngine {
 
   private recomputeReach(): void {
     const hero = this.getMyHeroToken();
-    if (!hero || this.options.mode === 'tv') {
+    const moves = hero && hero.movesLeft > 0 ? hero.movesLeft : 0;
+    if (!hero || moves <= 0) {
       this.reach.clear();
       this.graph = null;
       this.reachPath = null;
+      this.prevPath = null;
       return;
     }
-
-    // FIX: use 0 when movesLeft is 0 (not moveLimit as fallback via ||)
-    const moves = hero.movesLeft > 0 ? hero.movesLeft : 0;
-
-    if (moves <= 0) {
-      // No moves left — clear reach so player cannot move
-      this.reach.clear();
-      this.graph = null;
-      this.reachPath = null;
-      return;
-    }
-
-    this.graph = bfs(
-      hero.c,
-      hero.r,
-      moves,
-      this.valid,
-      (k) => this.isCellBlocked(k, hero.token.id),
-    );
-
-    this.reach = computeReach(
-      this.graph.dist,
-      moves,
-    );
-    this.rebuildReachPath();
+    this.graph = bfs(hero.c, hero.r, moves, this.valid, (k) => this.isCellBlocked(k, hero.token.id));
+    this.reach = computeReach(this.graph.dist, moves);
+    this.reachPath = this.cellsPath(this.reach.keys());
   }
 
-  private rebuildGridPath(): void {
-    if (typeof Path2D === 'undefined') return;
+  private cellsPath(keys: Iterable<string>): Path2D | null {
+    if (typeof Path2D === 'undefined') return null;
     const p = new Path2D();
-    for (const k of this.valid) {
-      const [sc, sr] = k.split(',').map(Number);
-      const pt = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
-      p.moveTo(pt.x, pt.y - this.TH / 2);
-      p.lineTo(pt.x + this.TW / 2, pt.y);
-      p.lineTo(pt.x, pt.y + this.TH / 2);
-      p.lineTo(pt.x - this.TW / 2, pt.y);
+    const hw = this.TW / 2;
+    const hh = this.TH / 2;
+    for (const k of keys) {
+      const [c, r] = k.split(',').map(Number);
+      const pt = center(c, r, this.OX, this.OY, this.TW, this.TH);
+      p.moveTo(pt.x, pt.y - hh);
+      p.lineTo(pt.x + hw, pt.y);
+      p.lineTo(pt.x, pt.y + hh);
+      p.lineTo(pt.x - hw, pt.y);
       p.closePath();
     }
-    this.gridPath = p;
-  }
-
-  private rebuildBlockedPath(): void {
-    if (typeof Path2D === 'undefined') return;
-    const p = new Path2D();
-    for (const k of this.blocked) {
-      const [sc, sr] = k.split(',').map(Number);
-      const pt = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
-      p.moveTo(pt.x, pt.y - this.TH / 2);
-      p.lineTo(pt.x + this.TW / 2, pt.y);
-      p.lineTo(pt.x, pt.y + this.TH / 2);
-      p.lineTo(pt.x - this.TW / 2, pt.y);
-      p.closePath();
-    }
-    this.blockedPath = p;
-  }
-
-  private rebuildReachPath(): void {
-    if (typeof Path2D === 'undefined') return;
-    const p = new Path2D();
-    for (const k of this.reach.keys()) {
-      const [sc, sr] = k.split(',').map(Number);
-      const pt = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
-      p.moveTo(pt.x, pt.y - this.TH / 2);
-      p.lineTo(pt.x + this.TW / 2, pt.y);
-      p.lineTo(pt.x, pt.y + this.TH / 2);
-      p.lineTo(pt.x - this.TW / 2, pt.y);
-      p.closePath();
-    }
-    this.reachPath = p;
+    return p;
   }
 
   private updateHover(coord: CellCoord | null): void {
     this.hover = coord;
     this.options.onHoverCell?.(coord);
-
     const hero = this.getMyHeroToken();
-    if (
-      !coord ||
-      !hero ||
-      hero.moving ||
-      this.options.mode === 'tv' ||
-      !this.graph
-    ) {
+    if (!coord || !hero || hero.moving || !this.graph || this.options.tool === 'measure') {
       this.prevPath = null;
-      this.dirty = true;
-      return;
+    } else {
+      this.prevPath = reconstructPath(this.graph.prev, this.graph.dist, coord.c, coord.r, hero.c, hero.r);
     }
-
-    const path = reconstructPath(
-      this.graph.prev,
-      this.graph.dist,
-      coord.c,
-      coord.r,
-      hero.c,
-      hero.r,
-    );
-    this.prevPath = path;
-    this.dirty = true;
+    this.invalidate();
   }
 
-  // ── Render Frame Loop ──
-  private step(now: number): void {
-    const frameStart = performance.now();
-    const dt = Math.min(0.05, (now - this.lastTime) / 1000);
-    this.lastTime = now;
+  // ───────────────────────── Pings e régua ─────────────────────────
 
-    // Métricas de FPS (atualizado a cada 500ms)
-    this.frameCount++;
-    if (now - this.fpsTimer >= 500) {
-      this.currentFps = Math.round(
-        (this.frameCount * 1000) / (now - this.fpsTimer),
-      );
-      this.frameCount = 0;
-      this.fpsTimer = now;
-      this.options.onFpsUpdate?.(this.currentFps, this.currentJsMs);
+  /** Mostra um ping animado numa célula (local ou recebido pela rede). */
+  public showPing(ping: BattlePing): void {
+    this.pings.push({ ...ping, start: performance.now() });
+    if (this.pings.length > 8) this.pings.shift();
+    this.invalidate();
+  }
+
+  public clearMeasure(): void {
+    if (!this.measureFrom && !this.measureTo) return;
+    this.measureFrom = null;
+    this.measureTo = null;
+    this.options.onMeasure?.(null);
+    this.invalidate();
+  }
+
+  // ───────────────────────── Desenho ─────────────────────────
+
+  private scheduleLayerRebuild(delay = 140): void {
+    if (this.layerTimer) clearTimeout(this.layerTimer);
+    this.layerTimer = setTimeout(() => {
+      this.layerTimer = null;
+      this.layerDirty = true;
+      this.invalidate();
+    }, delay);
+  }
+
+  /** Desenha fundo + grade numa camada em cache, na resolução do zoom atual. */
+  private rebuildLayer(): void {
+    const area = this.imgW * this.imgH;
+    const maxK = Math.sqrt(LAYER_MAX_PIXELS / Math.max(1, area));
+    const k = Math.max(0.5, Math.min(maxK, this.base * this.view.z));
+    const w = Math.max(1, Math.round(this.imgW * k));
+    const h = Math.max(1, Math.round(this.imgH * k));
+
+    if (!this.layer) this.layer = document.createElement('canvas');
+    if (this.layer.width !== w || this.layer.height !== h) {
+      this.layer.width = w;
+      this.layer.height = h;
     }
+    const lctx = this.layer.getContext('2d', { alpha: false });
+    if (!lctx) return;
 
-    // 1. Atualizar movimentação dos tokens
-    let anyMoving = false;
-    for (const state of this.tokenStates.values()) {
-      if (state.path.length > 0) {
-        anyMoving = true;
-        state.moving = true;
-        const [tc, tr] = state.path[0];
-        const p = center(tc, tr, this.OX, this.OY, this.TW, this.TH);
-        const dx = p.x - state.x;
-        const dy = p.y - state.y;
-        const dist = Math.hypot(dx, dy);
-        const sp =
-          this.speed * Math.hypot(this.TW / 2, this.TH / 2) * dt;
-
-        if (Math.abs(dx) > 1) {
-          state.facing = dx < 0 ? -1 : 1;
-        }
-
-        if (dist <= sp) {
-          state.x = p.x;
-          state.y = p.y;
-          state.c = tc;
-          state.r = tr;
-          state.path.shift();
-        } else {
-          state.x += (dx / dist) * sp;
-          state.y += (dy / dist) * sp;
-        }
-
-        if (state.path.length === 0) {
-          state.moving = false;
-          this.recomputeReach();
-          this.updateHover(this.hover);
-        }
-        this.dirty = true;
+    lctx.setTransform(1, 0, 0, 1, 0, 0);
+    lctx.fillStyle = C.abyss;
+    lctx.fillRect(0, 0, w, h);
+    lctx.setTransform(k, 0, 0, k, 0, 0);
+    lctx.imageSmoothingQuality = 'high';
+    if (this.bgLoaded && this.bgImg.naturalWidth) {
+      lctx.drawImage(this.bgImg, 0, 0, this.imgW, this.imgH);
+    }
+    if (this.showGrid) {
+      const gp = this.cellsPath(this.valid);
+      if (gp) {
+        lctx.lineWidth = 1 / k;
+        lctx.strokeStyle = C.textA(0.16);
+        lctx.stroke(gp);
       }
     }
-
-    // 2. Atualizar quadros de vídeo e aplicar culling com desduplicação de mídia
-    const visibleUrls = new Set<string>();
-    const processedUrls = new Set<string>();
-    for (const state of this.tokenStates.values()) {
-      if (state.token.visible !== false && state.mediaUrl) {
-        visibleUrls.add(state.mediaUrl);
-        if (!processedUrls.has(state.mediaUrl)) {
-          processedUrls.add(state.mediaUrl);
-          const entry = this.pool.get(state.mediaUrl, state.chromaMode);
-          if (entry && this.pool.updateFrame(entry, now)) {
-            this.dirty = true;
-          }
-        }
-      }
-    }
-
-    // Só reavalia reprodução/pausa de vídeos a cada 1000ms para evitar overhead de chamadas play() por quadro
-    if (now - this.lastVideoLimitsCheck > 1000) {
-      this.lastVideoLimitsCheck = now;
-      this.pool.applyVideoLimits(visibleUrls);
-    }
-
-    // 3. Renderizar Canvas se necessário
-    if (this.dirty || anyMoving) {
-      this.draw(now);
-      this.dirty = false;
-    }
-
-    this.currentJsMs = performance.now() - frameStart;
-    this.rafId = requestAnimationFrame(this.step);
+    this.layerScale = k;
+    this.layerDirty = false;
   }
 
   private draw(now: number): void {
     this.scale = this.base * this.view.z;
     const ctx = this.ctx;
-    const cv = this.cv;
+    const isDm = this.options.mode === 'dm';
+    const isPlayer = this.options.mode === 'player';
+
+    if (this.layerDirty || !this.layer) this.rebuildLayer();
+    else if (Math.abs(this.scale / this.layerScale - 1) > 0.25) this.scheduleLayerRebuild();
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#08080a';
-    ctx.fillRect(0, 0, cv.width, cv.height);
-
-    ctx.setTransform(
-      this.scale,
-      0,
-      0,
-      this.scale,
-      -this.view.x * this.scale,
-      -this.view.y * this.scale,
-    );
-
-    // 1. Imagem de fundo do mapa
-    if (this.bgLoaded && this.bgImg.naturalWidth) {
-      ctx.drawImage(this.bgImg, 0, 0, this.imgW, this.imgH);
-    }
+    ctx.fillStyle = C.abyss;
+    ctx.fillRect(0, 0, this.cv.width, this.cv.height);
+    ctx.setTransform(this.scale, 0, 0, this.scale, -this.view.x * this.scale, -this.view.y * this.scale);
+    ctx.imageSmoothingEnabled = true;
+    if (this.layer) ctx.drawImage(this.layer, 0, 0, this.imgW, this.imgH);
 
     const lw = 1.2 / this.scale;
-    const isPlayer = this.options.mode === 'player';
     const hero = this.getMyHeroToken();
 
-    // 2. Grade e alcance tático (Desenho ultra-rápido acelerado por hardware)
-    if (this.mapData?.show_grid !== false) {
-      // Quadrados alcançáveis: preenchimento --gold com 18% opacidade
-      if (isPlayer && hero && !hero.moving && this.reach.size > 0) {
-        ctx.fillStyle = 'rgba(245, 182, 91, 0.18)'; // --gold com 18%
-        if (this.reachPath) {
-          ctx.fill(this.reachPath);
-        } else {
-          ctx.beginPath();
-          for (const k of this.reach.keys()) {
-            const [sc, sr] = k.split(',').map(Number);
-            const p = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
-            ctx.moveTo(p.x, p.y - this.TH / 2);
-            ctx.lineTo(p.x + this.TW / 2, p.y);
-            ctx.lineTo(p.x, p.y + this.TH / 2);
-            ctx.lineTo(p.x - this.TW / 2, p.y);
-            ctx.closePath();
-          }
-          ctx.fill();
-        }
-      }
+    // Alcance do herói
+    if (isPlayer && hero && !hero.moving && this.reachPath && this.options.tool !== 'measure') {
+      // Preenchimento + contorno: sobre pisos claros só o preenchimento some.
+      ctx.fillStyle = 'rgba(7, 6, 5, 0.25)';
+      ctx.fill(this.reachPath);
+      ctx.fillStyle = C.goldA(0.22);
+      ctx.fill(this.reachPath);
+      ctx.lineWidth = lw * 1.2;
+      ctx.strokeStyle = C.goldA(0.75);
+      ctx.stroke(this.reachPath);
+    }
 
-      // Linhas da grade isométrica
-      ctx.lineWidth = lw;
-      ctx.strokeStyle = 'rgba(235, 230, 210, 0.16)';
-      if (this.gridPath) {
-        ctx.stroke(this.gridPath);
-      } else {
-        ctx.beginPath();
-        for (const k of this.valid) {
-          const [sc, sr] = k.split(',').map(Number);
-          const p = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
-          ctx.moveTo(p.x, p.y - this.TH / 2);
-          ctx.lineTo(p.x + this.TW / 2, p.y);
-          ctx.lineTo(p.x, p.y + this.TH / 2);
-          ctx.lineTo(p.x - this.TW / 2, p.y);
-          ctx.closePath();
-        }
-        ctx.stroke();
-      }
-
-      // Bloqueios de terreno em --blood suave e contorno bem definido
-      if (this.blocked.size > 0) {
-        ctx.fillStyle = 'rgba(200, 66, 58, 0.42)'; // --blood
-        if (this.blockedPath) {
-          ctx.fill(this.blockedPath);
-        } else {
-          ctx.beginPath();
-          for (const k of this.blocked) {
-            const [sc, sr] = k.split(',').map(Number);
-            const p = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
-            ctx.moveTo(p.x, p.y - this.TH / 2);
-            ctx.lineTo(p.x + this.TW / 2, p.y);
-            ctx.lineTo(p.x, p.y + this.TH / 2);
-            ctx.lineTo(p.x - this.TW / 2, p.y);
-            ctx.closePath();
-          }
-          ctx.fill();
-        }
-
-        // Borda e marcação visual destacada para o Mestre
-        if (isDm) {
-          ctx.strokeStyle = 'rgba(220, 70, 60, 0.85)';
-          ctx.lineWidth = Math.max(1, 1.5 * lw);
-          for (const k of this.blocked) {
-            const [sc, sr] = k.split(',').map(Number);
-            const p = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y - this.TH / 2);
-            ctx.lineTo(p.x + this.TW / 2, p.y);
-            ctx.lineTo(p.x, p.y + this.TH / 2);
-            ctx.lineTo(p.x - this.TW / 2, p.y);
-            ctx.closePath();
-            ctx.stroke();
-
-            // 'X' sutil de bloqueio no centro da célula
-            const crossW = this.TW * 0.16;
-            const crossH = this.TH * 0.16;
-            ctx.beginPath();
-            ctx.moveTo(p.x - crossW, p.y - crossH);
-            ctx.lineTo(p.x + crossW, p.y + crossH);
-            ctx.moveTo(p.x + crossW, p.y - crossH);
-            ctx.lineTo(p.x - crossW, p.y + crossH);
-            ctx.stroke();
-          }
-        }
+    // Bloqueios
+    if (this.blockedPath && this.blocked.size > 0 && (this.showGrid || isDm)) {
+      ctx.fillStyle = C.bloodA(isDm ? 0.45 : 0.32);
+      ctx.fill(this.blockedPath);
+      if (isDm) {
+        ctx.lineWidth = lw * 1.4;
+        ctx.strokeStyle = C.bloodA(0.9);
+        ctx.stroke(this.blockedPath);
       }
     }
 
-    // 3. Caminho em pontinhos dourados
+    // Caminho previsto
     if (isPlayer && hero && !hero.moving && this.prevPath) {
+      const limit = hero.movesLeft ?? this.moveLimit;
       this.prevPath.forEach((k, n) => {
         const [c, r] = k.split(',').map(Number);
         const p = center(c, r, this.OX, this.OY, this.TW, this.TH);
         ctx.beginPath();
-        ctx.ellipse(
-          p.x,
-          p.y,
-          this.TW * 0.08,
-          this.TH * 0.08,
-          0,
-          0,
-          Math.PI * 2,
-        );
-        ctx.fillStyle =
-          n < (hero.movesLeft ?? this.moveLimit)
-            ? 'rgba(245, 182, 91, 0.95)' // pontinho dourado
-            : 'rgba(200, 66, 58, 0.9)'; // --blood
+        ctx.ellipse(p.x, p.y, this.TW * 0.08, this.TH * 0.08, 0, 0, Math.PI * 2);
+        ctx.fillStyle = n < limit ? C.goldHi : C.bloodHi;
         ctx.fill();
       });
     }
 
-    // 4. Cursor de hover com mira / cruz central
-    if (this.hover && (isPlayer || this.options.mode === 'dm')) {
-      const p = center(
-        this.hover.c,
-        this.hover.r,
-        this.OX,
-        this.OY,
-        this.TW,
-        this.TH,
-      );
-      const k = cellKey(this.hover.c, this.hover.r);
-      const isDm = this.options.mode === 'dm';
-      const dmTool = this.options.tool || 'select';
+    this.drawHover(ctx, lw, hero);
 
-      let isBad = false;
-      let strokeColor = '#f5b65b';
-      let fillColor = 'rgba(245, 182, 91, 0.28)';
-
-      if (isDm) {
-        if (dmTool === 'paint_block') {
-          strokeColor = '#c8423a';
-          fillColor = 'rgba(200, 66, 58, 0.4)';
-        } else if (dmTool === 'erase_block') {
-          strokeColor = '#e2e8f0';
-          fillColor = 'rgba(226, 232, 240, 0.3)';
-        } else {
-          strokeColor = '#f5b65b';
-          fillColor = 'rgba(245, 182, 91, 0.22)';
-        }
-      } else {
-        isBad =
-          this.blocked.has(k) ||
-          !this.prevPath ||
-          this.prevPath.length > (hero?.movesLeft ?? this.moveLimit);
-        strokeColor = isBad ? '#c8423a' : '#f5b65b';
-        fillColor = isBad
-          ? 'rgba(200, 66, 58, 0.28)'
-          : 'rgba(245, 182, 91, 0.28)';
-      }
-
-      // Losango isométrico
-      diamond(ctx, p.x, p.y, this.TW, this.TH);
-      ctx.fillStyle = fillColor;
-      ctx.fill();
-
-      ctx.lineWidth = lw * 2;
-      ctx.strokeStyle = strokeColor;
-      ctx.stroke();
-
-      // Cruz central tática no centro exato do quadrado (a cruz é o centro)
-      ctx.beginPath();
-      ctx.moveTo(p.x - this.TW * 0.16, p.y);
-      ctx.lineTo(p.x + this.TW * 0.16, p.y);
-      ctx.moveTo(p.x, p.y - this.TH * 0.28);
-      ctx.lineTo(p.x, p.y + this.TH * 0.28);
-      ctx.lineWidth = lw * 1.5;
-      ctx.strokeStyle = strokeColor;
-      ctx.stroke();
-
-      // Ponto de mira no centro exato
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2 / this.scale, 0, Math.PI * 2);
-      ctx.fillStyle = strokeColor;
-      ctx.fill();
-    }
-
-    // Marcação da Origem da Grade (0, 0) com cruz no modo DM
-    if (this.options.mode === 'dm') {
+    // Origem da grade (só Mestre)
+    if (isDm) {
       const op = center(0, 0, this.OX, this.OY, this.TW, this.TH);
-      ctx.save();
       ctx.beginPath();
       ctx.arc(op.x, op.y, 4 / this.scale, 0, Math.PI * 2);
-      ctx.strokeStyle = '#f5b65b';
+      ctx.strokeStyle = C.gold;
       ctx.lineWidth = 1.5 / this.scale;
       ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(op.x - this.TW * 0.18, op.y);
-      ctx.lineTo(op.x + this.TW * 0.18, op.y);
-      ctx.moveTo(op.x, op.y - this.TH * 0.3);
-      ctx.lineTo(op.x, op.y + this.TH * 0.3);
-      ctx.strokeStyle = '#f5b65b';
-      ctx.lineWidth = 1.5 / this.scale;
-      ctx.stroke();
-      ctx.restore();
     }
 
-    // 5. Renderização das Peças Ordenadas por `y` (Depth Sorting)
-    const sortedStates = [...this.tokenStates.values()]
-      .filter((s) => s.token.visible !== false)
-      .sort((a, b) => a.y - b.y);
+    // Peças por profundidade (y)
+    const states = [...this.tokenStates.values()].filter((s) => this.isTokenShown(s));
+    states.sort((a, b) => a.y - b.y);
+    for (const s of states) this.drawToken(s, now, s === hero);
 
-    for (const s of sortedStates) {
-      this.drawToken(s, lw, now);
+    this.drawMeasure(ctx, lw);
+    this.drawPings(ctx, now);
+  }
+
+  private drawHover(ctx: CanvasRenderingContext2D, lw: number, hero: LocalTokenState | null): void {
+    if (!this.hover || this.options.mode === 'tv') return;
+    const tool = this.options.tool || 'select';
+    if (tool === 'pan' || tool === 'measure') return;
+    const p = center(this.hover.c, this.hover.r, this.OX, this.OY, this.TW, this.TH);
+    let stroke = C.gold;
+    let fill = C.goldA(0.22);
+
+    if (this.options.mode === 'dm') {
+      if (tool === 'paint_block') {
+        stroke = C.bloodHi;
+        fill = C.bloodA(0.4);
+      } else if (tool === 'erase_block') {
+        stroke = C.text;
+        fill = C.textA(0.25);
+      }
+    } else {
+      const k = cellKey(this.hover.c, this.hover.r);
+      const bad =
+        this.blocked.has(k) || !this.prevPath || this.prevPath.length > (hero?.movesLeft ?? this.moveLimit);
+      if (bad) {
+        stroke = C.bloodHi;
+        fill = C.bloodA(0.28);
+      }
+    }
+
+    diamond(ctx, p.x, p.y, this.TW, this.TH);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.lineWidth = lw * 2;
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
+  }
+
+  private drawMeasure(ctx: CanvasRenderingContext2D, lw: number): void {
+    if (!this.measureFrom || !this.measureTo) return;
+    const a = center(this.measureFrom.c, this.measureFrom.r, this.OX, this.OY, this.TW, this.TH);
+    const b = center(this.measureTo.c, this.measureTo.r, this.OX, this.OY, this.TW, this.TH);
+    const n = gridDistance(this.measureFrom.c, this.measureFrom.r, this.measureTo.c, this.measureTo.r);
+
+    for (const pt of [a, b]) {
+      diamond(ctx, pt.x, pt.y, this.TW, this.TH);
+      ctx.fillStyle = C.goldA(0.25);
+      ctx.fill();
+    }
+    ctx.save();
+    ctx.setLineDash([8 / this.scale, 6 / this.scale]);
+    ctx.lineWidth = lw * 2.4;
+    ctx.strokeStyle = C.goldHi;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.restore();
+
+    const label = `${n} ${n === 1 ? 'quadrado' : 'quadrados'}`;
+    const fs = Math.max(11, this.TH * 0.36);
+    ctx.font = `700 ${fs}px Cinzel, Georgia, serif`;
+    const tw = ctx.measureText(label).width;
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2 - fs;
+    ctx.fillStyle = 'rgba(7, 6, 5, 0.85)';
+    ctx.fillRect(mx - tw / 2 - fs * 0.5, my - fs * 0.8, tw + fs, fs * 1.6);
+    ctx.strokeStyle = C.gold;
+    ctx.lineWidth = lw;
+    ctx.strokeRect(mx - tw / 2 - fs * 0.5, my - fs * 0.8, tw + fs, fs * 1.6);
+    ctx.fillStyle = C.goldHi;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, mx, my);
+  }
+
+  private drawPings(ctx: CanvasRenderingContext2D, now: number): void {
+    for (const ping of this.pings) {
+      const t = Math.min(1, (now - ping.start) / PING_MS);
+      const p = center(ping.c, ping.r, this.OX, this.OY, this.TW, this.TH);
+      const color = ping.color || C.goldHi;
+      ctx.save();
+      ctx.strokeStyle = color;
+      for (let i = 0; i < 2; i++) {
+        const tt = Math.min(1, t * 1.4 - i * 0.25);
+        if (tt <= 0) continue;
+        ctx.globalAlpha = 1 - tt;
+        ctx.lineWidth = (3 - i) / this.scale;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, this.TW * (0.3 + tt * 0.9), this.TH * (0.3 + tt * 0.9), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1 - t;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - this.TW * 0.12, p.y - this.TH * 1.4);
+      ctx.lineTo(p.x + this.TW * 0.12, p.y - this.TH * 1.4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
     }
   }
 
-  private drawToken(s: LocalTokenState, lw: number, now: number): void {
-    // Viewport Culling: ignora peças completamente fora do campo visual da câmera
+  private drawToken(s: LocalTokenState, now: number, isMyHero: boolean): void {
+    // Culling: ignora peças fora da câmera
     const margin = Math.max(s.size, this.TW) * 1.5;
-    const minX = this.view.x - margin;
-    const maxX = this.view.x + this.cv.width / this.scale + margin;
-    const minY = this.view.y - margin;
-    const maxY = this.view.y + this.cv.height / this.scale + margin;
-    if (s.x < minX || s.x > maxX || s.y < minY || s.y > maxY) {
+    const vw = this.cv.width / this.scale;
+    const vh = this.cv.height / this.scale;
+    if (
+      s.x < this.view.x - margin ||
+      s.x > this.view.x + vw + margin ||
+      s.y < this.view.y - margin ||
+      s.y > this.view.y + vh + margin
+    ) {
       return;
     }
 
     const ctx = this.ctx;
-    const hero = this.getMyHeroToken();
-    const isMyHero = s === hero;
+    const hidden = s.token.visible === false;
+    const isSelected = this.options.selectedTokenId === s.token.id;
+    const isActive = this.options.activeTokenId === s.token.id;
+    ctx.save();
+    if (hidden) ctx.globalAlpha = 0.4;
 
-    // Sombra suave sob a peça
+    // Sombra
     ctx.beginPath();
-    ctx.ellipse(
-      s.x,
-      s.y + 2,
-      this.TW * 0.34,
-      this.TH * 0.28,
-      0,
-      0,
-      Math.PI * 2,
-    );
+    ctx.ellipse(s.x, s.y + 2, this.TW * 0.34, this.TH * 0.28, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.fill();
 
-    // Anel do herói / base isométrica com 1.5px
-    // Jogador: --gold; Outros heróis: --moss; Feras: --blood
-    diamond(ctx, s.x, s.y, this.TW * 0.9, this.TH * 0.9);
-    const isSelected = this.options.selectedTokenId === s.token.id;
-    ctx.lineWidth = (1.5 / this.scale) * (isSelected ? 2.5 : isMyHero ? 1.6 : 1.0);
-
-    if (isSelected) {
-      ctx.strokeStyle = '#f5b65b'; // --gold reticle
-    } else if (isMyHero) {
-      ctx.strokeStyle = '#f5b65b'; // --gold
-    } else if (s.kind === 'heroi') {
-      ctx.strokeStyle = '#4a7c59'; // --moss
-    } else {
-      ctx.strokeStyle = '#c8423a'; // --blood
+    // Turno ativo: anel dourado pulsante
+    if (isActive) {
+      const pulse = 0.5 + 0.5 * Math.sin(now / 260);
+      diamond(ctx, s.x, s.y, this.TW * (1.05 + pulse * 0.1), this.TH * (1.05 + pulse * 0.1));
+      ctx.fillStyle = C.goldA(0.12 + pulse * 0.12);
+      ctx.fill();
+      ctx.lineWidth = (2.2 / this.scale) * (1 + pulse * 0.4);
+      ctx.strokeStyle = C.goldHi;
+      ctx.stroke();
     }
+
+    // Base da peça
+    diamond(ctx, s.x, s.y, this.TW * 0.9, this.TH * 0.9);
+    ctx.lineWidth = (1.5 / this.scale) * (isSelected ? 2.4 : isMyHero ? 1.6 : 1);
+    ctx.strokeStyle = isSelected || isMyHero ? C.gold : s.kind === 'heroi' ? C.moss : C.bloodHi;
     ctx.stroke();
 
-    if (isSelected) {
-      // Cruz central no meio da base da peça selecionada
-      ctx.beginPath();
-      ctx.moveTo(s.x - this.TW * 0.2, s.y);
-      ctx.lineTo(s.x + this.TW * 0.2, s.y);
-      ctx.moveTo(s.x, s.y - this.TH * 0.35);
-      ctx.lineTo(s.x, s.y + this.TH * 0.35);
-      ctx.strokeStyle = '#f5b65b';
-      ctx.lineWidth = 1.4 / this.scale;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, (this.TW / 2) * 0.9, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(245, 182, 91, 0.5)';
-      ctx.lineWidth = 1.0 / this.scale;
-      ctx.stroke();
-    }
-
-    // Desenho do sprite / vídeo com chroma key
+    // Sprite / vídeo
     const entry = this.pool.get(s.mediaUrl, s.chromaMode);
     const source = entry?.src || (entry?.ready ? entry.el : null);
-
     let drawn = false;
     if (source) {
       const sw =
-        (source as HTMLVideoElement).videoWidth ||
-        (source as HTMLImageElement).naturalWidth ||
-        source.width;
+        (source as HTMLVideoElement).videoWidth || (source as HTMLImageElement).naturalWidth || source.width;
       const sh =
-        (source as HTMLVideoElement).videoHeight ||
-        (source as HTMLImageElement).naturalHeight ||
-        source.height;
-
+        (source as HTMLVideoElement).videoHeight || (source as HTMLImageElement).naturalHeight || source.height;
       if (sw && sh) {
         const H = s.size;
         const W = (H * sw) / sh;
-        const bob = s.moving
-          ? Math.abs(Math.sin(now / 95)) * -H * 0.025
-          : 0;
-
-        ctx.save();
+        const bob = s.moving ? Math.abs(Math.sin(now / 95)) * -H * 0.025 : 0;
         ctx.translate(s.x, s.y + this.TH * 0.14 + bob);
         ctx.scale(s.facing, 1);
         ctx.drawImage(source, -W * s.anchorX, -H * s.anchorY, W, H);
-        ctx.restore();
+        ctx.setTransform(this.scale, 0, 0, this.scale, -this.view.x * this.scale, -this.view.y * this.scale);
         drawn = true;
       }
     }
-
     if (!drawn) {
-      // Fallback elegante com insígnia enquanto a mídia carrega ou se falhar
-      ctx.save();
-      ctx.translate(s.x, s.y - s.size * 0.3);
+      const rr = s.size * 0.22;
       ctx.beginPath();
-      ctx.arc(0, 0, s.size * 0.22, 0, Math.PI * 2);
-      ctx.fillStyle = isMyHero ? '#f5b65b' : s.kind === 'heroi' ? '#4a7c59' : '#c8423a';
+      ctx.arc(s.x, s.y - s.size * 0.3, rr, 0, Math.PI * 2);
+      ctx.fillStyle = isMyHero ? C.gold : s.kind === 'heroi' ? C.moss : C.blood;
       ctx.fill();
       ctx.lineWidth = 1.5 / this.scale;
-      ctx.strokeStyle = '#ebe6d6';
+      ctx.strokeStyle = C.text;
       ctx.stroke();
-
-      ctx.font = `bold ${Math.round(s.size * 0.16)}px Cinzel, serif`;
-      ctx.fillStyle = '#08080a';
+      ctx.font = `700 ${Math.round(s.size * 0.16)}px Cinzel, Georgia, serif`;
+      ctx.fillStyle = C.abyss;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText((s.token.name || '?').substring(0, 2).toUpperCase(), 0, 1);
-      ctx.restore();
+      ctx.fillText((s.token.name || '?').substring(0, 2).toUpperCase(), s.x, s.y - s.size * 0.3 + 1);
     }
 
-    // Barra de Vida e Nome sobre a peça (idêntico no Mestre, TV e Jogador)
-    const hp = s.token.hp;
-    const maxHp = s.token.max_hp || hp;
-    if (hp !== undefined && maxHp && maxHp > 0) {
+    // Barra de vida (heróis via heroVitals, demais via hp da peça)
+    const vital = s.token.hero_id ? this.options.heroVitals?.[s.token.hero_id] : undefined;
+    const hp = vital?.hp ?? s.token.hp ?? undefined;
+    const maxHp = vital?.maxHp ?? s.token.max_hp ?? hp;
+    const top = s.y - s.size * 1.02;
+    if (hp != null && maxHp && maxHp > 0) {
       const bw = this.TW * 0.9;
-      const bh = Math.max(4, this.TH * 0.14);
+      const bh = Math.max(3 / this.scale, this.TH * 0.12);
       const bx = s.x - bw / 2;
-      const by = s.y - s.size * 1.04;
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(bx, by, bw, bh);
-
+      ctx.fillStyle = 'rgba(7, 6, 5, 0.8)';
+      ctx.fillRect(bx, top, bw, bh);
       const pct = Math.max(0, Math.min(1, hp / maxHp));
-      ctx.fillStyle = s.kind === 'heroi' ? '#4a7c59' : '#c8423a';
-      ctx.fillRect(bx, by, bw * pct, bh);
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.fillStyle = pct <= 0.3 ? C.bloodHi : s.kind === 'heroi' ? C.moss : C.blood;
+      ctx.fillRect(bx, top, bw * pct, bh);
+      ctx.strokeStyle = C.goldA(0.5);
       ctx.lineWidth = 1 / this.scale;
-      ctx.strokeRect(bx, by, bw, bh);
+      ctx.strokeRect(bx, top, bw, bh);
     }
 
-    // Nome legível com contraste sobre a peça
-    const labelY =
-      hp !== undefined && maxHp ? s.y - s.size * 1.08 : s.y - s.size * 0.96;
-    ctx.font = `600 ${Math.max(10, this.TH * 0.32)}px Inter, system-ui, sans-serif`;
+    // Nome
+    const fs = Math.max(10 / this.scale, this.TH * 0.3);
+    const labelY = top - fs * 0.5;
+    ctx.font = `700 ${fs}px Cinzel, Georgia, serif`;
     ctx.textAlign = 'center';
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.lineWidth = 2.5 / this.scale;
-    ctx.strokeText(s.token.name, s.x, labelY);
-    ctx.fillStyle = '#f5f5f7';
-    ctx.fillText(s.token.name, s.x, labelY);
+    ctx.textBaseline = 'alphabetic';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(7, 6, 5, 0.9)';
+    ctx.lineWidth = 3 / this.scale;
+    const name = hidden ? `${s.token.name} (oculto)` : s.token.name;
+    ctx.strokeText(name, s.x, labelY);
+    ctx.fillStyle = isActive ? C.goldHi : C.text;
+    ctx.fillText(name, s.x, labelY);
+    ctx.restore();
   }
 
-  // ── Gestos de Câmera e Entrada do Jogador ──
+  // ───────────────────────── Câmera ─────────────────────────
+
+  /** Escala que faz o mapa inteiro caber na área (w × h). */
+  private containScale(w: number, h: number): number {
+    if (!w || !h) return 1;
+    return Math.min(w / (this.imgW || 1376), h / (this.imgH || 768));
+  }
+
   private getCssScale(): number {
     const rc = this.cv.getBoundingClientRect();
     if (!rc.width) return 1;
-    return (rc.width / (this.imgW || 1376)) * this.view.z;
+    return this.containScale(rc.width, rc.height) * this.view.z;
   }
 
   private toImg(clientX: number, clientY: number): Point {
     const rc = this.cv.getBoundingClientRect();
-    const cssScale = this.getCssScale();
-    return {
-      x: this.view.x + (clientX - rc.left) / cssScale,
-      y: this.view.y + (clientY - rc.top) / cssScale,
-    };
+    const s = this.getCssScale();
+    return { x: this.view.x + (clientX - rc.left) / s, y: this.view.y + (clientY - rc.top) / s };
+  }
+
+  private cellAt(clientX: number, clientY: number): CellCoord | null {
+    const pt = this.toImg(clientX, clientY);
+    return pick(pt.x, pt.y, this.valid, this.OX, this.OY, this.TW, this.TH, this.imgW, this.imgH);
   }
 
   public clampView(): void {
     const rc = this.cv.getBoundingClientRect();
-    const cssScale = this.getCssScale();
-    const visibleW = rc.width > 0 ? rc.width / cssScale : this.imgW / this.view.z;
-    const visibleH = rc.height > 0 ? rc.height / cssScale : this.imgH / this.view.z;
-
+    const s = this.getCssScale();
+    const visibleW = rc.width > 0 ? rc.width / s : this.imgW / this.view.z;
+    const visibleH = rc.height > 0 ? rc.height / s : this.imgH / this.view.z;
     this.view.z = Math.min(this.ZMAX, Math.max(this.ZMIN, this.view.z));
-    this.view.x = Math.min(
-      Math.max(0, this.imgW - visibleW),
-      Math.max(0, this.view.x),
-    );
-    this.view.y = Math.min(
-      Math.max(0, this.imgH - visibleH),
-      Math.max(0, this.view.y),
-    );
-    this.dirty = true;
+    // Se a imagem é menor que a tela, centraliza; senão limita às bordas.
+    this.view.x =
+      visibleW >= this.imgW
+        ? (this.imgW - visibleW) / 2
+        : Math.min(this.imgW - visibleW, Math.max(0, this.view.x));
+    this.view.y =
+      visibleH >= this.imgH
+        ? (this.imgH - visibleH) / 2
+        : Math.min(this.imgH - visibleH, Math.max(0, this.view.y));
+    this.invalidate();
   }
 
   public zoomIn(): void {
-    this.view.z = Math.min(this.ZMAX, this.view.z * 1.3);
-    this.clampView();
+    this.zoomAtCenter(1.3);
   }
 
   public zoomOut(): void {
-    this.view.z = Math.max(this.ZMIN, this.view.z / 1.3);
+    this.zoomAtCenter(1 / 1.3);
+  }
+
+  private zoomAtCenter(factor: number): void {
+    const rc = this.cv.getBoundingClientRect();
+    this.zoomAt(rc.left + rc.width / 2, rc.top + rc.height / 2, this.view.z * factor);
+  }
+
+  private zoomAt(clientX: number, clientY: number, nz: number): void {
+    const pt = this.toImg(clientX, clientY);
+    const rc = this.cv.getBoundingClientRect();
+    const z = Math.min(this.ZMAX, Math.max(this.ZMIN, nz));
+    const s = this.containScale(rc.width, rc.height) * z;
+    this.view.z = z;
+    this.view.x = pt.x - (clientX - rc.left) / s;
+    this.view.y = pt.y - (clientY - rc.top) / s;
+    this.clampView();
+  }
+
+  /**
+   * Primeiro enquadramento: se a tela tem proporção muito diferente do mapa
+   * (celular em pé), começa preenchendo a tela em vez de deixar faixas vazias.
+   */
+  private applyInitialView(): void {
+    const rc = this.cv.getBoundingClientRect();
+    if (!rc.width || !rc.height) return;
+    this.needsInitialView = false;
+    const contain = this.containScale(rc.width, rc.height);
+    const cover = Math.max(rc.width / this.imgW, rc.height / this.imgH);
+    const ratio = cover / contain;
+    this.view.z = this.options.mode !== 'tv' && ratio > 1.4 ? Math.min(this.ZMAX, ratio) : 1;
+    this.view.x = (this.imgW - rc.width / (contain * this.view.z)) / 2;
+    this.view.y = (this.imgH - rc.height / (contain * this.view.z)) / 2;
     this.clampView();
   }
 
   public zoomFit(): void {
-    this.view.z = 1;
-    this.view.x = 0;
-    this.view.y = 0;
+    this.view = { z: 1, x: 0, y: 0 };
     this.clampView();
   }
 
   public centerOnHero(heroTokenId?: string): void {
-    let hero = this.getMyHeroToken();
-    if (heroTokenId && this.tokenStates.has(heroTokenId)) {
-      hero = this.tokenStates.get(heroTokenId)!;
-    }
-    if (!hero) return;
+    const s = heroTokenId ? this.tokenStates.get(heroTokenId) : this.getMyHeroToken();
+    if (s) this.centerOnPoint(s.x, s.y);
+  }
 
+  public centerOnToken(tokenId: string): void {
+    const s = this.tokenStates.get(tokenId);
+    if (s) this.centerOnPoint(s.x, s.y);
+  }
+
+  private centerOnPoint(x: number, y: number): void {
     this.view.z = Math.max(1.5, this.view.z);
     const rc = this.cv.getBoundingClientRect();
-    const cssScale = this.getCssScale();
-    const visibleW = rc.width > 0 ? rc.width / cssScale : this.imgW / this.view.z;
-    const visibleH = rc.height > 0 ? rc.height / cssScale : this.imgH / this.view.z;
-
-    this.view.x = hero.x - visibleW / 2;
-    this.view.y = hero.y - visibleH / 2;
+    const s = this.getCssScale();
+    this.view.x = x - (rc.width > 0 ? rc.width / s : this.imgW / this.view.z) / 2;
+    this.view.y = y - (rc.height > 0 ? rc.height / s : this.imgH / this.view.z) / 2;
     this.clampView();
+  }
+
+  // ───────────────────────── Entrada ─────────────────────────
+
+  private preventContextMenu(e: Event): void {
+    e.preventDefault();
   }
 
   private handleWheel(e: WheelEvent): void {
     e.preventDefault();
-    const pt = this.toImg(e.clientX, e.clientY);
-    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-    const nz = Math.min(this.ZMAX, Math.max(this.ZMIN, this.view.z * factor));
+    this.zoomAt(e.clientX, e.clientY, this.view.z * (e.deltaY < 0 ? 1.15 : 1 / 1.15));
+  }
 
-    const rc = this.cv.getBoundingClientRect();
-    const newCssScale = (rc.width / (this.imgW || 1376)) * nz;
+  private handleDblClick(e: MouseEvent): void {
+    if (this.options.mode === 'tv') return;
+    const cell = this.cellAt(e.clientX, e.clientY);
+    if (cell) this.emitPing(cell);
+  }
 
-    this.view.x = pt.x - (e.clientX - rc.left) / newCssScale;
-    this.view.y = pt.y - (e.clientY - rc.top) / newCssScale;
-    this.view.z = nz;
-    this.clampView();
+  private emitPing(cell: CellCoord): void {
+    const ping: BattlePing = { c: cell.c, r: cell.r, color: this.options.mode === 'dm' ? C.bloodHi : C.goldHi };
+    this.showPing(ping);
+    this.options.onPing?.(ping);
+  }
+
+  private cancelLongPress(): void {
+    if (this.longPressTimer) clearTimeout(this.longPressTimer);
+    this.longPressTimer = null;
+  }
+
+  private hitToken(pt: Point, cell: CellCoord | null): LocalTokenState | null {
+    const front = [...this.tokenStates.values()].filter((s) => this.isTokenShown(s)).sort((a, b) => b.y - a.y);
+    for (const s of front) {
+      if (cell && s.c === cell.c && s.r === cell.r) return s;
+      if (Math.hypot(pt.x - s.x, pt.y - s.y) < this.TW * 0.55) return s;
+      const halfW = (s.size * 0.45) / 2;
+      if (pt.x >= s.x - halfW && pt.x <= s.x + halfW && pt.y >= s.y - s.size && pt.y <= s.y) return s;
+    }
+    return null;
+  }
+
+  private paintAt(cell: CellCoord | null, add: boolean): void {
+    if (!cell) return;
+    const k = cellKey(cell.c, cell.r);
+    if (add === this.blocked.has(k)) return;
+    if (add) this.blocked.add(k);
+    else this.blocked.delete(k);
+    this.blockedPath = this.cellsPath(this.blocked);
+    this.options.onUpdateBlocked?.(Array.from(this.blocked));
+    this.invalidate();
   }
 
   private handlePointerDown(e: PointerEvent): void {
+    if (e.button === 2) return;
     this.cv.setPointerCapture(e.pointerId);
     this.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    if (this.pts.size === 1) {
-      const pt = this.toImg(e.clientX, e.clientY);
-      this.pressStart = {
-        pt,
-        client: { x: e.clientX, y: e.clientY },
-        time: performance.now(),
-      };
-      this.panView0 = { ...this.view };
-      this.isDragging = false;
-
-      // ── MODO DM INTERAÇÃO ──
-      if (this.options.mode === 'dm') {
-        const tool = this.options.tool || 'select';
-        const cell = pick(
-          pt.x,
-          pt.y,
-          this.valid,
-          this.OX,
-          this.OY,
-          this.TW,
-          this.TH,
-          this.imgW,
-          this.imgH,
-        );
-
-        if (tool === 'paint_block') {
-          if (cell) {
-            const k = cellKey(cell.c, cell.r);
-            this.blocked.add(k);
-            this.rebuildBlockedPath();
-            this.options.onUpdateBlocked?.(Array.from(this.blocked));
-            this.dirty = true;
-          }
-          this.isPaintingBlock = true;
-          return;
-        }
-
-        if (tool === 'erase_block') {
-          if (cell) {
-            const k = cellKey(cell.c, cell.r);
-            this.blocked.delete(k);
-            this.rebuildBlockedPath();
-            this.options.onUpdateBlocked?.(Array.from(this.blocked));
-            this.dirty = true;
-          }
-          this.isErasingBlock = true;
-          return;
-        }
-
-        if (tool === 'select') {
-          let clickedToken: LocalTokenState | null = null;
-          // Ordenado da frente para trás (maior y desenhado por cima tem prioridade)
-          const sortedTokens = [...this.tokenStates.values()]
-            .filter((s) => s.token.visible !== false)
-            .sort((a, b) => b.y - a.y);
-
-          for (const s of sortedTokens) {
-            // 1. Célula exata
-            if (cell && s.c === cell.c && s.r === cell.r) {
-              clickedToken = s;
-              break;
-            }
-            // 2. Base da peça (anel/losango)
-            if (Math.hypot(pt.x - s.x, pt.y - s.y) < this.TW * 0.55) {
-              clickedToken = s;
-              break;
-            }
-            // 3. Corpo e cabeça da peça
-            const halfW = (s.size * 0.45) / 2;
-            if (
-              pt.x >= s.x - halfW &&
-              pt.x <= s.x + halfW &&
-              pt.y >= s.y - s.size &&
-              pt.y <= s.y
-            ) {
-              clickedToken = s;
-              break;
-            }
-          }
-
-          if (clickedToken) {
-            this.options.selectedTokenId = clickedToken.token.id;
-            this.options.onSelectTokenId?.(clickedToken.token.id);
-            this.options.onSelectToken?.(clickedToken.token);
-            this.draggedTokenId = clickedToken.token.id;
-            this.dirty = true;
-          } else {
-            this.options.selectedTokenId = null;
-            this.options.onSelectTokenId?.(null);
-            this.options.onSelectToken?.(null);
-            this.draggedTokenId = null;
-            this.dirty = true;
-          }
-        }
-      }
-    } else if (this.pts.size === 2) {
-      // Início do pinch zoom
+    if (this.pts.size === 2) {
+      this.cancelLongPress();
       const [p1, p2] = [...this.pts.values()];
       this.pinchDist0 = Math.hypot(p2.x - p1.x, p2.y - p1.y);
       this.pinchZ0 = this.view.z;
-      this.panView0 = { ...this.view };
       this.isDragging = true;
+      this.isPaintingBlock = this.isErasingBlock = false;
+      this.draggedTokenId = null;
+      return;
     }
+    if (this.pts.size !== 1) return;
+
+    const pt = this.toImg(e.clientX, e.clientY);
+    const cell = pick(pt.x, pt.y, this.valid, this.OX, this.OY, this.TW, this.TH, this.imgW, this.imgH);
+    this.pressStart = { pt, client: { x: e.clientX, y: e.clientY }, time: performance.now() };
+    this.panView0 = { ...this.view };
+    this.isDragging = false;
+    this.longPressFired = false;
+
+    // Toque longo = ping (exceto na TV)
+    if (this.options.mode !== 'tv' && cell && e.pointerType !== 'mouse') {
+      this.cancelLongPress();
+      this.longPressTimer = setTimeout(() => {
+        this.longPressFired = true;
+        this.emitPing(cell);
+      }, LONG_PRESS_MS);
+    }
+
+    const tool = this.options.tool || 'select';
+    if (tool === 'measure') {
+      if (cell) {
+        this.measureFrom = cell;
+        this.measureTo = cell;
+        this.options.onMeasure?.(0);
+        this.invalidate();
+      }
+      return;
+    }
+
+    if (this.options.mode !== 'dm') return;
+    if (tool === 'paint_block') {
+      this.isPaintingBlock = true;
+      this.paintAt(cell, true);
+    } else if (tool === 'erase_block') {
+      this.isErasingBlock = true;
+      this.paintAt(cell, false);
+    } else if (tool === 'select') {
+      const hit = this.hitToken(pt, cell);
+      const id = hit?.token.id ?? null;
+      this.options.selectedTokenId = id;
+      this.options.onSelectTokenId?.(id);
+      this.options.onSelectToken?.(hit?.token ?? null);
+      this.draggedTokenId = id;
+      this.invalidate();
+    }
+  }
+
+  private handlePointerLeave(): void {
+    if (this.pts.size === 0 && this.hover) this.updateHover(null);
   }
 
   private handlePointerMove(e: PointerEvent): void {
     if (!this.pts.has(e.pointerId)) {
-      // Hover do mouse (quando nenhum botão está pressionado)
-      if (this.options.mode === 'player' || this.options.mode === 'dm') {
-        const pt = this.toImg(e.clientX, e.clientY);
-        const cell = pick(
-          pt.x,
-          pt.y,
-          this.valid,
-          this.OX,
-          this.OY,
-          this.TW,
-          this.TH,
-          this.imgW,
-          this.imgH,
-        );
-        const cellChanged =
-          (!this.hover && cell !== null) ||
-          (this.hover !== null && cell === null) ||
-          (this.hover !== null &&
-            cell !== null &&
-            (this.hover.c !== cell.c || this.hover.r !== cell.r));
-        if (cellChanged) {
-          this.updateHover(cell);
-        }
+      if (this.options.mode === 'tv' || e.pointerType !== 'mouse') return;
+      const cell = this.cellAt(e.clientX, e.clientY);
+      const h = this.hover;
+      if ((h === null) !== (cell === null) || (h && cell && (h.c !== cell.c || h.r !== cell.r))) {
+        this.updateHover(cell);
       }
       return;
     }
 
     this.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // ── MODO DM ARRASTO ──
-    if (this.options.mode === 'dm') {
-      const tool = this.options.tool || 'select';
-
-      if (this.isPaintingBlock && tool === 'paint_block') {
-        const pt = this.toImg(e.clientX, e.clientY);
-        const cell = pick(
-          pt.x,
-          pt.y,
-          this.valid,
-          this.OX,
-          this.OY,
-          this.TW,
-          this.TH,
-          this.imgW,
-          this.imgH,
-        );
-        if (cell) {
-          const k = cellKey(cell.c, cell.r);
-          if (!this.blocked.has(k)) {
-            this.blocked.add(k);
-            this.rebuildBlockedPath();
-            this.options.onUpdateBlocked?.(Array.from(this.blocked));
-            this.dirty = true;
-          }
-        }
-        return;
-      }
-
-      if (this.isErasingBlock && tool === 'erase_block') {
-        const pt = this.toImg(e.clientX, e.clientY);
-        const cell = pick(
-          pt.x,
-          pt.y,
-          this.valid,
-          this.OX,
-          this.OY,
-          this.TW,
-          this.TH,
-          this.imgW,
-          this.imgH,
-        );
-        if (cell) {
-          const k = cellKey(cell.c, cell.r);
-          if (this.blocked.has(k)) {
-            this.blocked.delete(k);
-            this.rebuildBlockedPath();
-            this.options.onUpdateBlocked?.(Array.from(this.blocked));
-            this.dirty = true;
-          }
-        }
-        return;
-      }
-
-      if (this.draggedTokenId && tool === 'select' && this.pressStart) {
-        const dx = e.clientX - this.pressStart.client.x;
-        const dy = e.clientY - this.pressStart.client.y;
-        if (Math.hypot(dx, dy) > 8) {
-          this.isDraggingToken = true;
-        }
-        if (this.isDraggingToken) {
-          const pt = this.toImg(e.clientX, e.clientY);
-          const cell = pick(
-            pt.x,
-            pt.y,
-            this.valid,
-            this.OX,
-            this.OY,
-            this.TW,
-            this.TH,
-            this.imgW,
-            this.imgH,
-          );
-          if (cell) {
-            const state = this.tokenStates.get(this.draggedTokenId);
-            if (state && (state.c !== cell.c || state.r !== cell.r)) {
-              state.c = cell.c;
-              state.r = cell.r;
-              const pos = center(cell.c, cell.r, this.OX, this.OY, this.TW, this.TH);
-              state.x = pos.x;
-              state.y = pos.y;
-              this.options.onMoveTokenDirect?.(this.draggedTokenId, cell.c, cell.r);
-              this.dirty = true;
-            }
-          }
-          return;
-        }
-      }
-    }
-
-    if (this.pts.size === 1 && this.panView0 && this.pressStart) {
-      const dx = e.clientX - this.pressStart.client.x;
-      const dy = e.clientY - this.pressStart.client.y;
-
-      if (Math.hypot(dx, dy) > 8) {
-        this.isDragging = true;
-      }
-
-      if (this.isDragging) {
-        const cssScale = this.getCssScale();
-        this.view.x = this.panView0.x - dx / cssScale;
-        this.view.y = this.panView0.y - dy / cssScale;
-        this.clampView();
-      }
-    } else if (this.pts.size === 2) {
-      // Pinça multi-touch
+    if (this.pts.size === 2) {
       const [p1, p2] = [...this.pts.values()];
       const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
       if (this.pinchDist0 > 0) {
-        const factor = dist / this.pinchDist0;
-        this.view.z = Math.min(
-          this.ZMAX,
-          Math.max(this.ZMIN, this.pinchZ0 * factor),
-        );
-        this.clampView();
+        this.zoomAt((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, this.pinchZ0 * (dist / this.pinchDist0));
       }
+      return;
+    }
+    if (!this.pressStart) return;
+
+    const dx = e.clientX - this.pressStart.client.x;
+    const dy = e.clientY - this.pressStart.client.y;
+    const moved = Math.hypot(dx, dy) > DRAG_THRESHOLD;
+    if (moved) this.cancelLongPress();
+    const tool = this.options.tool || 'select';
+
+    if (tool === 'measure' && this.measureFrom) {
+      const cell = this.cellAt(e.clientX, e.clientY);
+      if (cell && (cell.c !== this.measureTo?.c || cell.r !== this.measureTo?.r)) {
+        this.measureTo = cell;
+        this.options.onMeasure?.(gridDistance(this.measureFrom.c, this.measureFrom.r, cell.c, cell.r));
+        this.invalidate();
+      }
+      return;
+    }
+
+    if (this.options.mode === 'dm') {
+      if (this.isPaintingBlock) return this.paintAt(this.cellAt(e.clientX, e.clientY), true);
+      if (this.isErasingBlock) return this.paintAt(this.cellAt(e.clientX, e.clientY), false);
+      if (this.draggedTokenId && tool === 'select') {
+        if (moved) this.isDraggingToken = true;
+        if (this.isDraggingToken) {
+          const cell = this.cellAt(e.clientX, e.clientY);
+          const s = this.tokenStates.get(this.draggedTokenId);
+          if (cell && s && (s.c !== cell.c || s.r !== cell.r)) {
+            s.c = cell.c;
+            s.r = cell.r;
+            s.path = [];
+            const pos = center(cell.c, cell.r, this.OX, this.OY, this.TW, this.TH);
+            s.x = pos.x;
+            s.y = pos.y;
+            this.invalidate();
+          }
+        }
+        return;
+      }
+    }
+
+    if (moved) this.isDragging = true;
+    if (this.isDragging && this.panView0) {
+      const s = this.getCssScale();
+      this.view.x = this.panView0.x - dx / s;
+      this.view.y = this.panView0.y - dy / s;
+      this.clampView();
     }
   }
 
   private handlePointerUp(e: PointerEvent): void {
     this.pts.delete(e.pointerId);
+    this.cancelLongPress();
 
-    // Toque ou clique rápido sem arrastar = AÇÃO DE MOVIMENTO (modo player)
-    if (!this.isDragging && this.pressStart && this.options.mode === 'player') {
-      // FIX: use UP event coords, not stale pressStart.pt (which is pre-pan)
-      const pt = this.toImg(e.clientX, e.clientY);
-      const cell = pick(
-        pt.x,
-        pt.y,
-        this.valid,
-        this.OX,
-        this.OY,
-        this.TW,
-        this.TH,
-        this.imgW,
-        this.imgH,
-      );
+    if (this.isDraggingToken && this.draggedTokenId) {
+      const s = this.tokenStates.get(this.draggedTokenId);
+      if (s) this.options.onDropToken?.(this.draggedTokenId, s.c, s.r);
+    }
 
-      if (cell) {
-        this.handleCellAction(cell);
-      }
+    const tool = this.options.tool || 'select';
+    const isTap = !this.isDragging && !this.longPressFired && this.pressStart && e.type === 'pointerup';
+    if (isTap && this.options.mode === 'player' && tool !== 'measure') {
+      const cell = this.cellAt(e.clientX, e.clientY);
+      if (cell) this.handleCellAction(cell);
     }
 
     this.isPaintingBlock = false;
     this.isErasingBlock = false;
     this.isDraggingToken = false;
     this.draggedTokenId = null;
-
     if (this.pts.size === 0) {
       this.pressStart = null;
       this.panView0 = null;
@@ -1346,45 +1262,54 @@ export class BattleEngine {
   private handleCellAction(cell: CellCoord): void {
     const hero = this.getMyHeroToken();
     if (!hero || hero.moving || !this.graph) return;
-
-    const targetKey = cellKey(cell.c, cell.r);
-    // Se não for alcançável ou destino bloqueado, ignora
-    if (!this.reach.has(targetKey)) return;
-
-    const path = reconstructCoordPath(
-      this.graph.prev,
-      this.graph.dist,
-      cell.c,
-      cell.r,
-      hero.c,
-      hero.r,
-    );
+    if (!this.reach.has(cellKey(cell.c, cell.r))) return;
+    const path = reconstructCoordPath(this.graph.prev, this.graph.dist, cell.c, cell.r, hero.c, hero.r);
     if (!path || path.length === 0) return;
 
-    // Dispara callback assíncrono para a RPC mover_token
     this.options.onMoveToken?.(hero.token.id, cell.c, cell.r, path);
-
-    // Otimista: anima imediatamente no motor local
     hero.path = [...path];
     hero.moving = true;
     hero.movesLeft = Math.max(0, hero.movesLeft - path.length);
-    this.dirty = true;
+    this.prevPath = null;
+    this.invalidate();
   }
 
   public destroy(): void {
-    if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-    }
+    this.destroyed = true;
+    if (this.rafId !== null) cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    if (this.layerTimer) clearTimeout(this.layerTimer);
+    this.cancelLongPress();
+    this.resizeObserver?.disconnect();
+    this.cv.removeEventListener('contextmenu', this.preventContextMenu);
     this.cv.removeEventListener('pointerdown', this.handlePointerDown);
     this.cv.removeEventListener('pointermove', this.handlePointerMove);
     this.cv.removeEventListener('pointerup', this.handlePointerUp);
     this.cv.removeEventListener('pointercancel', this.handlePointerUp);
+    this.cv.removeEventListener('pointerleave', this.handlePointerLeave);
     this.cv.removeEventListener('wheel', this.handleWheel);
-
+    this.cv.removeEventListener('dblclick', this.handleDblClick);
+    document.removeEventListener('visibilitychange', this.handleVisibility);
     this.pool.destroy();
+    this.layer = null;
   }
+}
+
+function normalizePath(raw: unknown): Array<[number, number]> {
+  if (!Array.isArray(raw)) return [];
+  const out: Array<[number, number]> = [];
+  for (const p of raw) {
+    if (Array.isArray(p)) out.push([Number(p[0]), Number(p[1])]);
+    else if (typeof p === 'string' && p.includes(',')) {
+      const [c, r] = p.split(',').map(Number);
+      out.push([c, r]);
+    }
+  }
+  return out.filter(([c, r]) => Number.isFinite(c) && Number.isFinite(r));
+}
+
+/** buildGrid protegido contra parâmetros absurdos (tile minúsculo trava a aba). */
+function buildGridSafe(w: number, h: number, ox: number, oy: number, tw: number, th: number): Set<string> {
+  const safeTw = Math.max(16, tw);
+  return buildGrid(w, h, ox, oy, safeTw, safeTw === tw ? th : safeTw / 2);
 }

@@ -1,15 +1,7 @@
-import { useNavigate } from '@tanstack/react-router';
-import {
-  Compass,
-  Maximize2,
-  Minus,
-  Plus,
-  RotateCcw,
-  Smartphone,
-} from 'lucide-react';
-import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { Crosshair, Maximize2, Minus, Plus, Ruler } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSessionStore } from '../../../shared/stores/session.ts';
+import { type BattleTurn, useBattleSync, useHeroVitals } from '../api/battleSync.ts';
 import { useActiveBattleMap, useBattleTokens } from '../api/useBattle.ts';
 import { BattleEngine } from '../engine/BattleEngine.ts';
 import type { BattleToken } from '../engine/types.ts';
@@ -18,250 +10,199 @@ interface PlayerBattleCanvasProps {
   heroId?: string;
 }
 
-export const PlayerBattleCanvas: React.FC<PlayerBattleCanvasProps> = ({
-  heroId: propHeroId,
-}) => {
-  const sessionHeroId = useSessionStore((s) => s.heroId);
-  const heroId = propHeroId || sessionHeroId || 'tor_bjorn';
-  const heroIdRef = useRef(heroId);
-  heroIdRef.current = heroId;
+/** Encontra a peça do herói da sessão (por hero_id ou, na falta, pelo nome). */
+function findMyToken(tokens: BattleToken[], heroId: string | null): BattleToken | null {
+  if (!heroId) return null;
+  const byId = tokens.find((t) => t.hero_id === heroId);
+  if (byId) return byId;
+  const first = heroId.split('_')[0].toLowerCase();
+  return tokens.find((t) => t.kind === 'heroi' && t.name.toLowerCase().includes(first)) ?? null;
+}
 
-  const navigate = useNavigate();
+const hudBtn =
+  'w-10 h-10 flex items-center justify-center border border-[var(--iron)] bg-[var(--stone)]/95 text-[var(--muted)] hover:text-[var(--text)] active:translate-y-px cursor-pointer';
+
+export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasProps) {
+  const sessionHeroId = useSessionStore((s) => s.heroId);
+  const heroId = propHeroId || sessionHeroId || null;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<BattleEngine | null>(null);
-  const fpsRef = useRef<HTMLDivElement | null>(null);
 
-  const { data: map, isLoading: mapLoading } = useActiveBattleMap();
+  const { data: map, isLoading } = useActiveBattleMap();
   const { tokens, moveToken } = useBattleTokens(map?.id);
-  const moveTokenRef = useRef(moveToken);
-  moveTokenRef.current = moveToken;
+  const { vitals } = useHeroVitals();
+  const moveRef = useRef(moveToken);
+  moveRef.current = moveToken;
 
-  const [isPortrait, setIsPortrait] = useState(false);
-  const [dismissPortrait, setDismissPortrait] = useState(false);
-  const [movesLeft, setMovesLeft] = useState(6);
-  const [moveLimit, setMoveLimit] = useState(6);
+  const [measuring, setMeasuring] = useState(false);
+  const [measure, setMeasure] = useState<number | null>(null);
+  const [turn, setTurn] = useState<BattleTurn | null>(null);
 
-  // Detecção de orientação do celular (Landscape Enforcement)
-  useEffect(() => {
-    const checkOrientation = () => {
-      const portrait =
-        window.innerHeight > window.innerWidth && window.innerWidth < 850;
-      setIsPortrait(portrait);
-    };
+  const myToken = useMemo(() => findMyToken(tokens, heroId), [tokens, heroId]);
+  const moveLimit = map?.move_limit ?? 6;
+  const movesLeft = myToken?.moves_left ?? moveLimit;
+  const isLive = map?.status === 'ao_vivo';
+  const isMyTurn = Boolean(turn?.tokenId && myToken && turn.tokenId === myToken.id);
 
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', checkOrientation);
+  const { sendPing } = useBattleSync(map?.id, {
+    onPing: (p) => engineRef.current?.showPing(p),
+    onTurn: setTurn,
+  });
+  const sendPingRef = useRef(sendPing);
+  sendPingRef.current = sendPing;
 
-    return () => {
-      window.removeEventListener('resize', checkOrientation);
-      window.removeEventListener('orientationchange', checkOrientation);
-    };
-  }, []);
-
-  // Inicialização Única do Battle Engine
   useEffect(() => {
     if (!canvasRef.current) return;
-
     const engine = new BattleEngine(canvasRef.current, {
       mode: 'player',
-      myHeroId: heroIdRef.current,
-      onMoveToken: async (tokenId, c, r, path) => {
-        await moveTokenRef.current(tokenId, c, r, path);
+      onMoveToken: async (id, c, r, path) => {
+        await moveRef.current(id, c, r, path);
       },
-      onFpsUpdate: (currentFps) => {
-        if (fpsRef.current) {
-          fpsRef.current.textContent = `${currentFps} fps`;
-        }
-      },
+      onPing: (p) => sendPingRef.current(p),
+      onMeasure: setMeasure,
     });
-
     engineRef.current = engine;
-
     return () => {
       engine.destroy();
       engineRef.current = null;
     };
   }, []);
 
-  // Atualiza mapa no motor
   useEffect(() => {
-    if (engineRef.current && map) {
-      engineRef.current.setMap(map);
-      setMoveLimit(map.move_limit ?? 6);
-    }
+    if (map) engineRef.current?.setMap(map);
   }, [map]);
-
-  // Atualiza tokens no motor e captura moves_left do herói
   useEffect(() => {
-    if (engineRef.current && tokens) {
-      engineRef.current.setTokens(tokens);
+    engineRef.current?.setTokens(tokens);
+  }, [tokens]);
+  useEffect(() => {
+    engineRef.current?.setOptions({
+      myHeroId: heroId ?? undefined,
+      myHeroTokenId: myToken?.id ?? null,
+      tool: measuring ? 'measure' : 'select',
+      activeTokenId: turn?.tokenId ?? null,
+      heroVitals: vitals,
+    });
+  }, [heroId, myToken?.id, measuring, turn?.tokenId, vitals]);
 
-      const currentHeroId = heroIdRef.current;
-      const myToken =
-        tokens.find(
-          (t) =>
-            (t.hero_id && t.hero_id === currentHeroId) ||
-            (t.name && t.name.toLowerCase().includes(currentHeroId.split('_')[0])),
-        ) || tokens.find((t) => t.kind === 'heroi');
-
-      if (myToken) {
-        engineRef.current.setOptions({
-          myHeroTokenId: myToken.id,
-          myHeroId: currentHeroId,
-        });
-        setMovesLeft(myToken.moves_left ?? (map?.move_limit ?? 6));
-      }
-    }
-  }, [tokens, map?.move_limit]);
-
-  const handleCenter = () => {
-    engineRef.current?.centerOnHero();
-  };
-
-  const handleZoomIn = () => {
-    engineRef.current?.zoomIn();
-  };
-
-  const handleZoomOut = () => {
-    engineRef.current?.zoomOut();
-  };
-
-  const handleZoomFit = () => {
-    engineRef.current?.zoomFit();
-  };
-
-  const isLive = map?.status === 'ao_vivo';
+  // Ao virar meu turno, a câmera vai até o herói.
+  useEffect(() => {
+    if (isMyTurn && myToken) engineRef.current?.centerOnToken(myToken.id);
+  }, [isMyTurn, myToken?.id]);
 
   return (
     <div
-      className="relative w-full h-full bg-[#08080a] text-[#f5f5f7] overflow-hidden select-none"
+      className="relative w-full h-full min-h-0 bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none"
       data-testid="player-battle-canvas-container"
     >
-      {/* Aviso de Modo Retrato em Celular */}
-      {isPortrait && !dismissPortrait && (
-        <div className="absolute inset-0 z-50 bg-[#08080a]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
-          <Smartphone className="w-16 h-16 text-[#f5b65b] animate-bounce mb-4 rotate-90" />
-          <h2 className="font-title text-xl font-bold tracking-wider text-[#f5eedc] mb-2">
-            Gire o celular
-          </h2>
-          <p className="font-serif italic text-sm text-[#f5eedc]/70 max-w-xs mb-4">
-            A Mesa de Batalha tática recomenda a tela na horizontal para visualização
-            ótima do terreno e controle tático do seu herói.
-          </p>
-          <button
-            type="button"
-            onClick={() => setDismissPortrait(true)}
-            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-sans text-white/90 transition-colors pointer-events-auto"
-          >
-            Continuar mesmo em pé
-          </button>
-        </div>
-      )}
-
-      {/* Canvas Principal do Motor Tático */}
       <canvas
         ref={canvasRef}
-        style={{ willChange: 'transform' }}
-        className="absolute inset-0 w-full h-full block cursor-crosshair touch-none"
+        className={`absolute inset-0 w-full h-full block touch-none ${measuring ? 'cursor-crosshair' : 'cursor-pointer'}`}
         data-testid="battle-canvas"
       />
 
-      {/* Floating HUD — Topo: Contador de Movimento */}
-      <div className="absolute top-4 left-4 z-20 flex items-center gap-3">
-        {/* Pílula de Movimento */}
+      {/* Faixa do turno */}
+      {turn?.tokenId && (
         <div
-          className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 backdrop-blur-md shadow-lg"
-          data-testid="movement-pill"
+          key={turn.tokenId}
+          className={`absolute top-0 left-1/2 -translate-x-1/2 z-20 px-5 py-1.5 border border-t-0 font-['Cinzel',serif] text-xs uppercase tracking-[0.18em] animate-[bannerDrop_var(--t-slow)_var(--ease-out)] ${
+            isMyTurn
+              ? 'border-[var(--gold)] bg-[var(--gold)] text-[var(--abyss)]'
+              : 'border-[var(--iron)] bg-[var(--stone)]/95 text-[var(--gold-hi)]'
+          }`}
         >
-          <Compass className="w-4 h-4 text-[#f5b65b]" />
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] uppercase tracking-wider text-white/50 font-sans">
-                Movimento
-              </span>
-              <span className="text-xs font-semibold tabular-nums text-[#f5b65b]">
-                {movesLeft} de {moveLimit}
-              </span>
-            </div>
-            {/* Pips Dourados */}
-            <div className="flex items-center gap-1 mt-0.5">
-              {Array.from({ length: moveLimit }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-2 h-2 rounded-[2px] rotate-45 transition-all duration-200 ${
-                    i < movesLeft
-                      ? 'bg-[#f5b65b] shadow-[0_0_6px_rgba(245,182,91,0.6)]'
-                      : 'bg-white/15'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+          {isMyTurn ? 'Seu turno' : `Turno de ${turn.name ?? '…'}`}
+          <span className="ml-2 opacity-60">R{turn.round}</span>
         </div>
+      )}
 
-        {/* Status da Mesa */}
-        {!isLive && (
-          <div className="px-3 py-1.5 rounded-lg bg-[#c8423a]/20 border border-[#c8423a]/40 text-[#ff8a7a] text-xs font-serif italic">
-            Mesa em pausa
+      {/* Passos */}
+      <div
+        className="absolute top-3 left-3 z-20 px-3 py-2 border border-[var(--iron)] bg-[var(--stone)]/95"
+        data-testid="movement-pill"
+      >
+        <div className="flex items-baseline gap-2">
+          <span className="font-['Cinzel',serif] text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">
+            Passos
+          </span>
+          <span className="font-['Cinzel',serif] text-sm tabular-nums text-[var(--gold-hi)]">
+            {myToken ? `${movesLeft}/${moveLimit}` : '—'}
+          </span>
+        </div>
+        {myToken && (
+          <div className="flex gap-1 mt-1">
+            {Array.from({ length: moveLimit }, (_, i) => (
+              <span
+                key={i}
+                className={`w-2 h-2 rotate-45 transition-colors duration-[var(--t-fast)] ${
+                  i < movesLeft ? 'bg-[var(--gold)]' : 'bg-[var(--iron)]'
+                }`}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* Floating HUD — Controles de Câmera */}
-      <div className="absolute right-4 top-4 z-20 flex flex-col gap-1.5 p-1 rounded-xl bg-black/60 border border-white/10 backdrop-blur-md shadow-lg">
-        <button
-          type="button"
-          onClick={handleZoomIn}
-          title="Aproximar (+)"
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition-colors"
-          data-testid="btn-zoom-in"
-        >
+      {/* Câmera e régua */}
+      <div className="absolute top-3 right-3 z-20 flex flex-col gap-1">
+        <button type="button" onClick={() => engineRef.current?.zoomIn()} className={hudBtn} aria-label="Aproximar" data-testid="btn-zoom-in">
           <Plus className="w-4 h-4" />
         </button>
-        <button
-          type="button"
-          onClick={handleZoomOut}
-          title="Afastar (−)"
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition-colors"
-          data-testid="btn-zoom-out"
-        >
+        <button type="button" onClick={() => engineRef.current?.zoomOut()} className={hudBtn} aria-label="Afastar" data-testid="btn-zoom-out">
           <Minus className="w-4 h-4" />
         </button>
-        <button
-          type="button"
-          onClick={handleZoomFit}
-          title="Ver o mapa inteiro (⤢)"
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition-colors"
-          data-testid="btn-zoom-fit"
-        >
-          <Maximize2 className="w-3.5 h-3.5" />
+        <button type="button" onClick={() => engineRef.current?.zoomFit()} className={hudBtn} aria-label="Ver o mapa inteiro" data-testid="btn-zoom-fit">
+          <Maximize2 className="w-4 h-4" />
         </button>
         <button
           type="button"
-          onClick={handleCenter}
-          title="Centralizar no meu herói (◎)"
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#f5b65b] hover:bg-[#f5b65b]/20 active:scale-95 transition-colors"
+          onClick={() => myToken && engineRef.current?.centerOnToken(myToken.id)}
+          disabled={!myToken}
+          className={`${hudBtn} !text-[var(--gold)] disabled:opacity-40`}
+          aria-label="Centralizar no meu herói"
           data-testid="btn-center-hero"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <Crosshair className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMeasuring((v) => !v);
+            engineRef.current?.clearMeasure();
+          }}
+          aria-pressed={measuring}
+          aria-label="Régua"
+          className={`${hudBtn} ${measuring ? '!border-[var(--gold)] !text-[var(--gold-hi)] !bg-[var(--gold)]/15' : ''}`}
+        >
+          <Ruler className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Dica Inferior Flutuante */}
-      <div className="absolute bottom-4 left-4 z-20 pointer-events-none px-3 py-1.5 rounded-lg bg-black/50 border border-white/5 backdrop-blur-sm text-[11px] font-sans text-white/50">
-        Toque num quadrado <span className="text-[#f5b65b]">dourado</span> para mover
+      {/* Avisos e dica */}
+      <div className="absolute bottom-3 left-3 right-3 z-20 flex flex-wrap items-end justify-between gap-2 pointer-events-none">
+        <p className="px-3 py-1.5 border border-[var(--iron)] bg-[var(--stone)]/90 text-xs italic text-[var(--muted)]">
+          {measuring
+            ? measure != null
+              ? `Distância: ${measure} ${measure === 1 ? 'quadrado' : 'quadrados'}`
+              : 'Arraste para medir a distância'
+            : !myToken
+              ? 'Seu herói ainda não está nesta mesa'
+              : 'Toque num quadrado dourado para andar · segure para marcar'}
+        </p>
+        {!isLoading && map && !isLive && (
+          <p className="px-3 py-1.5 border border-[var(--blood)] bg-[var(--stone)]/90 text-xs text-[#e0645a]">
+            Mesa em pausa
+          </p>
+        )}
       </div>
 
-      {/* Indicador Discreto de FPS */}
-      <div
-        ref={fpsRef}
-        className="absolute bottom-4 right-4 z-20 pointer-events-none text-[10px] tabular-nums font-mono text-white/20"
-        data-testid="fps-counter"
-      >
-        60 fps
-      </div>
+      {!isLoading && !map && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[var(--abyss)]/90">
+          <p className="font-['Cinzel',serif] text-sm tracking-[0.12em] text-[var(--muted)]">
+            Aguardando o Mestre abrir a mesa…
+          </p>
+        </div>
+      )}
     </div>
   );
-};
+}

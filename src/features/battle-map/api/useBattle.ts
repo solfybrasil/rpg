@@ -1,179 +1,152 @@
+import type { RealtimeChannel, RealtimePostgresChangesPayload, SupabaseClient } from '@supabase/supabase-js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
 import { supabase as mainSupabase } from '../../../shared/supabase/client.ts';
 import type { BattleMap, BattleToken } from '../engine/types.ts';
-import {
-  battleSupabase,
-  fetchActiveBattleMap,
-  fetchBattleTokens,
-  moverTokenRpc,
-} from './battleApi.ts';
+import { battleSupabase, fetchActiveBattleMap, fetchBattleTokens, moverTokenRpc } from './battleApi.ts';
 
 export const BATTLE_MAP_KEY = ['battle_map', 'active'];
 export const BATTLE_TOKENS_KEY = (mapId: string) => ['battle_tokens', mapId];
 
+type Payload = RealtimePostgresChangesPayload<Record<string, unknown>>;
+
+/**
+ * Canais compartilhados com contagem de referência: vários componentes que
+ * escutam a mesma tabela usam um canal só (antes cada um abria 2 canais com
+ * nome aleatório).
+ */
+const shared = new Map<string, { channel: RealtimeChannel; client: SupabaseClient<any>; handlers: Set<(p: Payload) => void> }>();
+
+function listen(
+  client: SupabaseClient<any>,
+  name: string,
+  table: string,
+  filter: string | undefined,
+  handler: (p: Payload) => void,
+): () => void {
+  let entry = shared.get(name);
+  if (!entry) {
+    const handlers = new Set<(p: Payload) => void>();
+    const channel = client
+      .channel(name)
+      .on(
+        'postgres_changes' as never,
+        { event: '*', schema: 'public', table, ...(filter ? { filter } : {}) } as never,
+        (p: Payload) => {
+          for (const h of handlers) h(p);
+        },
+      )
+      .subscribe();
+    entry = { channel, client, handlers };
+    shared.set(name, entry);
+  }
+  entry.handlers.add(handler);
+  return () => {
+    const e = shared.get(name);
+    if (!e) return;
+    e.handlers.delete(handler);
+    if (e.handlers.size === 0) {
+      shared.delete(name);
+      void e.client.removeChannel(e.channel);
+    }
+  };
+}
+
+/** Escuta a mesma tabela nos dois projetos Supabase (mesa dedicada + principal). */
+function listenBoth(name: string, table: string, filter: string | undefined, handler: (p: Payload) => void) {
+  const a = listen(battleSupabase as SupabaseClient<any>, `bt_${name}`, table, filter, handler);
+  const b =
+    (battleSupabase as unknown) === (mainSupabase as unknown)
+      ? () => {}
+      : listen(mainSupabase as SupabaseClient<any>, `mn_${name}`, table, filter, handler);
+  return () => {
+    a();
+    b();
+  };
+}
+
+/** Aplica um evento de realtime numa lista de peças (INSERT repetido vira UPDATE). */
+export function applyTokenPayload(prev: BattleToken[] | undefined, payload: Payload): BattleToken[] {
+  const list = prev ?? [];
+  if (payload.eventType === 'DELETE') {
+    const id = (payload.old as { id?: string })?.id;
+    return list.filter((t) => t.id !== id);
+  }
+  const row = payload.new as unknown as BattleToken;
+  if (!row?.id) return list;
+  const i = list.findIndex((t) => t.id === row.id);
+  if (i === -1) return [...list, row];
+  const next = list.slice();
+  next[i] = { ...list[i], ...row };
+  return next;
+}
+
 export function useActiveBattleMap() {
   const queryClient = useQueryClient();
-
   const query = useQuery({
     queryKey: BATTLE_MAP_KEY,
     queryFn: fetchActiveBattleMap,
     staleTime: Number.POSITIVE_INFINITY,
   });
 
-  useEffect(() => {
-    // Escuta mudanças de status/rodada em battle_maps em tempo real
-    const channelId = `realtime_battle_maps_${Math.random().toString(36).substring(2, 9)}`;
-    const handleMapPayload = (payload: any) => {
-      if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-        const updated = payload.new as BattleMap;
-        queryClient.setQueryData(BATTLE_MAP_KEY, (prev: BattleMap | null) => {
-          if (!prev || prev.id === updated.id || updated.status === 'ao_vivo') {
-            return { ...prev, ...updated };
-          }
+  useEffect(
+    () =>
+      listenBoth('battle_maps', 'battle_maps', undefined, (payload) => {
+        if (payload.eventType !== 'UPDATE' && payload.eventType !== 'INSERT') return;
+        const updated = payload.new as unknown as BattleMap;
+        queryClient.setQueryData(BATTLE_MAP_KEY, (prev: BattleMap | null | undefined) => {
+          if (!prev || prev.id === updated.id) return { ...prev, ...updated };
+          // Outra mesa foi posta ao vivo: ela passa a ser a ativa.
+          if (updated.status === 'ao_vivo') return updated;
           return prev;
         });
-      }
-    };
-
-    const channelBattle = battleSupabase
-      .channel(channelId)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'battle_maps' },
-        handleMapPayload,
-      )
-      .subscribe();
-
-    const channelMainId = `realtime_main_battle_maps_${Math.random().toString(36).substring(2, 9)}`;
-    const channelMain = mainSupabase
-      .channel(channelMainId)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'battle_maps' },
-        handleMapPayload,
-      )
-      .subscribe();
-
-    return () => {
-      battleSupabase.removeChannel(channelBattle);
-      mainSupabase.removeChannel(channelMain);
-    };
-  }, [queryClient]);
+      }),
+    [queryClient],
+  );
 
   return query;
 }
 
 export function useBattleTokens(mapId: string | undefined) {
   const queryClient = useQueryClient();
-  const validMapId = mapId || '00000000-0000-0000-0000-000000000001';
 
   const query = useQuery({
-    queryKey: BATTLE_TOKENS_KEY(validMapId),
-    queryFn: () => fetchBattleTokens(validMapId),
-    enabled: Boolean(validMapId),
+    queryKey: BATTLE_TOKENS_KEY(mapId || 'none'),
+    queryFn: () => fetchBattleTokens(mapId as string),
+    enabled: Boolean(mapId),
     staleTime: Number.POSITIVE_INFINITY,
   });
 
   useEffect(() => {
-    if (!validMapId) return;
-
-    const handleTokenPayload = (payload: any) => {
-      const updatedToken = payload.new as BattleToken;
-      if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-        queryClient.setQueryData(
-          BATTLE_TOKENS_KEY(validMapId),
-          (prev: BattleToken[] | undefined) => {
-            if (!prev) return [updatedToken];
-            const index = prev.findIndex((t) => t.id === updatedToken.id);
-            if (index >= 0) {
-              const next = [...prev];
-              next[index] = { ...next[index], ...updatedToken };
-              return next;
-            }
-            return [...prev, updatedToken];
-          },
-        );
-      } else if (payload.eventType === 'DELETE') {
-        const deletedId = (payload.old as { id: string })?.id;
-        queryClient.setQueryData(
-          BATTLE_TOKENS_KEY(validMapId),
-          (prev: BattleToken[] | undefined) => {
-            if (!prev) return [];
-            return prev.filter((t) => t.id !== deletedId);
-          },
-        );
-      }
-    };
-
-    // Escuta movimentações e mudanças de tokens em tempo real em ambos os canais
-    const channelId = `realtime_battle_tokens_${validMapId}_${Math.random().toString(36).substring(2, 9)}`;
-    const channelBattle = battleSupabase
-      .channel(channelId)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'battle_tokens',
-          filter: `map_id=eq.${validMapId}`,
-        },
-        handleTokenPayload,
-      )
-      .subscribe();
-
-    const channelMainId = `realtime_main_tokens_${validMapId}_${Math.random().toString(36).substring(2, 9)}`;
-    const channelMain = mainSupabase
-      .channel(channelMainId)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'battle_tokens',
-          filter: `map_id=eq.${validMapId}`,
-        },
-        handleTokenPayload,
-      )
-      .subscribe();
-
-    return () => {
-      battleSupabase.removeChannel(channelBattle);
-      mainSupabase.removeChannel(channelMain);
-    };
-  }, [validMapId, queryClient]);
+    if (!mapId) return;
+    return listenBoth(`battle_tokens_${mapId}`, 'battle_tokens', `map_id=eq.${mapId}`, (payload) => {
+      queryClient.setQueryData(BATTLE_TOKENS_KEY(mapId), (prev: BattleToken[] | undefined) =>
+        applyTokenPayload(prev, payload),
+      );
+    });
+  }, [mapId, queryClient]);
 
   const moveToken = useCallback(
-    async (
-      tokenId: string,
-      c: number,
-      r: number,
-      path: Array<[number, number]>,
-    ) => {
-      // 1. Atualização Otimista no Cache TanStack Query
+    async (tokenId: string, c: number, r: number, path: Array<[number, number]>) => {
+      if (!mapId) return false;
       let prevMovesLeft = 6;
-      queryClient.setQueryData(
-        BATTLE_TOKENS_KEY(validMapId),
-        (prev: BattleToken[] | undefined) => {
-          if (!prev) return prev;
-          return prev.map((t) => {
-            if (t.id !== tokenId) return t;
-            prevMovesLeft = t.moves_left ?? 6;
-            return {
-              ...t,
-              c,
-              r,
-              path,
-              moves_left: Math.max(0, prevMovesLeft - path.length),
-            };
-          });
-        },
+      queryClient.setQueryData(BATTLE_TOKENS_KEY(mapId), (prev: BattleToken[] | undefined) =>
+        prev?.map((t) => {
+          if (t.id !== tokenId) return t;
+          prevMovesLeft = t.moves_left ?? 6;
+          return {
+            ...t,
+            c,
+            r,
+            path,
+            moves_left: Math.max(0, prevMovesLeft - path.length),
+            updated_at: new Date().toISOString(),
+          };
+        }),
       );
-
-      // 2. Executa a RPC com moves_left atual
-      return await moverTokenRpc(tokenId, c, r, path, prevMovesLeft);
+      return moverTokenRpc(tokenId, c, r, path, prevMovesLeft);
     },
-    [validMapId, queryClient],
+    [mapId, queryClient],
   );
 
   return {

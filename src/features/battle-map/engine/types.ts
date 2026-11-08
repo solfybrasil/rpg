@@ -40,6 +40,9 @@ export interface BattleToken {
   move_seq?: number | null;
   moves_left?: number | null;
   visible?: boolean | null;
+  /** Vida opcional (peças sem herói vinculado). Heróis usam `heroVitals`. */
+  hp?: number | null;
+  max_hp?: number | null;
   poster_url?: string | null;
   idle_mp4_url?: string | null;
   idle_webm_url?: string | null;
@@ -63,7 +66,20 @@ export interface CameraView {
 }
 
 export type BattleEngineMode = 'player' | 'tv' | 'dm';
-export type BattleEditorTool = 'select' | 'paint_block' | 'erase_block' | 'pan';
+export type BattleEditorTool = 'select' | 'paint_block' | 'erase_block' | 'pan' | 'measure';
+
+/** Vida atual/máxima de um herói, indexada pelo `hero_id` da peça. */
+export interface HeroVital {
+  hp: number;
+  maxHp: number;
+}
+
+export interface BattlePing {
+  c: number;
+  r: number;
+  /** Cor do anel (padrão: ouro). */
+  color?: string;
+}
 
 export interface BattleEngineOptions {
   mode: BattleEngineMode;
@@ -78,4 +94,14 @@ export interface BattleEngineOptions {
   onUpdateBlocked?: (blocked: string[]) => void;
   onHoverCell?: (coord: CellCoord | null) => void;
   onFpsUpdate?: (fps: number, jsFrameMs: number) => void;
+  /** Peça solta pelo Mestre ao fim de um arrasto (grava uma vez só). */
+  onDropToken?: (tokenId: string, c: number, r: number) => void;
+  /** Ping disparado localmente (toque longo ou duplo clique). */
+  onPing?: (ping: BattlePing) => void;
+  /** Resultado da régua: distância em quadrados (null ao limpar). */
+  onMeasure?: (cells: number | null) => void;
+  /** Peça cujo turno está ativo (anel dourado pulsante). */
+  activeTokenId?: string | null;
+  /** Vida dos heróis por hero_id, para a barra sobre a peça. */
+  heroVitals?: Record<string, HeroVital>;
 }
