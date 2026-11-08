@@ -393,17 +393,28 @@ export class BattleEngine {
       return;
     }
 
+    // FIX: use 0 when movesLeft is 0 (not moveLimit as fallback via ||)
+    const moves = hero.movesLeft > 0 ? hero.movesLeft : 0;
+
+    if (moves <= 0) {
+      // No moves left — clear reach so player cannot move
+      this.reach.clear();
+      this.graph = null;
+      this.reachPath = null;
+      return;
+    }
+
     this.graph = bfs(
       hero.c,
       hero.r,
-      hero.movesLeft || this.moveLimit,
+      moves,
       this.valid,
       (k) => this.isCellBlocked(k, hero.token.id),
     );
 
     this.reach = computeReach(
       this.graph.dist,
-      hero.movesLeft ?? this.moveLimit,
+      moves,
     );
     this.rebuildReachPath();
   }
@@ -637,9 +648,9 @@ export class BattleEngine {
         ctx.stroke();
       }
 
-      // Bloqueios de terreno em --blood suave
+      // Bloqueios de terreno em --blood suave e contorno bem definido
       if (this.blocked.size > 0) {
-        ctx.fillStyle = 'rgba(200, 66, 58, 0.35)'; // --blood
+        ctx.fillStyle = 'rgba(200, 66, 58, 0.42)'; // --blood
         if (this.blockedPath) {
           ctx.fill(this.blockedPath);
         } else {
@@ -654,6 +665,33 @@ export class BattleEngine {
             ctx.closePath();
           }
           ctx.fill();
+        }
+
+        // Borda e marcação visual destacada para o Mestre
+        if (isDm) {
+          ctx.strokeStyle = 'rgba(220, 70, 60, 0.85)';
+          ctx.lineWidth = Math.max(1, 1.5 * lw);
+          for (const k of this.blocked) {
+            const [sc, sr] = k.split(',').map(Number);
+            const p = center(sc, sr, this.OX, this.OY, this.TW, this.TH);
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y - this.TH / 2);
+            ctx.lineTo(p.x + this.TW / 2, p.y);
+            ctx.lineTo(p.x, p.y + this.TH / 2);
+            ctx.lineTo(p.x - this.TW / 2, p.y);
+            ctx.closePath();
+            ctx.stroke();
+
+            // 'X' sutil de bloqueio no centro da célula
+            const crossW = this.TW * 0.16;
+            const crossH = this.TH * 0.16;
+            ctx.beginPath();
+            ctx.moveTo(p.x - crossW, p.y - crossH);
+            ctx.lineTo(p.x + crossW, p.y + crossH);
+            ctx.moveTo(p.x + crossW, p.y - crossH);
+            ctx.lineTo(p.x - crossW, p.y + crossH);
+            ctx.stroke();
+          }
         }
       }
     }
@@ -1274,7 +1312,8 @@ export class BattleEngine {
 
     // Toque ou clique rápido sem arrastar = AÇÃO DE MOVIMENTO (modo player)
     if (!this.isDragging && this.pressStart && this.options.mode === 'player') {
-      const pt = this.pressStart.pt;
+      // FIX: use UP event coords, not stale pressStart.pt (which is pre-pan)
+      const pt = this.toImg(e.clientX, e.clientY);
       const cell = pick(
         pt.x,
         pt.y,

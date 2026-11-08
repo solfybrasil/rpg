@@ -1,5 +1,8 @@
 node_modules/
 dist/
+dist.zip
+*.webm
+videos_tmp/
 .output/
 .tanstack/
 test-results/

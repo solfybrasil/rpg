@@ -1,0 +1,276 @@
+/* ==========================================================================
+   PLAYER OATH TREE — Minimalist Utilitarian & Design Eng.
+   Styled with exact visual fidelity to PlayerInventory.css design system.
+   ========================================================================== */
+
+.oath-tree-root {
+  width: 100%;
+  max-width: 1320px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 1rem 1.25rem calc(3rem + env(safe-area-inset-bottom, 16px));
+  color: #e8e2d4;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 840px) {
+  .oath-tree-root {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0.35rem 0.5rem calc(2rem + env(safe-area-inset-bottom, 20px));
+    gap: 0.5rem;
+    overflow-x: hidden;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   1. Header Bar: Identity & Controls
+   -------------------------------------------------------------------------- */
+.oath-tree-header {
+  background: #14120e;
+  border: 1px solid rgba(201, 169, 97, 0.22);
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.oath-tree-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(201, 169, 97, 0.6), transparent);
+  pointer-events: none;
+}
+
+.oath-tree-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.oath-tree-kicker {
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c9a961;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  line-height: 1;
+}
+
+.oath-tree-title {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: #f5ede0;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.oath-tree-meta {
+  font-size: 0.72rem;
+  color: #8c8272;
+  font-family: var(--font-title, 'Cinzel', serif);
+}
+
+.oath-tree-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.oath-tree-metric-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #0d0c0a;
+  border: 1px solid rgba(201, 169, 97, 0.16);
+  border-radius: 5px;
+  height: 28px;
+  padding: 0 0.55rem;
+  font-size: 0.72rem;
+  color: #b5aa96;
+}
+
+.oath-tree-metric-chip strong {
+  color: #f5ede0;
+}
+
+.oath-tree-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: #181510;
+  border: 1px solid rgba(201, 169, 97, 0.25);
+  color: #e8e2d4;
+  height: 28px;
+  padding: 0 0.65rem;
+  border-radius: 5px;
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  transition: all 0.16s ease;
+}
+
+.oath-tree-btn:hover {
+  background: rgba(201, 169, 97, 0.12);
+  border-color: rgba(201, 169, 97, 0.5);
+  color: #fff;
+}
+
+.oath-tree-btn.primary {
+  background: rgba(201, 169, 97, 0.15);
+  border-color: #c9a961;
+  color: #f5ede0;
+}
+
+.oath-tree-btn.gold {
+  background: linear-gradient(180deg, #ecc05c 0%, #b8860b 100%);
+  border: 1px solid #fef08a;
+  color: #1a140d;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(236, 192, 92, 0.3);
+}
+
+.oath-tree-btn.gold:hover {
+  filter: brightness(1.15);
+  color: #000;
+}
+
+@media (max-width: 840px) {
+  .oath-tree-header {
+    padding: 0.45rem 0.6rem;
+    gap: 0.4rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .oath-tree-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .oath-tree-btn {
+    height: 26px;
+    padding: 0 0.45rem;
+    font-size: 0.68rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. Toolbar: Search & Visual Legend
+   -------------------------------------------------------------------------- */
+.oath-tree-toolbar {
+  background: #14120e;
+  border: 1px solid rgba(201, 169, 97, 0.2);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.oath-tree-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 240px;
+}
+
+.oath-tree-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: #8c7b68;
+  pointer-events: none;
+}
+
+.oath-tree-search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 2rem 0 2.2rem;
+  background: #0d0c0a;
+  border: 1px solid rgba(201, 169, 97, 0.18);
+  border-radius: 6px;
+  color: #f5ede0;
+  font-size: 0.8rem;
+  font-family: var(--font-ui, sans-serif);
+  outline: none;
+  transition: all 0.16s ease;
+  box-sizing: border-box;
+}
+
+.oath-tree-search-input:focus {
+  border-color: #c9a961;
+  background: #11100d;
+  box-shadow: 0 0 0 2px rgba(201, 169, 97, 0.15);
+}
+
+.oath-tree-search-clear {
+  position: absolute;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #8c7b68;
+  cursor: pointer;
+  padding: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oath-tree-search-clear:hover {
+  color: #f5ede0;
+}
+
+.oath-tree-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.68rem;
+  font-family: var(--font-title, 'Cinzel', serif);
+  color: #9a917f;
+}
+
+.oath-tree-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.oath-tree-canvas-wrapper {
+  background: #0a0907;
+  border: 1px solid rgba(201, 169, 97, 0.18);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}

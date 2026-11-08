@@ -40,51 +40,52 @@ export const NodeDetailSheet: React.FC<NodeDetailSheetProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+      className="modern-modal-overlay animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-6 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0"
+        className="modern-modal-box animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0"
+        style={{ maxWidth: 440 }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-[var(--border)] pb-3">
+        <div className="modern-modal-header">
           <div>
-            <span className="text-[10px] font-cinzel uppercase text-[var(--gold-dim)] tracking-wider block">
+            <span style={{ fontSize: '0.62rem', color: '#c9a961', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', fontWeight: 600 }}>
               Região: {node.reg} • {TIPO_LABELS[node.tipo] || node.tipo}
             </span>
-            <h3 className="font-cinzel font-bold text-lg text-[var(--text-1)] mt-0.5">
+            <h3 className="modern-modal-title" style={{ marginTop: '0.2rem' }}>
               {node.nm}
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--card)] transition-colors"
+            className="modern-modal-close"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
         {/* Description in Newsreader */}
-        <div className="p-3.5 rounded-lg bg-[var(--card)] border border-[var(--border)]">
-          <p className="font-newsreader italic text-[var(--text-2)] text-sm leading-relaxed whitespace-pre-line">
+        <div style={{ background: '#0d0c0a', border: '1px solid rgba(201, 169, 97, 0.16)', borderRadius: '6px', padding: '0.75rem 0.85rem' }}>
+          <p style={{ fontFamily: 'var(--font-serif, "EB Garamond", serif)', fontStyle: 'italic', color: '#d5ccba', fontSize: '0.85rem', lineHeight: 1.5, whiteSpace: 'pre-line', margin: 0 }}>
             {node.ds || 'O poder do Juramento ressoa neste nó primordial.'}
           </p>
         </div>
 
         {/* Status & Level Badge */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="p-2.5 rounded bg-[var(--card)] border border-[var(--border)] flex flex-col">
-            <span className="text-[10px] font-cinzel text-[var(--text-3)] uppercase">Nível Requerido</span>
-            <span className="font-semibold text-[var(--text-1)] mt-0.5">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem' }}>
+          <div style={{ background: '#0d0c0a', border: '1px solid rgba(201, 169, 97, 0.16)', borderRadius: '5px', padding: '0.5rem 0.65rem', display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.62rem', color: '#8c8272', textTransform: 'uppercase', fontFamily: 'var(--font-title, "Cinzel", serif)' }}>Nível Requerido</span>
+            <span style={{ fontWeight: 600, color: '#f5ede0', fontSize: '0.82rem', marginTop: '0.15rem' }}>
               Nível {node.lv ?? 1} (Você: {heroLevel})
             </span>
           </div>
 
-          <div className="p-2.5 rounded bg-[var(--card)] border border-[var(--border)] flex flex-col">
-            <span className="text-[10px] font-cinzel text-[var(--text-3)] uppercase">Custo de Inspiração</span>
-            <span className="font-semibold text-[var(--gold)] mt-0.5">
+          <div style={{ background: '#0d0c0a', border: '1px solid rgba(201, 169, 97, 0.16)', borderRadius: '5px', padding: '0.5rem 0.65rem', display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.62rem', color: '#8c8272', textTransform: 'uppercase', fontFamily: 'var(--font-title, "Cinzel", serif)' }}>Custo</span>
+            <span style={{ fontWeight: 600, color: '#e6cf94', fontSize: '0.82rem', marginTop: '0.15rem' }}>
               {custoTotal} {custoTotal === 1 ? 'Inspiração' : 'Inspirações'}
             </span>
           </div>
@@ -92,20 +93,23 @@ export const NodeDetailSheet: React.FC<NodeDetailSheetProps> = ({
 
         {/* Marks progress */}
         {!isDone && custoTotal > 1 && (
-          <div className="p-3 rounded bg-[var(--card)] border border-[var(--border)] flex items-center justify-between">
-            <span className="text-xs font-cinzel text-[var(--text-2)]">Progresso de Marcas:</span>
-            <div className="flex items-center gap-1.5">
+          <div style={{ background: '#0d0c0a', border: '1px solid rgba(201, 169, 97, 0.16)', borderRadius: '5px', padding: '0.5rem 0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.72rem', color: '#b5aa96', fontFamily: 'var(--font-title, "Cinzel", serif)' }}>Progresso de Marcas:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               {Array.from({ length: custoTotal }).map((_, i) => (
                 <div
                   key={i}
-                  className={`w-3 h-3 rounded-full ${
-                    i < currentMarks
-                      ? 'bg-[var(--gold)]'
-                      : 'bg-black/50 border border-zinc-700'
-                  }`}
+                  style={{
+                    width: 9,
+                    height: 9,
+                    borderRadius: '50%',
+                    backgroundColor: i < currentMarks ? '#c9a961' : 'transparent',
+                    border: '1.5px solid rgba(201, 169, 97, 0.4)',
+                    boxShadow: i < currentMarks ? '0 0 6px rgba(201, 169, 97, 0.6)' : 'none',
+                  }}
                 />
               ))}
-              <span className="font-mono text-xs text-[var(--text-1)] font-bold ml-1">
+              <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '0.75rem', color: '#f5ede0', fontWeight: 700, marginLeft: 4 }}>
                 {currentMarks}/{custoTotal}
               </span>
             </div>
@@ -114,23 +118,23 @@ export const NodeDetailSheet: React.FC<NodeDetailSheetProps> = ({
 
         {/* State Banner */}
         {isDone ? (
-          <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-800/50 flex items-center gap-2 text-emerald-300 text-xs font-cinzel font-semibold">
+          <div style={{ background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.3)', borderRadius: '6px', padding: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#86efac', fontSize: '0.75rem', fontWeight: 600 }}>
             <Check size={16} />
             <span>Nó Desbloqueado e Ativo no Jurado</span>
           </div>
         ) : state === 'lvlock' ? (
-          <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-800/50 flex items-center gap-2 text-amber-300 text-xs">
-            <AlertCircle size={16} className="shrink-0" />
+          <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '6px', padding: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#fcd34d', fontSize: '0.75rem' }}>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
             <span>Requer Nível {node.lv} para liberar este nó.</span>
           </div>
         ) : state === 'locked' ? (
-          <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center gap-2 text-zinc-400 text-xs">
-            <Lock size={16} className="shrink-0" />
-            <span>Bloqueado. Precisa estar ligado a um nó já liberado.</span>
+          <div style={{ background: '#0e0d0a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', padding: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#8c8272', fontSize: '0.75rem' }}>
+            <Lock size={16} style={{ flexShrink: 0 }} />
+            <span>Bloqueado. Precisa estar conectado a um nó liberado.</span>
           </div>
         ) : (
-          <div className="p-3 rounded-lg bg-[var(--card)] border border-[var(--gold-dim)]/50 flex items-center gap-2 text-[var(--gold)] text-xs font-cinzel">
-            <Sparkles size={16} className="shrink-0" />
+          <div style={{ background: 'rgba(201, 169, 97, 0.08)', border: '1px solid rgba(201, 169, 97, 0.25)', borderRadius: '6px', padding: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#e6cf94', fontSize: '0.75rem' }}>
+            <Sparkles size={16} style={{ flexShrink: 0 }} />
             <span>Nó disponível para investimento!</span>
           </div>
         )}
@@ -141,9 +145,10 @@ export const NodeDetailSheet: React.FC<NodeDetailSheetProps> = ({
             type="button"
             disabled={!canInvest || isInvesting}
             onClick={onInvest}
-            className="w-full py-2.5 rounded-lg bg-[var(--gold)] hover:bg-[var(--gold-bright)] text-black font-cinzel font-bold text-xs uppercase tracking-wider transition-colors shadow-md disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+            className="modern-btn primary"
+            style={{ width: '100%', height: '36px', fontSize: '0.78rem' }}
           >
-            <Sparkles size={15} className="fill-black" />
+            <Sparkles size={14} />
             <span>
               {isInvesting
                 ? 'Gravando Juramento...'

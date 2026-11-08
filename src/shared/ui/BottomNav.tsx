@@ -3,10 +3,6 @@ import {
   Anvil,
   Backpack,
   BookOpen,
-  Dice5,
-  Feather,
-  Flame,
-  Mail,
   MapPin,
   Menu,
   Scroll,
@@ -31,18 +27,14 @@ export const BottomNav: React.FC<BottomNavProps> = () => {
     { label: 'Ficha', icon: <User size={20} />, to: '/jogador/ficha' },
     { label: 'Mochila', icon: <Backpack size={20} />, to: '/jogador/mochila' },
     { label: 'Grimório', icon: <BookOpen size={20} />, to: '/jogador/grimorio' },
-    { label: 'Diário', icon: <Feather size={20} />, to: '/jogador/diario' },
+    { label: 'Árvore', icon: <Sparkles size={20} />, to: '/jogador/arvore' },
   ];
 
   const moreItems = [
     { label: 'Oficina', icon: <Anvil size={22} />, to: '/jogador/oficina' },
     { label: 'Receitas', icon: <Scroll size={22} />, to: '/jogador/receitas' },
-    { label: 'Árvore', icon: <Sparkles size={22} />, to: '/jogador/arvore' },
     { label: 'Mapa', icon: <MapPin size={22} />, to: '/jogador/mapa' },
-    { label: 'Missivas', icon: <Mail size={22} />, to: '/jogador/missivas' },
     { label: 'Loja', icon: <Store size={22} />, to: '/jogador/loja' },
-    { label: 'Dados', icon: <Dice5 size={22} />, to: '/jogador/dados' },
-    { label: 'Combate', icon: <Flame size={22} />, to: '/jogador/combate' },
   ];
 
   const isMoreActive = moreItems.some((item) => pathname.startsWith(item.to));

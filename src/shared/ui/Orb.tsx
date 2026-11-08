@@ -12,7 +12,6 @@ export interface OrbProps extends React.HTMLAttributes<HTMLDivElement> {
   label?: string;
   isDamaged?: boolean;
   isHealing?: boolean;
-  isSpendingFocus?: boolean;
   floatingItems?: FloatingItem[];
   onFloatingComplete?: (id: string) => void;
   onClick?: () => void;
@@ -21,7 +20,7 @@ export interface OrbProps extends React.HTMLAttributes<HTMLDivElement> {
 /**
  * Orbe de Vidro (SKILL.md Seção 5 e 6)
  * Vidro com líquido volumétrico que sobe/desce, balanço na superfície,
- * tremor ao tomar dano, bolhas de cura e escurecimento ao gastar Foco.
+ * tremor ao tomar dano e bolhas de cura.
  */
 export const Orb: React.FC<OrbProps> = ({
   variant = 'hp',
@@ -30,7 +29,6 @@ export const Orb: React.FC<OrbProps> = ({
   label,
   isDamaged = false,
   isHealing = false,
-  isSpendingFocus = false,
   floatingItems = [],
   onFloatingComplete,
   className,
@@ -47,9 +45,7 @@ export const Orb: React.FC<OrbProps> = ({
           ? { x: [-2, 2, -2, 2, 0] }
           : isHealing
             ? { scale: [1, 1.04, 1] }
-            : isSpendingFocus
-              ? { scale: [1, 0.96, 1] }
-              : { x: 0, scale: 1 }
+            : { x: 0, scale: 1 }
       }
       transition={{ duration: 0.3 }}
       onClick={onClick}
@@ -61,7 +57,6 @@ export const Orb: React.FC<OrbProps> = ({
         clsx(
           'orb',
           variant === 'hp' ? 'hp' : 'focus mp',
-          isSpendingFocus && 'spending-focus',
           onClick && 'cursor-pointer hover:scale-105 transition-transform',
           className,
         ),

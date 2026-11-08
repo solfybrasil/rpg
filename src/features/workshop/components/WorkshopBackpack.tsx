@@ -41,23 +41,23 @@ export const WorkshopBackpack: React.FC<WorkshopBackpackProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-neutral-900/60 rounded-xl border border-neutral-800/80 p-3 shadow-inner">
+    <div className="flex flex-col h-full bg-[#14120e] rounded-xl border border-[rgba(201,169,97,0.22)] p-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
       {/* Cabeçalho da Mochila */}
-      <div className="flex items-center justify-between gap-2 pb-2 border-b border-neutral-800">
-        <div className="flex items-center gap-1.5 text-neutral-300">
-          <Package size={15} className="text-amber-500" />
-          <span className="text-xs font-mono font-medium tracking-wide">
+      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-[rgba(201,169,97,0.18)]">
+        <div className="flex items-center gap-1.5 text-[#f5ede0]">
+          <Package size={15} className="text-[#c9a961]" />
+          <span className="text-xs font-['Cinzel',serif] font-bold tracking-wide">
             Mochila ({availableItems.length} materiais)
           </span>
         </div>
         <div className="relative w-36">
-          <Search size={12} className="absolute left-2 top-2 text-neutral-500" />
+          <Search size={12} className="absolute left-2.5 top-2 text-[#8c8272]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar..."
-            className="w-full bg-neutral-950/80 border border-neutral-800 rounded-md pl-6 pr-2 py-0.5 text-xs font-mono text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:border-amber-600/60"
+            className="w-full bg-[#0d0c0a] border border-[rgba(201,169,97,0.2)] rounded-md pl-6 pr-2 py-0.5 text-xs font-mono text-[#f5ede0] placeholder:text-[#8c8272] focus:outline-none focus:border-[#c9a961]"
           />
         </div>
       </div>

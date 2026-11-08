@@ -1,8 +1,7 @@
-import { ArrowRightLeft, Minus, Plus } from 'lucide-react';
+import { ArrowRightLeft, Minus, Plus, X } from 'lucide-react';
 import React, { useState } from 'react';
 import type { InventoryItemRecord } from '../../../entities/item';
 import type { CharacterRow } from '../../../shared/hooks/baseHooks';
-import { GoldButton, Modal, Parchment, StoneButton } from '../../../shared/ui';
 
 export interface TransferModalProps {
   item: InventoryItemRecord | null;
@@ -10,11 +9,7 @@ export interface TransferModalProps {
   onOpenChange: (open: boolean) => void;
   currentHeroId: string | null | undefined;
   heroes: CharacterRow[];
-  onConfirmTransfer: (
-    item: InventoryItemRecord,
-    targetHeroId: string,
-    quantity: number,
-  ) => Promise<void>;
+  onConfirmTransfer: (item: InventoryItemRecord, targetHeroId: string, quantity: number) => Promise<void>;
 }
 
 export const TransferModal: React.FC<TransferModalProps> = ({
@@ -44,9 +39,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     setQuantity(1);
   }, [item]);
 
-  if (!item) return null;
+  if (!open || !item) return null;
 
-  const itemName = item.name || (item.item_name as string) || 'Artefato';
   const maxQty = Math.max(1, Number(item.quantity || 1));
 
   const handleIncrement = () => {
@@ -71,106 +65,186 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   };
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Transferir Item">
-      <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-        <Parchment seed={19} unroll className="p-3">
-          <p className="text-xs font-['EB_Garamond',serif] italic text-[var(--ink)] leading-relaxed">
-            Entregar exemplar de <strong>"{itemName}"</strong> a outro companheiro de jornada. O
-            artefato será depositado diretamente na mochila do jurado escolhido.
-          </p>
-        </Parchment>
-
-        {/* Destinatário */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-['Cinzel',serif] font-bold text-[var(--gold-hi)] uppercase tracking-wider">
-            Destinatário
-          </label>
-          <div className="grid grid-cols-1 gap-2">
-            {otherHeroes.map((h) => {
-              const selected = targetHeroId === h.id;
-              return (
-                <button
-                  key={h.id}
-                  type="button"
-                  onClick={() => setTargetHeroId(h.id)}
-                  className={`flex items-center gap-3 p-3 border transition-all text-left cursor-pointer ${
-                    selected
-                      ? 'slab on border-[var(--gold)] text-[var(--gold-hi)] font-bold shadow-[inset_0_0_12px_rgba(201,164,92,0.2)]'
-                      : 'recess border-[var(--iron)] text-[var(--muted)] hover:text-[var(--text)]'
-                  }`}
-                >
-                  <div className="w-8 h-8 slab flex items-center justify-center text-xs font-['Cinzel',serif] font-bold text-[var(--gold-hi)]">
-                    {h.name.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-['Cinzel',serif] font-semibold text-inherit">
-                      {h.name}
-                    </span>
-                    <span className="text-[10px] font-['EB_Garamond',serif] italic text-[var(--muted)]">
-                      {h.title || h.race || 'Companheiro'}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Quantidade (se > 1) */}
-        {maxQty > 1 && (
-          <div className="space-y-1.5 border-t border-[var(--iron)]/60 pt-3">
-            <div className="flex justify-between items-center text-xs font-['Cinzel',serif]">
-              <span className="text-[var(--gold-hi)] font-bold uppercase tracking-wider">
-                Quantidade
-              </span>
-              <span className="text-[var(--muted)] tabular-nums">Disponível: {maxQty}</span>
-            </div>
-
-            <div className="flex items-center justify-center gap-4 recess border border-[var(--iron)] p-2">
-              <button
-                type="button"
-                onClick={handleDecrement}
-                disabled={quantity <= 1}
-                className="w-8 h-8 slab flex items-center justify-center text-[var(--text)] disabled:opacity-30 cursor-pointer"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-
-              <span className="font-['Cinzel',serif] tabular-nums text-lg font-bold text-[var(--gold-hi)] w-12 text-center">
-                {quantity}
-              </span>
-
-              <button
-                type="button"
-                onClick={handleIncrement}
-                disabled={quantity >= maxQty}
-                className="w-8 h-8 slab flex items-center justify-center text-[var(--text)] disabled:opacity-30 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Ações (Máximo 1 GoldButton) */}
-        <div className="flex justify-end gap-2 border-t border-[var(--iron)]/60 pt-4">
-          <StoneButton
+    <div className="modern-modal-overlay" onClick={() => onOpenChange(false)}>
+      <div className="modern-modal-box" onClick={(e) => e.stopPropagation()}>
+        <div className="modern-modal-header">
+          <h3 className="modern-modal-title">Transferir Item</h3>
+          <button
             type="button"
-            title="Cancelar"
             onClick={() => onOpenChange(false)}
-            disabled={loading}
-            className="w-auto px-4 py-2"
-          />
-          <GoldButton
-            type="submit"
-            disabled={!targetHeroId || loading}
-            className="w-auto px-4 py-2 inline-flex items-center gap-2 text-xs font-['Cinzel',serif] font-bold uppercase tracking-wider"
+            className="modern-modal-close"
+            title="Fechar"
           >
-            <ArrowRightLeft className="w-4 h-4" />
-            <span>{loading ? 'Transferindo...' : 'Confirmar Transferência'}</span>
-          </GoldButton>
+            <X size={16} />
+          </button>
         </div>
-      </form>
-    </Modal>
+
+        <form onSubmit={handleSubmit}>
+          <div className="modern-modal-body">
+            <p style={{ color: '#b5aa96', fontSize: '0.85rem', margin: 0 }}>
+              Entregar exemplar de <strong>"{item.name}"</strong> a outro companheiro de jornada.
+            </p>
+
+            {/* Destinatário */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label
+                style={{
+                  fontSize: '0.72rem',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: '#c9a961',
+                  fontWeight: 600,
+                }}
+              >
+                Destinatário
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.45rem' }}>
+                {otherHeroes.map((h) => {
+                  const selected = targetHeroId === h.id;
+                  return (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => setTargetHeroId(h.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '6px',
+                        border: selected
+                          ? '1px solid #c9a961'
+                          : '1px solid rgba(201, 169, 97, 0.16)',
+                        background: selected ? 'rgba(201, 169, 97, 0.18)' : '#0d0c0a',
+                        color: selected ? '#f5ede0' : '#b5aa96',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '4px',
+                          background: '#1c1812',
+                          border: '1px solid rgba(201, 169, 97, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontFamily: 'var(--font-title, "Cinzel", serif)',
+                          fontWeight: 'bold',
+                          fontSize: '0.75rem',
+                          color: '#e6cf94',
+                        }}
+                      >
+                        {h.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{h.name}</span>
+                        <span style={{ fontSize: '0.7rem', color: '#8c7b68' }}>
+                          {h.title || h.race || 'Companheiro'}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Quantidade (se > 1) */}
+            {maxQty > 1 && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.45rem',
+                  borderTop: '1px solid rgba(201, 169, 97, 0.14)',
+                  paddingTop: '0.75rem',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '0.75rem',
+                    color: '#c9a961',
+                    fontWeight: 600,
+                  }}
+                >
+                  <span>QUANTIDADE</span>
+                  <span style={{ color: '#8c7b68' }}>Disponível: {maxQty}</span>
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '1rem',
+                    background: '#0d0c0a',
+                    border: '1px solid rgba(201, 169, 97, 0.16)',
+                    borderRadius: '6px',
+                    padding: '0.5rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={handleDecrement}
+                    disabled={quantity <= 1}
+                    className="modern-btn secondary"
+                    style={{ width: '32px', height: '32px', padding: 0 }}
+                  >
+                    <Minus size={14} />
+                  </button>
+
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono, monospace)',
+                      fontSize: '1.15rem',
+                      fontWeight: 700,
+                      color: '#f5ede0',
+                      width: '40px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {quantity}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={handleIncrement}
+                    disabled={quantity >= maxQty}
+                    className="modern-btn secondary"
+                    style={{ width: '32px', height: '32px', padding: 0 }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="modern-modal-footer">
+            <button
+              type="button"
+              className="modern-btn secondary"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="modern-btn primary"
+              disabled={!targetHeroId || loading}
+            >
+              <ArrowRightLeft size={14} />
+              <span>{loading ? 'Transferindo...' : 'Confirmar Transferência'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };

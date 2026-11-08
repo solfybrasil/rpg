@@ -1,0 +1,1113 @@
+/* ═══════════════════════════════════════════════════════════════
+   SISTEMA DE BATALHA DE ALDRENOR — PAINEL DO MESTRE (CONFESSÓRIO)
+   Design Minimalista, Fluido e Premium — Dark Editorial Fantasy
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Container Raiz do Rastreador de Batalha ── */
+.dm-battle-root {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: radial-gradient(circle at 50% 0%, rgba(28, 22, 17, 0.45) 0%, rgba(11, 9, 7, 0.98) 100%);
+  border: 1px solid var(--line, rgba(201, 169, 97, 0.18));
+  border-radius: 8px;
+  padding: 20px;
+  color: var(--text, #ede0c2);
+  font-family: var(--font-body, 'EB Garamond', serif);
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 768px) {
+  .dm-battle-root {
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+/* ── Barra Superior / Tactical Command Header ── */
+.dm-battle-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1px solid rgba(201, 169, 97, 0.14);
+  padding-bottom: 14px;
+}
+
+.dm-battle-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dm-battle-main-title {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold-bright, #e8cf94);
+  text-transform: uppercase;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dm-battle-round-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(201, 169, 97, 0.08);
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gold, #c9a961);
+  letter-spacing: 0.04em;
+}
+
+.dm-battle-round-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold, #c9a961);
+  box-shadow: 0 0 8px var(--gold, #c9a961);
+  animation: dmBattlePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes dmBattlePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.dm-battle-feedback-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 4px;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.75rem;
+  color: #86efac;
+  font-weight: 500;
+  animation: dmFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dmFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dm-battle-actions-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Botões Táticos Minimalistas ── */
+.dm-tactical-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(24, 19, 15, 0.85);
+  border: 1px solid rgba(201, 169, 97, 0.22);
+  border-radius: 4px;
+  color: var(--text, #ede0c2);
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 140ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.dm-tactical-btn:hover {
+  background: rgba(201, 169, 97, 0.12);
+  border-color: rgba(201, 169, 97, 0.45);
+  color: #fff;
+}
+
+.dm-tactical-btn:active {
+  transform: scale(0.97);
+}
+
+.dm-tactical-btn-gold {
+  background: #c9a961;
+  border: 1px solid #ecc05c;
+  color: #0d0a08;
+  font-weight: 700;
+}
+
+.dm-tactical-btn-gold:hover {
+  background: #d8b870;
+  border-color: #fae8b4;
+  color: #050403;
+  box-shadow: 0 0 10px rgba(201, 169, 97, 0.3);
+}
+
+.dm-tactical-btn-success {
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #86efac;
+}
+
+.dm-tactical-btn-success:hover {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.dm-tactical-btn-danger {
+  background: rgba(168, 58, 42, 0.14);
+  border: 1px solid rgba(168, 58, 42, 0.35);
+  color: #fca5a5;
+}
+
+.dm-tactical-btn-danger:hover {
+  background: rgba(168, 58, 42, 0.25);
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.dm-tactical-btn-subtle {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted, #9a917f);
+}
+
+.dm-tactical-btn-subtle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text, #ede0c2);
+}
+
+/* ── Grid Principal de 2 Colunas Bento ── */
+.dm-battle-bento-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1.05fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .dm-battle-bento-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dm-battle-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* ── Cartões Bento Utilitários ── */
+.dm-bento-card {
+  background: rgba(18, 14, 11, 0.88);
+  border: 1px solid var(--line, rgba(201, 169, 97, 0.18));
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  transition: border-color 0.15s ease;
+}
+
+.dm-bento-card:hover {
+  border-color: rgba(201, 169, 97, 0.28);
+}
+
+.dm-bento-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid rgba(201, 169, 97, 0.12);
+  padding-bottom: 10px;
+}
+
+.dm-bento-card-title {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold-bright, #e8cf94);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.dm-bento-card-subtitle {
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.72rem;
+  color: var(--text-muted, #9a917f);
+}
+
+/* ── Segmented Control (Modo de Dados) ── */
+.dm-segmented-control {
+  display: inline-flex;
+  background: rgba(8, 6, 5, 0.75);
+  border: 1px solid rgba(201, 169, 97, 0.2);
+  border-radius: 4px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.dm-segment-btn {
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  padding: 3px 9px;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted, #9a917f);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 120ms ease-out;
+}
+
+.dm-segment-btn:hover {
+  color: #fff;
+}
+
+.dm-segment-btn.active {
+  background: rgba(201, 169, 97, 0.25);
+  color: var(--gold-bright, #e8cf94);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Terrenos de Combate em Carrossel Horizontal ── */
+.dm-terrains-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 169, 97, 0.2) transparent;
+}
+
+.dm-terrain-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  background: rgba(14, 11, 9, 0.8);
+  border: 1px solid rgba(201, 169, 97, 0.16);
+  border-radius: 4px;
+  color: var(--text-muted, #9a917f);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.73rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 120ms ease;
+  flex-shrink: 0;
+}
+
+.dm-terrain-pill:hover {
+  border-color: rgba(201, 169, 97, 0.35);
+  color: var(--text, #ede0c2);
+}
+
+.dm-terrain-pill.active {
+  background: rgba(201, 169, 97, 0.14);
+  border-color: var(--gold, #c9a961);
+  color: var(--gold-bright, #e8cf94);
+  box-shadow: 0 0 8px rgba(201, 169, 97, 0.16);
+}
+
+/* ── Barra de Pesquisa e Filtros do Catálogo ── */
+.dm-search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dm-input-search-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.dm-input-search-wrapper svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #9a917f);
+  pointer-events: none;
+}
+
+.dm-battle-input {
+  width: 100%;
+  background: rgba(10, 8, 6, 0.85);
+  border: 1px solid rgba(201, 169, 97, 0.2);
+  border-radius: 4px;
+  padding: 7px 10px 7px 32px;
+  color: var(--text, #ede0c2);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.78rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.dm-battle-input:focus {
+  border-color: var(--gold, #c9a961);
+  box-shadow: 0 0 0 1px rgba(201, 169, 97, 0.25);
+}
+
+.dm-battle-select {
+  background: rgba(10, 8, 6, 0.85);
+  border: 1px solid rgba(201, 169, 97, 0.2);
+  border-radius: 4px;
+  padding: 7px 10px;
+  color: var(--text, #ede0c2);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.78rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.dm-battle-select:focus {
+  border-color: var(--gold, #c9a961);
+}
+
+/* ── Lista de Criaturas do Catálogo ── */
+.dm-creatures-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 169, 97, 0.3) rgba(10, 8, 6, 0.4);
+}
+
+.dm-creatures-list-grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.dm-creatures-list-grid::-webkit-scrollbar-thumb {
+  background: rgba(201, 169, 97, 0.3);
+  border-radius: 3px;
+}
+
+.dm-creature-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(13, 10, 8, 0.9);
+  border: 1px solid rgba(201, 169, 97, 0.15);
+  border-radius: 4px;
+  transition: all 120ms ease;
+}
+
+.dm-creature-item:hover {
+  border-color: rgba(201, 169, 97, 0.35);
+  background: rgba(20, 15, 12, 0.95);
+}
+
+.dm-creature-item.selected {
+  background: rgba(201, 169, 97, 0.1);
+  border-color: var(--gold, #c9a961);
+}
+
+.dm-creature-thumb {
+  width: 38px;
+  height: 38px;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid rgba(201, 169, 97, 0.25);
+  background: #000;
+  flex-shrink: 0;
+}
+
+.dm-creature-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.dm-creature-name {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.77rem;
+  font-weight: 700;
+  color: var(--text, #ede0c2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dm-creature-meta {
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.68rem;
+  color: var(--text-muted, #9a917f);
+}
+
+/* ── Stepper Numérico ── */
+.dm-stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(201, 169, 97, 0.2);
+  border-radius: 3px;
+  padding: 1px;
+}
+
+.dm-stepper-btn {
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  color: var(--text, #ede0c2);
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: background 0.1s;
+}
+
+.dm-stepper-btn:hover {
+  background: rgba(201, 169, 97, 0.25);
+  color: #fff;
+}
+
+.dm-stepper-btn-add {
+  background: rgba(201, 169, 97, 0.18);
+  color: var(--gold-bright, #e8cf94);
+}
+
+.dm-stepper-btn-add:hover {
+  background: var(--gold, #c9a961);
+  color: #0b0a08;
+}
+
+.dm-stepper-val {
+  min-width: 16px;
+  text-align: center;
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--gold-bright, #e8cf94);
+}
+
+/* ── Convocação dos Jurados (Roster Pills) ── */
+.dm-heroes-roster-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dm-hero-roster-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(14, 11, 9, 0.85);
+  border: 1px solid rgba(201, 169, 97, 0.18);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 120ms ease;
+  user-select: none;
+}
+
+.dm-hero-roster-pill:hover {
+  border-color: rgba(201, 169, 97, 0.35);
+}
+
+.dm-hero-roster-pill.active {
+  background: rgba(201, 169, 97, 0.14);
+  border-color: var(--gold, #c9a961);
+}
+
+.dm-hero-roster-checkbox {
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+  accent-color: var(--gold, #c9a961);
+}
+
+.dm-hero-roster-name {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text, #ede0c2);
+}
+
+.dm-hero-roster-pill.active .dm-hero-roster-name {
+  color: var(--gold-bright, #e8cf94);
+}
+
+.dm-hero-roster-hp {
+  font-family: monospace;
+  font-size: 0.68rem;
+  color: var(--text-muted, #9a917f);
+}
+
+/* ── Botão Principal de Iniciar Combate ── */
+.dm-launch-combat-btn {
+  width: 100%;
+  min-height: 40px;
+  background: linear-gradient(180deg, #c9a961 0%, #b38f45 100%);
+  border: 1px solid #fae8b4;
+  border-radius: 4px;
+  color: #0c0907;
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 140ms ease;
+  box-shadow: 0 4px 14px rgba(201, 169, 97, 0.25);
+  user-select: none;
+}
+
+.dm-launch-combat-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #dcbe76 0%, #c19b4f 100%);
+  box-shadow: 0 6px 18px rgba(201, 169, 97, 0.35);
+}
+
+.dm-launch-combat-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.dm-launch-combat-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Lista de Combatentes & Ordem de Iniciativa ── */
+.dm-combatants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dm-combatant-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(14, 11, 8, 0.85);
+  border: 1px solid rgba(201, 169, 97, 0.14);
+  border-radius: 5px;
+  transition: all 150ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  position: relative;
+}
+
+.dm-combatant-card:hover {
+  border-color: rgba(201, 169, 97, 0.28);
+  background: rgba(18, 14, 10, 0.95);
+}
+
+.dm-combatant-card.active-turn {
+  border: 1.5px solid var(--gold, #c9a961);
+  background: rgba(30, 23, 16, 0.95);
+  box-shadow: 0 0 16px rgba(201, 169, 97, 0.2);
+}
+
+.dm-combatant-active-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--gold, #c9a961);
+  border-radius: 3px 0 0 3px;
+}
+
+.dm-combatant-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dm-combatant-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(201, 169, 97, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-weight: 700;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  background: #14100c;
+  color: var(--gold-bright, #e8cf94);
+  overflow: hidden;
+}
+
+.dm-combatant-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dm-combatant-avatar.hero {
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(21, 128, 61, 0.2);
+  color: #86efac;
+}
+
+.dm-combatant-avatar.beast {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(185, 28, 28, 0.2);
+  color: #fca5a5;
+}
+
+.dm-combatant-name-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dm-combatant-name {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text, #ede0c2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dm-combatant-card.active-turn .dm-combatant-name {
+  color: var(--gold-bright, #e8cf94);
+}
+
+.dm-active-turn-tag {
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.65rem;
+  background: rgba(201, 169, 97, 0.25);
+  color: var(--gold-bright, #e8cf94);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dm-combatant-submeta {
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.7rem;
+  color: var(--text-muted, #9a917f);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Controles de Vida do Combatente ── */
+.dm-combatant-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.dm-hp-editor {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.dm-hp-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  border: none;
+  font-weight: bold;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.1s;
+}
+
+.dm-hp-btn-minus {
+  background: rgba(168, 58, 42, 0.3);
+  color: #fca5a5;
+  border: 1px solid rgba(168, 58, 42, 0.4);
+}
+
+.dm-hp-btn-minus:hover {
+  background: #a83a2a;
+  color: #fff;
+}
+
+.dm-hp-btn-plus {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.dm-hp-btn-plus:hover {
+  background: #15803d;
+  color: #fff;
+}
+
+.dm-hp-display {
+  font-family: monospace;
+  font-size: 0.78rem;
+  font-weight: bold;
+  color: var(--text, #ede0c2);
+  min-width: 58px;
+  text-align: center;
+}
+
+.dm-vantagem-toggle {
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: var(--text-faint, #6b6456);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 120ms ease;
+}
+
+.dm-vantagem-toggle:hover {
+  border-color: rgba(201, 169, 97, 0.3);
+  color: var(--text-muted, #9a917f);
+}
+
+.dm-vantagem-toggle.active {
+  background: rgba(234, 179, 8, 0.15);
+  border-color: #eab308;
+  color: #fde047;
+}
+
+/* ── Barra Fina de Vida do Combatente ── */
+.dm-combatant-hp-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.dm-combatant-hp-bar {
+  height: 100%;
+  transition: width 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), background-color 0.3s ease;
+}
+
+/* ── Dossier da Fera Ativa (Substitui o pergaminho claro por Luxury Dark Obsidian) ── */
+.dm-active-beast-card {
+  background: linear-gradient(160deg, #18130e 0%, #100d0a 100%);
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.dm-active-beast-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(201, 169, 97, 0.6), transparent);
+}
+
+.dm-active-beast-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(201, 169, 97, 0.15);
+  padding-bottom: 8px;
+}
+
+.dm-active-beast-label {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--gold-dim, #8a7445);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.dm-beast-behavior-tag {
+  background: rgba(201, 169, 97, 0.12);
+  border: 1px solid rgba(201, 169, 97, 0.25);
+  color: var(--gold-bright, #e8cf94);
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.dm-active-beast-profile {
+  display: flex;
+  gap: 14px;
+}
+
+.dm-active-beast-img {
+  width: 90px;
+  height: 90px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  background: #000;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dm-active-beast-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dm-active-beast-name {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text, #ede0c2);
+  letter-spacing: 0.04em;
+}
+
+.dm-active-beast-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.76rem;
+  color: var(--text-muted, #9a917f);
+}
+
+/* ── HUD de Previsão de Alvo da IA ── */
+.dm-ai-prediction-hud {
+  background: rgba(10, 8, 6, 0.75);
+  border: 1px solid rgba(201, 169, 97, 0.22);
+  border-left: 3px solid var(--gold, #c9a961);
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dm-ai-prediction-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dm-ai-prediction-title {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--gold-bright, #e8cf94);
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dm-ai-prediction-reason {
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.7rem;
+  color: #fca5a5;
+  font-weight: 500;
+}
+
+.dm-ai-prediction-target {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dm-target-name {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ── Ataques & Ações da Fera ── */
+.dm-beast-attacks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dm-beast-attack-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: rgba(10, 8, 6, 0.65);
+  border: 1px solid rgba(201, 169, 97, 0.12);
+  border-radius: 4px;
+  font-size: 0.76rem;
+}
+
+.dm-attack-name {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-weight: 600;
+  color: var(--text, #ede0c2);
+}
+
+.dm-attack-damage {
+  font-family: monospace;
+  font-weight: 700;
+  color: #fca5a5;
+}
+
+/* ── Registro de Combate em Tempo Real (Terminal Log) ── */
+.dm-chronicle-log-box {
+  background: rgba(8, 6, 5, 0.9);
+  border: 1px solid rgba(201, 169, 97, 0.16);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dm-chronicle-log-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.74rem;
+  color: var(--text-muted, #9a917f);
+  padding-right: 4px;
+}
+
+.dm-chronicle-log-row {
+  padding: 4px 6px;
+  border-left: 2px solid rgba(201, 169, 97, 0.3);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0 3px 3px 0;
+  line-height: 1.4;
+}
+
+/* ── Modais de Reforço e Vitória ── */
+.dm-battle-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(5, 4, 3, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.dm-battle-modal-window {
+  background: #14100c;
+  border: 1px solid var(--line-strong, rgba(201, 169, 97, 0.45));
+  border-radius: 8px;
+  padding: 20px;
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+  color: var(--text, #ede0c2);
+  box-sizing: border-box;
+}
+
+.dm-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(201, 169, 97, 0.18);
+  padding-bottom: 10px;
+}
+
+.dm-modal-title {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--gold-bright, #e8cf94);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dm-modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #9a917f);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 120ms ease;
+}
+
+.dm-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}

@@ -1,243 +1,52 @@
-import {
-  Anvil,
-  BookOpen,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  FlaskConical,
-  Search,
-  UtensilsCrossed,
-  X,
-} from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import type { InventoryItemRecord } from '../../../entities/item';
-import {
-  deriveRecipeCategory,
-  enrichRecipeWithInventory,
-  filterRecipeList,
-  type GridRecipeRecord,
-  type WorkshopStation,
-} from '../../../entities/recipe';
-import { playPageFlipSound } from '../../recipes/utils/bookAudio';
+import type { GridRecipeRecord, WorkshopStation } from '../../../entities/recipe';
+import { RecipeBookView } from '../../recipes/components/RecipeBookView';
 
 interface RecipeBookModalProps {
   isOpen: boolean;
   onClose: () => void;
-  recipes: GridRecipeRecord[];
-  knownRecipeIds: Set<string>;
-  backpackItems: InventoryItemRecord[];
-  currentStation: WorkshopStation;
+  recipes?: GridRecipeRecord[];
+  knownRecipeIds?: Set<string>;
+  backpackItems?: InventoryItemRecord[];
+  currentStation?: WorkshopStation;
   onAssembleRecipe: (recipe: GridRecipeRecord) => void;
 }
 
 export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
   isOpen,
   onClose,
-  recipes,
-  knownRecipeIds,
-  backpackItems,
-  currentStation,
   onAssembleRecipe,
 }) => {
-  const [stationFilter, setStationFilter] = useState<string>(currentStation);
-  const [search, setSearch] = useState('');
-  const [onlyCraftable, setOnlyCraftable] = useState(false);
-
-  React.useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Enriquece receitas conhecidas com status de inventário
-  const enrichedKnown = useMemo(() => {
-    return recipes
-      .filter((r) => r.starter || knownRecipeIds.has(r.id))
-      .map((r) => enrichRecipeWithInventory(r, backpackItems, true));
-  }, [recipes, knownRecipeIds, backpackItems]);
-
-  // Filtra por busca, estação e se pode criar agora
-  const filteredRecipes = useMemo(() => {
-    return filterRecipeList(enrichedKnown, {
-      search,
-      station: stationFilter,
-      onlyCraftable,
-    });
-  }, [enrichedKnown, search, stationFilter, onlyCraftable]);
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-neutral-950 border border-amber-900/40 ring-1 ring-amber-600/20 rounded-2xl flex flex-col max-h-[85vh] shadow-2xl overflow-hidden">
-        {/* Cabeçalho */}
-        <div className="flex items-center justify-between p-4 border-b border-neutral-800 bg-neutral-900/60">
-          <div className="flex items-center gap-2">
-            <BookOpen size={18} className="text-amber-500" />
-            <h2 className="text-sm font-serif font-bold text-white tracking-wider uppercase">
-              Livro de Receitas ({filteredRecipes.length} disponíveis)
-            </h2>
-          </div>
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col my-auto rounded-xl overflow-hidden border border-[rgba(201,169,97,0.35)] shadow-[0_12px_48px_rgba(0,0,0,0.9)] bg-[#0e0906]">
+        {/* Top bar with close button */}
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[#14120e] border-b border-[rgba(201,169,97,0.2)]">
+          <span className="font-['Cinzel',serif] text-xs font-bold tracking-widest text-[#c9a961] uppercase">
+            COMPÊNDIO DE MANUFATURA
+          </span>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-neutral-400 hover:text-white rounded-full bg-neutral-900 border border-neutral-800 cursor-pointer"
+            className="w-7 h-7 rounded-full bg-[#1e1a14] border border-[rgba(201,169,97,0.25)] text-[#e8e2d4] hover:text-white flex items-center justify-center text-sm font-bold transition-all cursor-pointer hover:border-[#c9a961]"
           >
-            <X size={16} />
+            ✕
           </button>
         </div>
 
-        {/* Barra de Filtros e Busca */}
-        <div className="p-3 border-b border-neutral-800/80 bg-neutral-900/30 flex flex-wrap items-center justify-between gap-2">
-          {/* Tabs de Estação */}
-          <div className="flex items-center gap-1">
-            {[
-              { id: 'todas', label: 'Todas' },
-              { id: 'forja', label: 'Forja', icon: Anvil },
-              { id: 'alquimia', label: 'Alquimia', icon: FlaskConical },
-              { id: 'cozinha', label: 'Cozinha', icon: UtensilsCrossed },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = stationFilter === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => {
-                    setStationFilter(tab.id);
-                    playPageFlipSound();
-                  }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer ${
-                    isActive
-                      ? 'bg-amber-950/80 border border-amber-600/70 text-amber-200 font-bold'
-                      : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200'
-                  }`}
-                >
-                  {Icon && <Icon size={12} />}
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Toggle Posso Fazer Agora */}
-            <button
-              type="button"
-              onClick={() => {
-                setOnlyCraftable(!onlyCraftable);
-                playPageFlipSound();
-              }}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
-                onlyCraftable
-                  ? 'bg-emerald-950 border border-emerald-500 text-emerald-300'
-                  : 'bg-neutral-900 border border-neutral-800 text-neutral-400'
-              }`}
-            >
-              {onlyCraftable && <Check size={11} className="text-emerald-400" />}
-              <span>Posso fazer</span>
-            </button>
-
-            {/* Campo de Busca */}
-            <div className="relative w-36">
-              <Search size={12} className="absolute left-2.5 top-2 text-neutral-500" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar..."
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-md pl-7 pr-2 py-1 text-xs font-mono text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:border-amber-600"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Lista de Receitas */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
-          {filteredRecipes.length === 0 ? (
-            <div className="py-12 text-center text-xs font-mono text-neutral-500">
-              Nenhuma receita encontrada para os filtros selecionados.
-            </div>
-          ) : (
-            filteredRecipes.map((r) => {
-              const category = deriveRecipeCategory(r);
-
-              return (
-                <div
-                  key={r.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-neutral-900/50 border border-neutral-800/80 hover:border-neutral-700 transition-all"
-                >
-                  {/* Informações da Receita */}
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-11 h-11 rounded-lg bg-neutral-950 border border-neutral-800 flex items-center justify-center flex-shrink-0">
-                      {r.image_url ? (
-                        <img
-                          src={r.image_url}
-                          alt={r.result_name}
-                          className="w-8 h-8 object-contain"
-                        />
-                      ) : (
-                        <span className="text-xl">
-                          {r.station === 'forja' ? '⚔️' : r.station === 'alquimia' ? '🧪' : '🍲'}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-serif font-bold text-white truncate">
-                          {r.result_name}
-                        </span>
-                        {(r.result_qty || 1) > 1 && (
-                          <span className="text-[10px] font-mono text-amber-400 font-bold">
-                            ×{r.result_qty}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] font-mono text-neutral-400 mt-0.5">
-                        <span className="capitalize text-amber-400/80">{r.station}</span>
-                        <span>·</span>
-                        <span>{category}</span>
-                        <span>·</span>
-                        <span>Peso {r.peso}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Ação: Montar na Bancada */}
-                  <div className="flex items-center justify-end gap-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-neutral-800/60">
-                    {r.canCraftNow ? (
-                      <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 mr-1 font-bold">
-                        <Check size={12} />
-                        <span>Você tem tudo</span>
-                      </div>
-                    ) : (
-                      <span className="text-[10px] font-mono text-neutral-500 mr-1">
-                        {r.progressPercent}% materiais
-                      </span>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onAssembleRecipe(r);
-                        onClose();
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900/60 border border-amber-600/60 text-amber-200 font-mono text-xs font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
-                    >
-                      <span>Montar</span>
-                      <ChevronRight size={12} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
+        {/* Book View */}
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4">
+          <RecipeBookView
+            isModal={true}
+            onCloseModal={onClose}
+            onAssembleRecipe={(recipe) => {
+              onAssembleRecipe(recipe);
+              onClose();
+            }}
+          />
         </div>
       </div>
     </div>

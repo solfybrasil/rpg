@@ -151,26 +151,27 @@ export function useBattleTokens(mapId: string | undefined) {
       path: Array<[number, number]>,
     ) => {
       // 1. Atualização Otimista no Cache TanStack Query
+      let prevMovesLeft = 6;
       queryClient.setQueryData(
         BATTLE_TOKENS_KEY(validMapId),
         (prev: BattleToken[] | undefined) => {
           if (!prev) return prev;
-          return prev.map((t) =>
-            t.id === tokenId
-              ? {
-                  ...t,
-                  c,
-                  r,
-                  path,
-                  moves_left: Math.max(0, (t.moves_left ?? 6) - path.length),
-                }
-              : t,
-          );
+          return prev.map((t) => {
+            if (t.id !== tokenId) return t;
+            prevMovesLeft = t.moves_left ?? 6;
+            return {
+              ...t,
+              c,
+              r,
+              path,
+              moves_left: Math.max(0, prevMovesLeft - path.length),
+            };
+          });
         },
       );
 
-      // 2. Executa a RPC
-      return await moverTokenRpc(tokenId, c, r, path);
+      // 2. Executa a RPC com moves_left atual
+      return await moverTokenRpc(tokenId, c, r, path, prevMovesLeft);
     },
     [validMapId, queryClient],
   );

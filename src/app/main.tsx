@@ -4,11 +4,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { routeTree } from '../routeTree.gen.ts';
 import { queryClient } from '../shared/supabase/queryClient.ts';
-import {
-  LoadingSkeleton,
-  RouteErrorBoundary,
-  RouteNotFoundBoundary,
-} from '../shared/ui/RouteErrorBoundary.tsx';
+import { RouteErrorBoundary } from '../shared/ui/RouteErrorBoundary.tsx';
+import { LoadingSkeleton } from '../shared/ui/RouteErrorBoundary.tsx';
 import './main.css';
 
 // Configuração do TanStack Router
@@ -17,7 +14,6 @@ const router = createRouter({
   defaultPreload: 'intent',
   defaultPendingComponent: () => <LoadingSkeleton />,
   defaultErrorComponent: ({ error, reset }) => <RouteErrorBoundary error={error} reset={reset} />,
-  defaultNotFoundComponent: () => <RouteNotFoundBoundary />,
 });
 
 declare module '@tanstack/react-router' {

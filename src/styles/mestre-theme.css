@@ -1,0 +1,391 @@
+/* ============================================================
+   mestre-theme.css — aplica o visual de confessor_mestre_elden_ring.html
+   a TODAS as abas do mestre (bestiário, itens, oficina, grimório,
+   mesa, sistema, modais, fichas) sem reescrever cada componente.
+
+   Como funciona (custo zero de JS, só CSS):
+   1. Redefine, dentro de .mestre-root, os tokens que os componentes já
+      consomem (--gold, --surface, --text-1…) e os tokens do Tailwind v4
+      (--color-white, --color-stone-*, --radius-*, --font-serif…).
+   2. Mapeia as cores fixas mais frequentes (#f5b65b, #16161a…) para a
+      paleta do fonte.
+   Tudo usa apenas valores que existem no HTML fonte.
+   ============================================================ */
+
+/* ── 1. Tokens do app → paleta do fonte ── */
+.mestre-root {
+  /* tokens do app (tokens.css / index.css) */
+  --stone: #100e0c;
+  --bg-app: #100e0c;
+  --bg-deep: #100e0c;
+  --bg-table: #15120f;
+  --bg-panel: #191512;
+  --bg-card: #211b16;
+  --surface: #191512;
+  --surface-raised: #211b16;
+  --iron: #493827;
+  --border: #59432d;
+  --border-leather: #59432d;
+  --border-gold: #80633d;
+  --border-ornate: #725936;
+  --gold-hi: #e4c894;
+  --gold-bright: #e4c894;
+  --gold-leaf: #c5a36a;
+  --gold-lo: #80633d;
+  --gold-dim: #80633d;
+  --gold-glow: #c5a36a30;
+  --text-1: #e2d5bd;
+  --text-2: #a99a82;
+  --parch: #e2d5bd;
+  --parchment-light: #f0dfc0;
+  --parchment-base: #e2d5bd;
+  --parchment-dark: #cdbb9c;
+  --parchment-edge: #b6a58b;
+  --ink-dim: #766a59;
+  --blood: #8d302b;
+  --seal-red: #8d302b;
+  --mana: #477d8d;
+  --mist: #52879a;
+  --moss: #78834f;
+  --font-title: Cinzel, serif;
+  --font-text: "Crimson Pro", Georgia, serif;
+
+  /* tokens do Tailwind v4: text-white/60, border-white/10, bg-black/40… */
+  --color-white: #e2d5bd;
+  --color-black: #0d0b09;
+  --color-stone-100: #f0dfc0;
+  --color-stone-200: #e2d5bd;
+  --color-stone-300: #cdbb9c;
+  --color-stone-400: #a99a82;
+  --color-stone-500: #766a59;
+  --color-stone-600: #59432d;
+  --color-stone-700: #493827;
+  --color-stone-800: #382b20;
+  --color-stone-900: #15120f;
+  --color-stone-950: #100e0c;
+  --color-neutral-500: #766a59;
+  --color-neutral-800: #382b20;
+  --color-neutral-900: #15120f;
+  --color-zinc-400: #a99a82;
+  --color-zinc-500: #766a59;
+  --color-zinc-800: #382b20;
+  --color-zinc-900: #15120f;
+  --color-amber-100: #f0d6a3;
+  --color-amber-200: #e4c894;
+  --color-amber-300: #e4c894;
+  --color-amber-400: #c5a36a;
+  --color-amber-500: #c5a36a;
+  --color-amber-600: #a17c48;
+  --color-amber-950: #382b20;
+
+  /* cantos retos e sombras do fonte */
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
+  --radius-3xl: 2px;
+  --shadow-lg: 0 12px 30px #0007;
+  --shadow-xl: 0 18px 45px #0009;
+  --shadow-2xl: 0 18px 45px #0009;
+
+  /* tipografia: corpo Crimson Pro, títulos Cinzel */
+  --font-serif: "Crimson Pro", Georgia, serif;
+  --text-xs: 13px;
+  --text-sm: 15px;
+}
+
+/* ── Área de conteúdo das abas: ocupa até o rodapé, rola por dentro ── */
+.mestre-root .mestre-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.mestre-root .mestre-content > * {
+  flex: 1 0 auto;
+}
+
+/* hubs com min-h-screen dentro do layout → preenchem só a área útil */
+.mestre-root .mestre-content .min-h-screen {
+  min-height: 100%;
+}
+
+/* fundos chapados dos hubs → deixam o gradiente do fonte aparecer */
+.mestre-root .mestre-content > .min-h-screen,
+.mestre-root .mestre-content > div > .min-h-screen {
+  background: transparent;
+}
+
+/* ── 2. Tipografia ── */
+.mestre-root .mestre-content h1,
+.mestre-root .mestre-content h2,
+.mestre-root .mestre-content h3,
+.mestre-root [role="dialog"] h2,
+.mestre-root [role="dialog"] h3 {
+  font-family: Cinzel, serif;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #e5d2af;
+}
+
+.mestre-root .font-bold.font-serif,
+.mestre-root .font-semibold.font-serif {
+  font-weight: 600;
+}
+
+/* ── 3. Superfícies (cartões, fichas, painéis, modais) → .panel ── */
+.mestre-root .bg-\[\#16161a\],
+.mestre-root .bg-\[\#18181d\],
+.mestre-root .bg-\[\#121215\],
+.mestre-root .bg-\[\#121215\]\/90,
+.mestre-root .bg-\[\#121215\]\/80,
+.mestre-root .bg-\[\#16161b\],
+.mestre-root .bg-\[\#1c1c22\],
+.mestre-root .bg-\[\#1b1b1f\],
+.mestre-root .bg-\[\#141418\] {
+  background: linear-gradient(135deg, #211a14f2, #15120ff7 75%);
+}
+
+.mestre-root .bg-\[\#121215\]\/60,
+.mestre-root .bg-\[\#111114\],
+.mestre-root .bg-\[\#111114\]\/90,
+.mestre-root .bg-\[\#0d0d10\],
+.mestre-root .bg-\[\#0e0e11\],
+.mestre-root .bg-\[\#0d0c0a\],
+.mestre-root .bg-\[\#0a0908\],
+.mestre-root .bg-\[\#08080a\] {
+  background-color: #100e0b;
+}
+
+.mestre-root .bg-\[\#26262a\],
+.mestre-root .bg-\[\#1a1a1e\],
+.mestre-root .bg-\[\#14120e\],
+.mestre-root .bg-\[\#1e1a14\],
+.mestre-root .bg-\[\#14100c\] {
+  background-color: #181410;
+}
+
+.mestre-root .hover\:bg-\[\#26262a\]:hover,
+.mestre-root .hover\:bg-\[\#1e1e24\]:hover,
+.mestre-root .hover\:bg-\[\#202026\]:hover {
+  background-color: #302316;
+}
+
+/* bordas → linhas do fonte */
+.mestre-root .border-white\/5,
+.mestre-root .border-\[\#2a2520\] {
+  border-color: #382b20;
+}
+
+.mestre-root .border-white\/10,
+.mestre-root .border-\[\#26262a\] {
+  border-color: #493827;
+}
+
+.mestre-root .border-white\/15,
+.mestre-root .border-white\/20,
+.mestre-root .border-\[\#3b3b40\] {
+  border-color: #59432d;
+}
+
+.mestre-root .hover\:border-white\/20:hover,
+.mestre-root .hover\:border-\[\#c9a961\]:hover {
+  border-color: #a17c48;
+}
+
+/* cartões arredondados ganham a moldura dupla do .panel */
+.mestre-root .mestre-content .rounded-2xl.border,
+.mestre-root [role="dialog"] .rounded-2xl.border {
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+/* ── 4. Ouro (#f5b65b) → dourado do fonte ── */
+.mestre-root .text-\[\#f5b65b\],
+.mestre-root .text-\[\#c9a961\],
+.mestre-root .text-\[\#d4af37\],
+.mestre-root .hover\:text-\[\#f5b65b\]:hover {
+  color: var(--gold);
+}
+
+.mestre-root .text-\[\#ffd27a\],
+.mestre-root .text-\[\#ffd700\] {
+  color: var(--gold-light);
+}
+
+.mestre-root .border-\[\#f5b65b\],
+.mestre-root .border-\[\#f5b65b\]\/50,
+.mestre-root .hover\:border-\[\#f5b65b\]:hover,
+.mestre-root .hover\:border-\[\#f5b65b\]\/50:hover,
+.mestre-root .border-\[\#ffd27a\] {
+  border-color: #a17c48;
+}
+
+.mestre-root .border-\[\#f5b65b\]\/40,
+.mestre-root .border-\[\#f5b65b\]\/30,
+.mestre-root .border-\[\#f5b65b\]\/20 {
+  border-color: #725936;
+}
+
+.mestre-root .bg-\[\#f5b65b\]\/5,
+.mestre-root .bg-\[\#f5b65b\]\/10 {
+  background-color: #59402542;
+}
+
+.mestre-root .bg-\[\#f5b65b\]\/20,
+.mestre-root .hover\:bg-\[\#f5b65b\]\/10:hover,
+.mestre-root .hover\:bg-\[\#f5b65b\]\/20:hover {
+  background-color: #372a1b99;
+}
+
+/* botões primários dourados chapados → .btn do fonte */
+.mestre-root .bg-\[\#f5b65b\],
+.mestre-root .bg-gradient-to-r.from-\[\#f5b65b\],
+.mestre-root .bg-gradient-to-b.from-\[\#f5b65b\] {
+  background: linear-gradient(180deg, #2b2118, #17120f);
+  border: 1px solid #80633d;
+  color: #d9bd88;
+  font-family: Cinzel, serif;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.mestre-root .bg-\[\#f5b65b\]:hover,
+.mestre-root .bg-gradient-to-r.from-\[\#f5b65b\]:hover,
+.mestre-root .bg-gradient-to-b.from-\[\#f5b65b\]:hover {
+  background: #38291a;
+  border-color: #c19a5c;
+}
+
+/* ── 5. Texto ── */
+.mestre-root .text-\[\#ebe6d6\],
+.mestre-root .text-\[\#f5ede0\],
+.mestre-root .text-\[\#f5f0e1\],
+.mestre-root .text-\[\#f5f5f7\],
+.mestre-root .hover\:text-\[\#ebe6d6\]:hover,
+.mestre-root .hover\:text-\[\#f5ede0\]:hover {
+  color: var(--text);
+}
+
+.mestre-root .text-\[\#8a8a93\],
+.mestre-root .text-\[\#a1a1aa\],
+.mestre-root .text-\[\#9a917f\],
+.mestre-root .text-\[\#a8947c\] {
+  color: var(--muted);
+}
+
+.mestre-root .text-\[\#8c8272\] {
+  color: var(--dim);
+}
+
+/* vermelhos → sangue do fonte */
+.mestre-root .text-\[\#c8423a\],
+.mestre-root .text-\[\#ff4d4f\],
+.mestre-root .text-\[\#e8584a\] {
+  color: #c4574c;
+}
+
+.mestre-root .bg-\[\#c8423a\] {
+  background-color: var(--red);
+}
+
+/* ── 6. Campos de formulário ── */
+.mestre-root .mestre-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.mestre-root .mestre-content select,
+.mestre-root .mestre-content textarea,
+.mestre-root [role="dialog"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.mestre-root [role="dialog"] select,
+.mestre-root [role="dialog"] textarea {
+  background: #15120f;
+  border: 1px solid #493929;
+  border-radius: 2px;
+  color: var(--text);
+  font-family: "Crimson Pro", Georgia, serif;
+}
+
+.mestre-root .mestre-content input:focus,
+.mestre-root .mestre-content select:focus,
+.mestre-root .mestre-content textarea:focus,
+.mestre-root [role="dialog"] input:focus,
+.mestre-root [role="dialog"] select:focus,
+.mestre-root [role="dialog"] textarea:focus {
+  outline: none;
+  border-color: #c19a5c;
+}
+
+.mestre-root input::placeholder,
+.mestre-root textarea::placeholder {
+  color: var(--dim);
+}
+
+.mestre-root input[type="checkbox"],
+.mestre-root input[type="radio"],
+.mestre-root input[type="range"] {
+  accent-color: var(--gold);
+}
+
+/* ── 7. Sub-abas (botões com border-b-2) → mesmo estilo do .nav ── */
+.mestre-root .mestre-content button.border-b-2 {
+  font: 500 11px Cinzel, serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 0;
+}
+
+/* ── 8. Tabelas ── */
+.mestre-root .mestre-content table {
+  border-color: #493827;
+}
+
+.mestre-root .mestre-content th {
+  font: 500 11px Cinzel, serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.mestre-root .mestre-content tr {
+  border-color: #382b20;
+}
+
+/* ── 9. Modais/sheets Radix ── */
+/* modais/sheets Radix (renderizados dentro de .mestre-root) → .panel */
+.mestre-root [role="dialog"].slab {
+  background: linear-gradient(135deg, #211a14f2, #15120ff7 75%);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-family: "Crimson Pro", Georgia, serif;
+}
+.mestre-root * {
+  scrollbar-width: thin;
+  scrollbar-color: #59432d transparent;
+}
+
+.mestre-root ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.mestre-root ::-webkit-scrollbar-thumb {
+  background: #493827;
+}
+
+.mestre-root ::-webkit-scrollbar-thumb:hover {
+  background: #6f5536;
+}
+
+.mestre-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ── 11. Desempenho: sem blur pesado em superfícies grandes ── */
+.mestre-root .mestre-content .backdrop-blur-xl,
+.mestre-root .mestre-content .backdrop-blur-2xl,
+.mestre-root .mestre-content .backdrop-blur-3xl {
+  backdrop-filter: blur(12px);
+}

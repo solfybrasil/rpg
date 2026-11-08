@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { DMWorkshopHubView } from '../../features/workshop/components/DMWorkshopHubView.tsx';
+import { DMOficinaView } from '../../features/dm-dashboard/components/DMOficinaView';
 
 export const Route = createFileRoute('/mestre/oficina')({
-  component: DMWorkshopHubView,
+  component: DMOficinaView,
 });

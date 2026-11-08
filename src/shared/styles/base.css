@@ -1,5 +1,5 @@
 /* ==========================================================================
-   BASE & RESET STYLES — Pedra e Pergaminho
+   BASE & RESET STYLES — Elden Ring Modern Minimalist
    ========================================================================== */
 
 *,
@@ -12,9 +12,9 @@
 
 html {
   font-size: 16px;
-  background-color: var(--abyss);
+  background-color: var(--bg);
   color: var(--text);
-  font-family: var(--body);
+  font-family: var(--font-body);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -28,8 +28,9 @@ html {
 
 body {
   min-height: 100%;
+  background-color: var(--bg);
   color: var(--text);
-  font-family: var(--body);
+  font-family: var(--font-body);
   line-height: 1.5;
   max-width: 100%;
   width: 100%;
@@ -51,16 +52,30 @@ body {
   position: relative;
 }
 
-/* Foco Visível Elegante (SKILL.md Seção 6) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -999;
+  pointer-events: none;
+  background-image: radial-gradient(
+      ellipse at 50% 30%,
+      rgba(20, 18, 14, 0.4) 0%,
+      rgba(11, 10, 8, 0.95) 100%
+    ),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* Foco Visível Elegante */
 :focus-visible {
-  outline: 1px solid var(--gold-hi);
+  outline: 1px solid var(--gold);
   outline-offset: 2px;
 }
 
 /* Seleção de Texto */
 ::selection {
-  background: var(--stone-2);
-  color: var(--gold-hi);
+  background: var(--surface-3);
+  color: var(--gold-bright);
 }
 
 /* Scrollbars Finas e Douradas */
@@ -70,16 +85,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--stone);
+  background: var(--surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gold-lo);
-  border-radius: 0px;
+  background: var(--line-strong);
+  border-radius: var(--radius);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gold);
+  background: var(--gold-dim);
 }
 
 /* Tipografia Base */
@@ -89,11 +104,11 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--display);
+  font-family: var(--font-title);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 600;
-  color: var(--gold-hi);
+  color: var(--gold-bright);
 }
 
 p,
@@ -110,20 +125,20 @@ button {
   border: none;
   cursor: pointer;
   color: inherit;
-  font-family: var(--display);
+  font-family: var(--font-title);
 }
 
 input,
 textarea,
 select {
-  font-family: var(--body);
-  background: var(--stone-2);
-  border: 1px solid var(--iron);
+  font-family: var(--font-ui);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   color: var(--text);
-  border-radius: 2px;
-  font-size: 15px;
-  padding: 6px 10px;
-  transition: border-color var(--t-fast) var(--ease-out);
+  border-radius: var(--radius-input);
+  font-size: var(--text-base);
+  padding: var(--space-2) var(--space-3);
+  transition: border-color var(--dur-hover) var(--ease);
 }
 
 input:focus,
@@ -139,8 +154,8 @@ select:focus {
   align-items: center;
   justify-content: center;
   width: 100%;
-  margin: 12px 0;
-  gap: 12px;
+  margin: var(--space-3) 0;
+  gap: var(--space-3);
 }
 
 .ornamental-divider::before,
@@ -148,22 +163,22 @@ select:focus {
   content: "";
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--iron), transparent);
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
 }
 
 .ornamental-divider .diamond {
   width: 5px;
   height: 5px;
-  background-color: var(--gold-lo);
+  background-color: var(--gold-dim);
   transform: rotate(45deg);
   flex-shrink: 0;
 }
 
 /* Pulsação Leve para Esqueletos de Carregamento */
 .skeleton-pulse {
-  background: var(--stone-2);
-  border: 1px solid var(--iron);
-  border-radius: 0px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   animation: skeletonFade 1.6s ease-in-out infinite alternate;
 }
 

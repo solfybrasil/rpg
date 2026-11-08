@@ -1,0 +1,71 @@
+/* ==========================================================================
+   TABS COMPONENT — Elden Ring Minimalist
+   ========================================================================== */
+
+.er-tabs-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  padding: 0 var(--space-2);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.er-tab-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  background: transparent;
+  border: none;
+  font-family: var(--font-title);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--dur-hover) var(--ease);
+  white-space: nowrap;
+}
+
+.er-tab-btn:hover {
+  color: var(--text);
+}
+
+/* Aba ativa: fio dourado de 1px embaixo e um losango minúsculo acima; nada de fundos coloridos */
+.er-tab-btn.active {
+  color: var(--gold-bright);
+}
+
+.er-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--gold);
+}
+
+.er-tab-btn.active::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 4px;
+  height: 4px;
+  background-color: var(--gold);
+}
+
+.er-tab-badge {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--crimson-bright);
+  display: inline-block;
+  margin-left: 2px;
+}

@@ -3,27 +3,24 @@ import {
   Store,
   ShoppingCart,
   Coins,
-  Shield,
-  Sword,
-  Sparkles,
-  Loader2,
   Package,
   AlertCircle,
-  Lock,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useHero, useGameState, useInventory } from '../../../shared/hooks/baseHooks';
 import { useSessionStore } from '../../../shared/stores/session';
-import { CoinsBadge, Empty } from '../../../shared/ui';
+import { CoinsBadge } from '../../../shared/ui';
 import { fetchShopItems, buyShopItemInDB, sellItemInDB, subscribeToShopRealtime } from '../api';
 import type { ShopItem } from '../types';
+import '../../../styles/features/PlayerShop.css';
 
 export const PlayerShopView: React.FC = () => {
   const sessionHeroId = useSessionStore((s) => s.heroId);
   const heroId = sessionHeroId || 'teste_1';
   const { hero, updateHeroAsync } = useHero(heroId);
   const { items: inventoryItems } = useInventory(heroId);
-  const { data: gameState } = useGameState();
+  const { gameState } = useGameState();
 
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
@@ -36,7 +33,7 @@ export const PlayerShopView: React.FC = () => {
   const shopName = gameState?.shop_name || 'Mercado da Fuligem';
   const playerCoins = hero?.coins_bronze ?? 0;
 
-  // Carrega itens da loja
+  // Carrega itens da loja e escuta mudanças em tempo real
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -98,7 +95,7 @@ export const PlayerShopView: React.FC = () => {
     });
   }, [shopItems, filterCategory]);
 
-  // Itens do jogador elegíveis para venda (não equipados e com preço de recompra)
+  // Itens do jogador que podem ser vendidos
   const sellableItems = useMemo(() => {
     return (inventoryItems || []).filter((it) => {
       if (it.equip_slot) return false;
@@ -108,21 +105,23 @@ export const PlayerShopView: React.FC = () => {
 
   // Ação de Compra
   const handleBuy = async (item: ShopItem) => {
-    if (!shopOpen) {
-      toast.error('As portas estão trancadas pelo Confessor.');
-      return;
-    }
     if (loadingAction || buyingItemId) return;
     if (playerCoins < item.price_bronze) {
-      toast.error('Moedas insuficientes para adquirir este item!');
+      toast.error('Moedas de bronze insuficientes para adquirir este artigo!');
       return;
     }
 
     setLoadingAction(true);
     setBuyingItemId(item.id);
+
     try {
-      await buyShopItemInDB(heroId, item.id, 1);
-      toast.success(`✨ ${item.name} foi adicionado à sua mochila!`);
+      await buyShopItemInDB('MESA', heroId, item.id, 1);
+      if (updateHeroAsync) {
+        await updateHeroAsync({
+          coins_bronze: Math.max(0, playerCoins - item.price_bronze),
+        });
+      }
+      toast.success(`✨ ${item.name} foi adicionado à sua mochila de viagem!`);
     } catch (err: any) {
       console.error('[SHOP] Falha ao comprar:', err);
       toast.error(err.message || 'Erro ao realizar compra.');
@@ -134,18 +133,20 @@ export const PlayerShopView: React.FC = () => {
 
   // Ação de Venda
   const handleSell = async (item: any) => {
-    if (!shopOpen) {
-      toast.error('As portas estão trancadas pelo Confessor.');
-      return;
-    }
     if (loadingAction || sellingItemId) return;
+    const sellValue = Math.floor(Number(item.price_bronze) / 2);
 
-    const sellPrice = Math.floor(Number(item.price_bronze) / 2);
     setLoadingAction(true);
     setSellingItemId(item.id);
+
     try {
-      await sellItemInDB(heroId, item.id, 1);
-      toast.success(`💰 Você vendeu ${item.name} por +${sellPrice} moedas de bronze!`);
+      await sellItemInDB('MESA', heroId, item.id, 1);
+      if (updateHeroAsync) {
+        await updateHeroAsync({
+          coins_bronze: playerCoins + sellValue,
+        });
+      }
+      toast.success(`💰 Você vendeu ${item.name} e recebeu +${sellValue} moedas de bronze!`);
     } catch (err: any) {
       console.error('[SHOP] Falha ao vender:', err);
       toast.error(err.message || 'Erro ao realizar venda.');
@@ -156,89 +157,74 @@ export const PlayerShopView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
-      {/* ── CABEÇALHO DA LOJA COM NOME EM CINZEL E DIVISOR ◆ ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--iron)]/60 pb-5">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-['Cinzel',serif] text-[var(--gold-hi)] uppercase tracking-widest font-bold">
-            <span>Módulo de Comércio</span>
-            <span>◆</span>
-            <span className={shopOpen ? 'text-[var(--gold)]' : 'text-[var(--blood)]'}>
-              {shopOpen ? 'Portas Abertas' : 'Portas Trancadas'}
-            </span>
+    <div className="player-shop-root">
+      {/* ── ALERTA DE MERCADO FECHADO ── */}
+      {!shopOpen && (
+        <div className="shop-closed-alert">
+          <AlertCircle size={24} style={{ color: '#ef4444', flexShrink: 0 }} />
+          <div>
+            <div className="shop-closed-title">
+              🔒 MERCADO FECHADO PELO CONFESSOR (MODO VITRINE)
+            </div>
+            <div className="shop-closed-desc">
+              As caravanas estão recolhidas. Você pode consultar os preços e artigos do catálogo, mas as negociações de compra e venda estão temporariamente suspensas.
+            </div>
           </div>
-          <h1 className="font-['Cinzel',serif] text-2xl md:text-3xl font-bold text-[var(--gold-hi)] tracking-wider mt-1 flex items-center gap-3">
-            <Store className="w-6 h-6 text-[var(--gold)]" />
-            <span>{shopName}</span>
-          </h1>
-          <p className="font-serif text-xs md:text-sm text-[var(--muted)] italic mt-0.5">
-            Câmbio Oficial: 50 Bronze = 1 Prata · 50 Prata = 1 Ouro (2.500b = 1o)
-          </p>
+        </div>
+      )}
+
+      {/* ── BANNER DA LOJA & BOLSA DO JURADO ── */}
+      <div className="shop-banner">
+        <div className="shop-identity-group">
+          <div className="shop-icon-frame">
+            <Store size={26} />
+          </div>
+          <div className="shop-title-area">
+            <h1 className="shop-title">
+              <span>{shopName}</span>
+              <span className={`shop-status-tag ${shopOpen ? 'open' : 'closed'}`}>
+                {shopOpen ? 'Aberto' : 'Trancado'}
+              </span>
+            </h1>
+            <p className="shop-exchange-sub">
+              Câmbio Oficial: 50 Bronze = 1 Prata • 50 Prata = 1 Ouro (2.500b = 1o)
+            </p>
+          </div>
         </div>
 
         {/* Bolsa Pessoal do Jogador */}
-        <div className="flex items-center gap-3 px-4 py-2.5 slab border border-[var(--iron)] shadow-inner">
-          <div className="text-right">
-            <div className="text-[10px] font-['Cinzel',serif] uppercase tracking-wider text-[var(--gold-hi)] font-bold">
-              Sua Bolsa de Moedas
-            </div>
-            <CoinsBadge coinsBronze={playerCoins} size="md" />
-          </div>
+        <div className="shop-wallet-box">
+          <span className="shop-wallet-kicker">SUA BOLSA DE MOEDAS</span>
+          <CoinsBadge coinsBronze={playerCoins} />
         </div>
       </div>
 
-      {/* ── ALERTA QUANDO A LOJA ESTIVER FECHADA (EMPTY STATE) ── */}
-      {!shopOpen && (
-        <Empty
-          data-testid="shop-closed-empty"
-          icon={<Lock className="w-10 h-10 text-[var(--blood)]" />}
-          title="As portas estão trancadas."
-          description="O mercado encontra-se recolhido sob toque de recolher pelo Confessor. Você pode inspecionar os artigos em vitrine, mas as negociações de compra e venda estão temporariamente suspensas."
-          className="bg-[var(--blood)]/10 border-[var(--blood)]/40 mb-6"
-        />
-      )}
-
-      {/* ── NAVEGAÇÃO DE ABAS: COMPRAR / VENDER ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--iron)]/60 pb-3">
-        <div className="flex items-center gap-2">
+      {/* ── NAVEGAÇÃO DE ABAS & FILTROS ── */}
+      <div className="shop-nav-bar">
+        <div className="shop-tabs-group">
           <button
             type="button"
             onClick={() => setActiveTab('buy')}
-            className={`
-              flex items-center gap-2 px-4 py-2 font-['Cinzel',serif] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer
-              ${
-                activeTab === 'buy'
-                  ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] shadow-md'
-                  : 'slab text-[var(--muted)] hover:text-[var(--text)] border border-[var(--iron)]'
-              }
-            `}
+            className={`shop-tab-btn buy ${activeTab === 'buy' ? 'active' : ''}`}
           >
-            <ShoppingCart className="w-3.5 h-3.5" />
-            <span>Comprar ({filteredShopItems.length})</span>
+            <ShoppingCart size={14} />
+            <span>COMPRAR ITENS ({filteredShopItems.length})</span>
           </button>
-
           <button
             type="button"
             onClick={() => setActiveTab('sell')}
-            className={`
-              flex items-center gap-2 px-4 py-2 font-['Cinzel',serif] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer
-              ${
-                activeTab === 'sell'
-                  ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] shadow-md'
-                  : 'slab text-[var(--muted)] hover:text-[var(--text)] border border-[var(--iron)]'
-              }
-            `}
+            className={`shop-tab-btn sell ${activeTab === 'sell' ? 'active' : ''}`}
           >
-            <Coins className="w-3.5 h-3.5" />
-            <span>Vender ({inventoryItems.length})</span>
+            <Coins size={14} />
+            <span>VENDER PERTENCES ({sellableItems.length})</span>
           </button>
         </div>
 
         {/* Filtros de Categoria */}
         {activeTab === 'buy' && (
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <div className="shop-filters-group">
             {[
-              { id: 'all' as const, label: 'Todos' },
+              { id: 'all' as const, label: 'Tudo' },
               { id: 'weapon' as const, label: 'Armas' },
               { id: 'armor' as const, label: 'Armaduras' },
               { id: 'consumable' as const, label: 'Consumíveis' },
@@ -247,14 +233,7 @@ export const PlayerShopView: React.FC = () => {
                 key={cat.id}
                 type="button"
                 onClick={() => setFilterCategory(cat.id)}
-                className={`
-                  px-3 py-1 text-[11px] font-['Cinzel',serif] uppercase transition-all whitespace-nowrap cursor-pointer
-                  ${
-                    filterCategory === cat.id
-                      ? 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] font-bold'
-                      : 'recess text-[var(--muted)] border border-black hover:text-[var(--text)]'
-                  }
-                `}
+                className={`shop-chip ${filterCategory === cat.id ? 'active' : ''}`}
               >
                 {cat.label}
               </button>
@@ -267,118 +246,85 @@ export const PlayerShopView: React.FC = () => {
       {activeTab === 'buy' && (
         <div>
           {filteredShopItems.length === 0 ? (
-            <div className="text-center py-16 text-[var(--muted)] font-serif italic">
-              <Package className="w-10 h-10 opacity-30 mx-auto mb-3" />
-              Nenhum artigo disponível nesta categoria no momento.
+            <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: '#8a7860' }}>
+              <Package size={34} style={{ margin: '0 auto 0.6rem', opacity: 0.4 }} />
+              <p style={{ fontStyle: 'italic', fontFamily: 'var(--font-title, serif)' }}>
+                Nenhum artigo disponível nesta categoria no momento.
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="shop-items-grid">
               {filteredShopItems.map((item) => {
                 const canAfford = playerCoins >= item.price_bronze;
                 const isBuying = buyingItemId === item.id;
+                const isAnyAction = loadingAction || buyingItemId !== null || sellingItemId !== null;
 
                 return (
-                  <div
-                    key={item.id}
-                    className="flex flex-col justify-between p-4 slab border border-[var(--iron)] hover:border-[var(--gold-lo)] transition-all shadow-lg space-y-3"
-                  >
+                  <div key={item.id} className="shop-item-card">
                     <div>
-                      {/* Ícone, Nome e Categoria */}
-                      <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 recess border border-black flex items-center justify-center text-2xl shrink-0 overflow-hidden">
+                      {/* Topo: Ícone e Nome */}
+                      <div className="shop-item-top">
+                        <div className="shop-item-thumb">
                           {item.image_url ? (
-                            <img
-                              src={item.image_url}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={item.image_url} alt={item.name} />
                           ) : (
-                            <span>{item.icon || '🎒'}</span>
+                            <span style={{ fontSize: '1.4rem' }}>{item.icon || '🎒'}</span>
                           )}
                         </div>
-
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-['Cinzel',serif] text-sm font-bold text-[var(--gold-hi)] truncate">
-                            {item.name}
-                          </h3>
-                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 slab text-[var(--gold-hi)]">
-                              {item.rarity || 'Comum'}
-                            </span>
-                            {item.category && (
-                              <span className="text-[10px] text-[var(--muted)] font-['Cinzel',serif]">
-                                {item.category}
-                              </span>
-                            )}
+                        <div className="shop-item-info">
+                          <h4 className="shop-item-name">{item.name}</h4>
+                          <div className="shop-item-tags">
+                            <span className="shop-tag-rarity">{item.rarity || 'Comum'}</span>
+                            {item.category && <span className="shop-tag-cat">{item.category}</span>}
                           </div>
                         </div>
                       </div>
 
                       {/* Atributos / Stats */}
-                      <div className="flex flex-wrap gap-1.5 mt-3 text-[11px] font-mono">
+                      <div className="shop-item-badges">
                         {item.damage_dice && (
-                          <span className="px-2 py-0.5 bg-[var(--blood)]/20 text-[#fca5a5] border border-[var(--blood)]/40">
-                            Dano: {item.damage_dice}
-                            {item.damage_bonus ? ` +${item.damage_bonus}` : ''}
+                          <span className="shop-badge-stat damage">
+                            Dano: {item.damage_dice}{item.damage_bonus ? ` + ${item.damage_bonus}` : ''}
                           </span>
                         )}
                         {(item.armor_bonus ?? 0) > 0 && (
-                          <span className="px-2 py-0.5 bg-[var(--mist)]/20 text-[#7dd3fc] border border-[var(--mist)]/40">
+                          <span className="shop-badge-stat defense">
                             Defesa +{item.armor_bonus}
                           </span>
                         )}
                         {item.two_handed && (
-                          <span className="px-2 py-0.5 bg-[var(--gold)]/20 text-[var(--gold-hi)] border border-[var(--gold-lo)]">
-                            2 Mãos
-                          </span>
+                          <span className="shop-badge-stat neutral">2 Mãos</span>
                         )}
                         {item.ranged && (
-                          <span className="px-2 py-0.5 slab text-[var(--muted)] border border-[var(--iron)]">
-                            À Distância
-                          </span>
+                          <span className="shop-badge-stat neutral">À Distância</span>
                         )}
                       </div>
 
                       {/* Descrição em Garamond */}
                       {item.description && (
-                        <p className="font-serif italic text-xs text-[var(--muted)] leading-relaxed mt-2.5 line-clamp-2">
+                        <p className="shop-item-desc">
                           "{item.description}"
                         </p>
                       )}
                     </div>
 
-                    {/* Preço e Botão de Compra Dourado */}
-                    <div className="flex items-center justify-between pt-3 border-t border-[var(--iron)]/60 mt-2">
-                      <CoinsBadge coinsBronze={item.price_bronze} size="sm" />
-
+                    {/* Preço e Botão de Ação */}
+                    <div className="shop-item-footer">
+                      <CoinsBadge coinsBronze={item.price_bronze} />
                       <button
                         type="button"
-                        data-testid="buy-shop-item"
                         onClick={() => handleBuy(item)}
-                        disabled={!shopOpen || !canAfford || loadingAction}
-                        title={
-                          !shopOpen
-                            ? 'As portas estão trancadas'
-                            : !canAfford
-                            ? 'Moedas insuficientes'
-                            : 'Comprar item'
-                        }
-                        className={`
-                          px-4 py-2 font-['Cinzel',serif] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer
-                          ${
-                            !shopOpen || !canAfford || loadingAction
-                              ? 'recess text-white/30 border border-black cursor-not-allowed'
-                              : 'bg-[var(--gold)] text-black border border-[var(--gold-hi)] hover:brightness-110 active:scale-95 shadow-md'
-                          }
-                        `}
+                        disabled={!shopOpen || !canAfford || isAnyAction}
+                        className="shop-btn-action buy"
                       >
                         {isBuying ? (
                           <>
-                            <Loader2 className="w-3 h-3 animate-spin" /> Comprando...
+                            <Loader2 size={13} className="animate-spin" />
+                            <span>Comprando...</span>
                           </>
                         ) : (
                           <>
-                            <ShoppingCart className="w-3 h-3" />
+                            <ShoppingCart size={13} />
                             <span>{shopOpen ? 'Comprar' : 'Trancado'}</span>
                           </>
                         )}
@@ -392,91 +338,73 @@ export const PlayerShopView: React.FC = () => {
         </div>
       )}
 
-      {/* ── CONTEÚDO DA ABA VENDER (PERTENCES DO JOGADOR) ── */}
+      {/* ── CONTEÚDO DA ABA VENDER ── */}
       {activeTab === 'sell' && (
         <div>
           {sellableItems.length === 0 ? (
-            <div className="text-center py-16 text-white/40 font-serif italic space-y-2">
-              <Coins className="w-10 h-10 opacity-30 mx-auto mb-2" />
-              <p>Você não possui itens avaliados para venda na sua mochila.</p>
-              <p className="text-xs text-white/30">
-                Itens equipados devem ser desequipados antes da negociação.
+            <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: '#8a7860' }}>
+              <Coins size={34} style={{ margin: '0 auto 0.6rem', opacity: 0.4 }} />
+              <p style={{ fontStyle: 'italic', fontFamily: 'var(--font-title, serif)' }}>
+                Você não possui artigos avaliados para venda na sua mochila.
+              </p>
+              <p style={{ fontSize: '0.72rem', color: '#6e5f4d', marginTop: '4px' }}>
+                Itens equipados devem ser retirados para os slots gerais antes da negociação.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="shop-items-grid">
               {sellableItems.map((item) => {
                 const sellValue = Math.floor(Number(item.price_bronze) / 2);
                 const isSelling = sellingItemId === item.id;
+                const isAnyAction = loadingAction || buyingItemId !== null || sellingItemId !== null;
 
                 return (
-                  <div
-                    key={item.id}
-                    className="flex flex-col justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] hover:border-white/15 transition-all shadow-lg space-y-3"
-                  >
+                  <div key={item.id} className="shop-item-card">
                     <div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-2xl shrink-0 overflow-hidden">
+                      <div className="shop-item-top">
+                        <div className="shop-item-thumb">
                           {item.image_url ? (
-                            <img
-                              src={item.image_url}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={item.image_url} alt={item.name} />
                           ) : (
-                            <span>{item.icon || '🎒'}</span>
+                            <span style={{ fontSize: '1.4rem' }}>{item.icon || '🎒'}</span>
                           )}
                         </div>
-
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-serif text-sm font-bold text-[#f5f5f7] truncate">
-                            {item.name}
-                          </h3>
-                          <div className="text-xs text-[#f5b65b] font-mono mt-0.5">
-                            Posse: {item.quantity || 1} un
+                        <div className="shop-item-info">
+                          <h4 className="shop-item-name">{item.name}</h4>
+                          <div className="shop-item-tags">
+                            <span className="shop-tag-rarity">{item.rarity || 'Comum'}</span>
+                            <span className="shop-tag-cat">Posse: {item.quantity || 1} un</span>
                           </div>
                         </div>
                       </div>
 
-                      <p className="font-serif italic text-xs text-white/60 leading-relaxed mt-2.5 line-clamp-2">
-                        "{item.description || 'Pertence de viagem.'}"
+                      <p className="shop-item-desc">
+                        "{item.description || 'Pertence de viagem registrado nos anais do Jurado.'}"
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] mt-2">
+                    <div className="shop-item-footer">
                       <div>
-                        <div className="text-[10px] font-serif uppercase tracking-wider text-white/40">
+                        <div style={{ fontSize: '0.58rem', color: '#8c8272', textTransform: 'uppercase', fontFamily: 'var(--font-title, serif)' }}>
                           Recompra (50%)
                         </div>
-                        <CoinsBadge coinsBronze={sellValue} size="sm" />
+                        <CoinsBadge coinsBronze={sellValue} />
                       </div>
 
                       <button
                         type="button"
-                        data-testid="sell-shop-item"
                         onClick={() => handleSell(item)}
-                        disabled={!shopOpen || loadingAction}
-                        title={
-                          !shopOpen
-                            ? 'As portas estão trancadas'
-                            : 'Vender item por 50% do valor'
-                        }
-                        className={`
-                          px-4 py-2 rounded-xl font-serif text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all
-                          ${
-                            !shopOpen || loadingAction
-                              ? 'bg-white/[0.04] text-white/30 border border-white/[0.06] cursor-not-allowed'
-                              : 'bg-gradient-to-b from-[#ca8a04] to-[#854d0e] text-[#f5e8c8] border border-[#f5b65b]/60 hover:brightness-110 active:scale-95 shadow-md'
-                          }
-                        `}
+                        disabled={!shopOpen || isAnyAction}
+                        className="shop-btn-action sell"
                       >
                         {isSelling ? (
                           <>
-                            <Loader2 className="w-3 h-3 animate-spin" /> Vendendo...
+                            <Loader2 size={13} className="animate-spin" />
+                            <span>Vendendo...</span>
                           </>
                         ) : (
                           <>
-                            <Coins className="w-3 h-3" />
+                            <Coins size={13} />
                             <span>{shopOpen ? 'Vender' : 'Trancado'}</span>
                           </>
                         )}

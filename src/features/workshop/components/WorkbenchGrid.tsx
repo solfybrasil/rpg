@@ -15,9 +15,9 @@ interface WorkbenchGridProps {
 }
 
 const STATION_ACCENT_COLORS: Record<WorkshopStation, { border: string; glow: string; text: string }> = {
-  forja: { border: 'border-amber-600/50', glow: 'shadow-[0_0_20px_rgba(226,119,31,0.25)]', text: 'text-amber-500' },
-  alquimia: { border: 'border-purple-600/50', glow: 'shadow-[0_0_20px_rgba(192,132,252,0.25)]', text: 'text-purple-400' },
-  cozinha: { border: 'border-emerald-600/50', glow: 'shadow-[0_0_20px_rgba(74,124,89,0.25)]', text: 'text-emerald-400' },
+  forja: { border: 'border-[rgba(201,169,97,0.35)]', glow: 'shadow-[0_0_20px_rgba(201,169,97,0.2)]', text: 'text-[#ecc05c]' },
+  alquimia: { border: 'border-purple-600/40', glow: 'shadow-[0_0_20px_rgba(192,132,252,0.2)]', text: 'text-purple-400' },
+  cozinha: { border: 'border-emerald-600/40', glow: 'shadow-[0_0_20px_rgba(74,124,89,0.2)]', text: 'text-emerald-400' },
 };
 
 export const WorkbenchGrid: React.FC<WorkbenchGridProps> = ({
@@ -78,9 +78,9 @@ export const WorkbenchGrid: React.FC<WorkbenchGridProps> = ({
 
       {/* Grade 3x3 */}
       <div
-        className={`relative grid grid-cols-3 gap-2 p-3 rounded-xl border ${accent.border} ${accent.glow} bg-neutral-950/70 backdrop-blur-sm transition-all duration-300`}
+        className={`relative grid grid-cols-3 gap-2.5 p-3.5 rounded-xl border ${accent.border} ${accent.glow} bg-[#14120e] shadow-[0_8px_32px_rgba(0,0,0,0.6)] transition-all duration-300`}
         style={{
-          backgroundImage: `radial-gradient(ellipse at center, rgba(30, 25, 20, 0.4) 0%, rgba(10, 10, 10, 0.8) 100%)`,
+          backgroundImage: `radial-gradient(ellipse at center, rgba(30, 24, 18, 0.5) 0%, rgba(14, 11, 8, 0.95) 100%)`,
         }}
       >
         {slots.map((item, idx) => {
@@ -100,8 +100,8 @@ export const WorkbenchGrid: React.FC<WorkbenchGridProps> = ({
               onDragLeave={() => setDragOverIndex(null)}
               onDrop={(e) => handleDrop(e, idx)}
               title={item ? `${item.name} (clique para retirar)` : 'Slot livre (clique ou arraste um ingrediente)'}
-              className={`relative w-[72px] h-[72px] rounded-lg flex items-center justify-center p-1 transition-transform active:scale-95 select-none focus:outline-none focus:ring-1 focus:ring-amber-500/50 ${
-                isOver ? 'scale-105 z-10' : ''
+              className={`relative w-[72px] h-[72px] rounded-lg flex items-center justify-center p-1 transition-transform active:scale-95 select-none focus:outline-none focus:ring-1 focus:ring-[rgba(201,169,97,0.5)] bg-[#0d0c0a] border border-[rgba(201,169,97,0.18)] hover:border-[rgba(201,169,97,0.4)] ${
+                isOver ? 'scale-105 z-10 border-[#c9a961]' : ''
               }`}
               style={{
                 backgroundImage: `url(${bgSlot})`,

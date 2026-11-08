@@ -1,0 +1,33 @@
+/* ==========================================================================
+   EMPTY STATE COMPONENT — Elden Ring Minimalist
+   ========================================================================== */
+
+.er-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  gap: var(--space-3);
+  color: var(--text-muted);
+}
+
+.er-empty-icon {
+  color: var(--gold-dim);
+  opacity: 0.75;
+  margin-bottom: var(--space-1);
+}
+
+.er-empty-text {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+.er-empty-action {
+  margin-top: var(--space-2);
+}

@@ -34,6 +34,11 @@ export const WorkshopResultSlot: React.FC<WorkshopResultSlotProps> = ({
           disabled: '/assets/forja/martelar_desligado.webp',
           title: prerequisites.forgeReady ? 'MARTELAR NA BIGORNA' : 'FORJA APAGADA',
           subtitle: prerequisites.forgeReady ? 'Inicia o minigame do martelo e teste' : 'Aguarde o Mestre acender a forja',
+          btnClass: 'forge-hammer-action-btn',
+          bgClass: 'forge-hammer-btn-bg',
+          textWrapClass: 'forge-hammer-btn-text-wrap',
+          titleClass: 'forge-hammer-btn-title',
+          subtitleClass: 'forge-hammer-btn-subtitle',
         };
       case 'alquimia':
         return {
@@ -42,6 +47,11 @@ export const WorkshopResultSlot: React.FC<WorkshopResultSlotProps> = ({
           disabled: '/assets/alquimia/preparar_desligado.webp',
           title: prerequisites.canOperate ? 'DESTILAR NO CALDEIRÃO' : 'SEM REQUISITOS',
           subtitle: 'Inicia o minigame das bolhas de vapor',
+          btnClass: 'alchemy-action-btn',
+          bgClass: 'alchemy-action-btn-bg',
+          textWrapClass: 'alchemy-action-btn-text-wrap',
+          titleClass: 'alchemy-action-btn-title',
+          subtitleClass: 'alchemy-action-btn-subtitle',
         };
       case 'cozinha':
         return {
@@ -50,6 +60,11 @@ export const WorkshopResultSlot: React.FC<WorkshopResultSlotProps> = ({
           disabled: '/assets/cozinha/cozinhar_desligado.webp',
           title: prerequisites.forgeReady ? 'COZINHAR NA GRELHA' : 'FOGO APAGADO',
           subtitle: 'Prepara o prato e testa a culinária',
+          btnClass: 'cozinha-cook-btn',
+          bgClass: 'cozinha-cook-btn-bg',
+          textWrapClass: 'cozinha-cook-btn-text-wrap',
+          titleClass: 'cozinha-cook-btn-title',
+          subtitleClass: 'cozinha-cook-btn-subtitle',
         };
     }
   };
@@ -63,94 +78,80 @@ export const WorkshopResultSlot: React.FC<WorkshopResultSlotProps> = ({
       : btnConfig.default;
 
   return (
-    <div className="flex flex-col items-center bg-neutral-900/60 rounded-xl border border-neutral-800 p-3 max-w-sm w-full shadow-inner">
-      <span className="text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-2">
-        Produto Resultante
-      </span>
+    <div className="forge-result-col">
+      <span className="forge-result-header-label">RESULTADO</span>
 
-      {/* Palco do Produto */}
-      <div className="relative w-24 h-24 rounded-xl border-2 border-amber-900/40 bg-neutral-950/80 flex items-center justify-center p-2 mb-3 shadow-[0_0_15px_rgba(0,0,0,0.8)] overflow-hidden">
-        {matchedRecipe ? (
-          isKnown ? (
-            <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
-              {matchedRecipe.image_url ? (
+      {/* Palco do Ícone Resultante com Moldura e Brilho de Brasas */}
+      <div className="forge-result-stage">
+        <div className="forge-result-inner-glow">
+          {matchedRecipe ? (
+            isKnown ? (
+              matchedRecipe.image_url ? (
                 <img
                   src={matchedRecipe.image_url}
                   alt={matchedRecipe.result_name}
-                  className="w-16 h-16 object-contain drop-shadow-[0_0_10px_rgba(245,182,91,0.3)]"
+                  className="forge-result-thumb"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
                 />
               ) : (
-                <span className="text-3xl">
-                  {station === 'forja' ? '⚔️' : station === 'alquimia' ? '🧪' : '🍲'}
+                <span style={{ fontSize: '2.5rem' }}>
+                  {matchedRecipe.rarity === 'Artefato' ? '✨' : station === 'forja' ? '⚔️' : station === 'alquimia' ? '🧪' : '🍲'}
                 </span>
-              )}
-            </div>
+              )
+            ) : (
+              <span className="forge-result-unknown-char">?</span>
+            )
           ) : (
-            <div className="flex flex-col items-center justify-center animate-pulse">
-              <span className="text-4xl font-serif text-purple-400 drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]">
-                ?
-              </span>
-            </div>
-          )
-        ) : (
-          <span className="text-3xl text-neutral-700 font-mono select-none">∅</span>
-        )}
-
-        {/* Brilho de Brasas / Vapor no fundo */}
-        {matchedRecipe && (
-          <div className="absolute inset-0 bg-gradient-to-t from-amber-600/10 via-transparent to-transparent pointer-events-none" />
-        )}
+            <span className="forge-result-empty-char">∅</span>
+          )}
+        </div>
+        <img src="/assets/forja/quadro_resultado.webp" alt="" className="forge-result-frame-img" />
       </div>
 
-      {/* Descrição e Estatísticas da Receita */}
+      {/* Detalhes da Receita Encontrada */}
       {matchedRecipe ? (
         isKnown ? (
-          <div className="text-center w-full space-y-1.5 mb-3">
-            <h3 className="text-sm font-mono font-bold text-amber-200">
-              {matchedRecipe.result_name}
-              {(matchedRecipe.result_qty || 1) > 1 ? ` (${matchedRecipe.result_qty}x)` : ''}
+          <>
+            <h3 className="forge-result-title">
+              {matchedRecipe.result_name} {(matchedRecipe.result_qty || 1) > 1 ? `(${matchedRecipe.result_qty}x)` : ''}
             </h3>
-            <p className="text-[11px] text-neutral-400 line-clamp-2 px-2 font-serif italic">
-              {matchedRecipe.description || 'Receita tradicional forjada sob juramento.'}
+            <p className="forge-result-desc">
+              {matchedRecipe.description || (matchedRecipe.category ? `Item da categoria ${matchedRecipe.category}` : 'Receita tradicional forjada sob juramento.')}
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-[10px] font-mono">
-              <span className="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-800/60 text-amber-300">
-                Peso {matchedRecipe.peso}
+            <div className="forge-result-pills-row">
+              <span className="forge-stat-pill">Peso {matchedRecipe.peso}</span>
+              <span className="forge-stat-pill">
+                Astúcia + {station === 'forja' ? 'Forja' : station === 'alquimia' ? 'Alquimia' : 'Sobrevivência'} (+{playerModifier})
               </span>
-              <span className="px-2 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-300">
-                Mod: +{playerModifier}
-              </span>
-              <span className="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/60 text-emerald-300">
-                Chance: {successChancePct}%
-              </span>
+              <span className="forge-stat-pill chance">Chance: {successChancePct}%</span>
               {matchedRecipe.rarity && (
-                <span className="px-2 py-0.5 rounded bg-purple-950/60 border border-purple-800/60 text-purple-300">
-                  {matchedRecipe.rarity}
-                </span>
+                <span className="forge-stat-pill rarity">{matchedRecipe.rarity}</span>
               )}
             </div>
-          </div>
+          </>
         ) : (
-          <div className="text-center w-full space-y-1 mb-3 px-2">
-            <h3 className="text-sm font-mono font-bold text-purple-300 flex items-center justify-center gap-1">
-              <Sparkles size={14} /> Fórmula Oculta
+          <>
+            <h3 className="forge-result-title" style={{ color: '#c084fc' }}>
+              <Sparkles size={14} className="inline mr-1" /> Fórmula Oculta
             </h3>
-            <p className="text-[11px] text-purple-200/70 font-serif italic">
-              Combinação exata de uma fórmula não registrada no seu livro. O Peso é desconhecido até o golpe final!
+            <p className="forge-result-desc">
+              Você combinou os ingredientes exatos de uma receita ainda não registrada no seu Livro. O Peso é desconhecido até a martelada final.
             </p>
-          </div>
+          </>
         )
       ) : (
-        <p className="text-[11px] text-neutral-500 font-serif italic text-center mb-3 px-2">
-          Organize os materiais na grade 3×3 para revelar o que suas mãos são capazes de moldar.
+        <p className="forge-result-desc" style={{ color: '#8c7b68', fontStyle: 'italic', margin: '14px 0' }}>
+          Organize os materiais na bigorna para revelar o que suas mãos são capazes de moldar.
         </p>
       )}
 
-      {/* Avisos de Pré-requisitos Pendentes */}
+      {/* Alerta de Requisitos Faltando */}
       {!prerequisites.canOperate && (
-        <div className="w-full mb-3 p-2 rounded-lg bg-red-950/40 border border-red-800/50 flex items-start gap-2 text-left">
-          <AlertTriangle size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
-          <div className="space-y-0.5 text-[11px] text-red-300 font-mono">
+        <div className="forge-reqs-alert">
+          <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+          <div className="space-y-0.5">
             {prerequisites.missingReasons.map((reason, idx) => (
               <div key={idx}>• {reason}</div>
             ))}
@@ -158,25 +159,23 @@ export const WorkshopResultSlot: React.FC<WorkshopResultSlotProps> = ({
         </div>
       )}
 
-      {/* Botão Oficial Themed de Ação */}
+      {/* Botão Oficial Forjado */}
       <button
         type="button"
         onClick={onStartCraft}
         disabled={!isButtonEnabled}
-        className={`relative w-full max-w-[260px] h-[52px] rounded-lg overflow-hidden flex items-center justify-center transition-transform active:scale-95 ${
-          !isButtonEnabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:brightness-110'
-        }`}
+        className={btnConfig.btnClass}
       >
         <img
           src={btnImgSrc}
           alt={btnConfig.title}
-          className="absolute inset-0 w-full h-full object-cover"
+          className={btnConfig.bgClass}
         />
-        <div className="relative z-10 flex flex-col items-center justify-center text-center px-2 select-none">
-          <span className="text-xs font-mono font-bold tracking-wider text-amber-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+        <div className={btnConfig.textWrapClass}>
+          <span className={btnConfig.titleClass}>
             {btnConfig.title}
           </span>
-          <span className="text-[9px] font-mono text-amber-200/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+          <span className={btnConfig.subtitleClass}>
             {btnConfig.subtitle}
           </span>
         </div>

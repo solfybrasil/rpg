@@ -1,0 +1,90 @@
+/* ==========================================================================
+   ELDEN RING EVENT BANNER COMPONENT
+   ========================================================================== */
+
+.er-banner-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.45);
+  animation: erBannerFade 2.4s var(--ease) forwards;
+}
+
+.er-banner-bar {
+  width: 100%;
+  background: rgba(11, 10, 8, 0.92);
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.85);
+}
+
+.er-banner-line {
+  width: min(460px, 85vw);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.er-banner-line.crimson {
+  background: linear-gradient(90deg, transparent, var(--crimson-bright), transparent);
+}
+
+.er-banner-title {
+  font-family: var(--font-title);
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--gold-bright);
+  text-transform: uppercase;
+  margin: var(--space-3) 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.er-banner-title.crimson {
+  color: var(--crimson-bright);
+}
+
+.er-banner-subtitle {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+@keyframes erBannerFade {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .er-banner-overlay {
+    animation: none;
+    opacity: 1;
+  }
+}

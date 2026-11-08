@@ -1,6 +1,5 @@
 import React from 'react';
 import { twMerge } from 'tailwind-merge';
-import { CountUp } from './CountUp';
 
 export interface AttrSlabProps extends React.HTMLAttributes<HTMLDivElement> {
   name: string;
@@ -33,7 +32,7 @@ export const AttrSlab: React.FC<AttrSlabProps> = ({
           {name}
         </div>
         <div className="font-['Cinzel',serif] font-bold text-[22px] text-[var(--gold-hi)] leading-none tabular-nums">
-          <CountUp value={value} duration={260} />
+          {value}
         </div>
       </div>
 

@@ -30,6 +30,7 @@ import {
 import { OathTreeCanvas } from './OathTreeCanvas';
 import { NodeDetailSheet } from './NodeDetailSheet';
 import { SkillsBookDrawer } from './SkillsBookDrawer';
+import '../../../styles/features/PlayerOathTree.css';
 
 const { N, IDS } = GRAPH;
 
@@ -269,37 +270,39 @@ export const PlayerOathTreeView: React.FC = () => {
   }
 
   return (
-    <main className="w-full max-w-6xl mx-auto px-4 py-6 flex flex-col gap-6">
+    <div className="oath-tree-root">
       {/* 1. Header & Controls */}
-      <section className="p-5 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <span className="text-[10px] font-cinzel uppercase text-[var(--gold-dim)] tracking-widest">
-            Votos & Linhagens de Aldrenor
+      <div className="oath-tree-header">
+        <div className="oath-tree-hero-info">
+          <span className="oath-tree-kicker">
+            <Sparkles size={10} /> Votos & Linhagens de Aldrenor
           </span>
-          <h1 className="font-cinzel font-bold text-2xl text-[var(--text-1)] mt-0.5">
+          <h1 className="oath-tree-title">
             Árvore do Juramento de {hero.name}
           </h1>
-          <p className="text-xs text-[var(--text-3)] font-cinzel mt-1">
+          <p className="oath-tree-meta">
             200 Nós Primordiais • 8 Regiões • Nível {heroLevel}
           </p>
         </div>
 
         {/* Action Controls & Inspiration */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="oath-tree-controls">
           {/* Inspiration Counter */}
-          <div className="px-3.5 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] flex flex-col">
-            <span className="text-[9px] uppercase font-cinzel text-[var(--gold)] font-bold tracking-wider">
-              Inspiração ({heroInspiration}/{heroInspirationMax})
-            </span>
-            <div className="flex items-center gap-1.5 mt-1">
+          <div className="oath-tree-metric-chip">
+            <span>Inspiração</span>
+            <strong>{heroInspiration}/{heroInspirationMax}</strong>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', marginLeft: '4px' }}>
               {Array.from({ length: Math.max(3, heroInspirationMax) }).map((_, i) => (
                 <div
                   key={i}
-                  className={`w-3 h-3 rounded-full border transition-all ${
-                    i < heroInspiration
-                      ? 'bg-[var(--gold)] border-[var(--gold-bright)] shadow-[0_0_6px_rgba(201,169,97,0.6)]'
-                      : 'bg-black/60 border-zinc-700'
-                  }`}
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    backgroundColor: i < heroInspiration ? '#c9a961' : 'transparent',
+                    border: '1.5px solid rgba(201, 169, 97, 0.4)',
+                    boxShadow: i < heroInspiration ? '0 0 6px rgba(201, 169, 97, 0.6)' : 'none',
+                  }}
                 />
               ))}
             </div>
@@ -309,9 +312,9 @@ export const PlayerOathTreeView: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsSkillsDrawerOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--gold-dim)] text-[var(--text-1)] font-cinzel text-xs font-semibold transition-colors cursor-pointer"
+            className="oath-tree-btn gold"
           >
-            <Award size={15} className="text-[var(--gold)]" />
+            <BookOpen size={13} style={{ color: '#1a140d' }} />
             <span>Livro de Perícias</span>
           </button>
 
@@ -319,66 +322,64 @@ export const PlayerOathTreeView: React.FC = () => {
           <button
             type="button"
             onClick={toggleParchmentMode}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-cinzel text-xs font-semibold border transition-colors cursor-pointer ${
-              isParchmentMode
-                ? 'bg-[#c9a961] border-[#a07e32] text-black shadow-inner font-bold'
-                : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-2)] hover:text-[var(--text-1)]'
-            }`}
+            className={`oath-tree-btn ${isParchmentMode ? 'primary' : ''}`}
           >
-            <Scroll size={15} />
+            <Scroll size={13} />
             <span>{isParchmentMode ? 'Modo Pergaminho ✓' : 'Modo Pergaminho'}</span>
           </button>
         </div>
-      </section>
+      </div>
 
       {/* 2. Search & Legend Bar */}
-      <section className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
-        <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]" />
+      <div className="oath-tree-toolbar">
+        <div className="oath-tree-search-wrap">
+          <Search size={14} className="oath-tree-search-icon" />
           <input
             type="text"
             placeholder="Pesquisar nós, talentos, perícias ou regiões..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-hidden focus:border-[var(--gold-dim)]"
+            className="oath-tree-search-input"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-3)] hover:text-[var(--text-1)]"
+              className="oath-tree-search-clear"
             >
-              <X size={13} />
+              <X size={12} />
             </button>
           )}
         </div>
 
         {/* Visual Legend */}
-        <div className="flex items-center gap-4 text-[11px] font-cinzel text-[var(--text-3)] shrink-0 px-1">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--gold)]" />
+        <div className="oath-tree-legend">
+          <div className="oath-tree-legend-item">
+            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#c9a961', display: 'inline-block' }} />
             <span>Desbloqueado</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full border border-[var(--gold)] bg-transparent animate-pulse" />
+          <div className="oath-tree-legend-item">
+            <span style={{ width: 8, height: 8, borderRadius: '50%', border: '1.5px solid #c9a961', display: 'inline-block' }} />
             <span>Disponível</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full border border-zinc-700 bg-zinc-900" />
+          <div className="oath-tree-legend-item">
+            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#27272a', border: '1.5px solid #52525b', display: 'inline-block' }} />
             <span>Bloqueado</span>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* 3. Interactive SVG Canvas */}
-      <OathTreeCanvas
-        curTree={treeState}
-        heroLevel={heroLevel}
-        highlightedNodeIds={highlightedNodeIds}
-        selectedNodeId={selectedNode?.id || null}
-        onSelectNode={(node) => setSelectedNode(node)}
-        isParchmentMode={isParchmentMode}
-      />
+      <div className="oath-tree-canvas-wrapper">
+        <OathTreeCanvas
+          curTree={treeState}
+          heroLevel={heroLevel}
+          highlightedNodeIds={highlightedNodeIds}
+          selectedNodeId={selectedNode?.id || null}
+          onSelectNode={(node) => setSelectedNode(node)}
+          isParchmentMode={isParchmentMode}
+        />
+      </div>
 
       {/* 4. Node Detail Modal/Sheet */}
       {selectedNode && (
@@ -402,6 +403,6 @@ export const PlayerOathTreeView: React.FC = () => {
         heroInspiration={heroInspiration}
         onInvestSkill={handleInvestSkill}
       />
-    </main>
+    </div>
   );
 };

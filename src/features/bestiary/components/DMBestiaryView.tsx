@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { BookOpen, Film, Flame, Plus, Shield, Skull, Sparkles, Sword } from 'lucide-react';
-import React, { useState } from 'react';
+import { BookOpen, Film, Flame, LayoutGrid, List, Plus, Shield, Skull, Sparkles, Sword } from 'lucide-react';
+import React, { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { MediaBattleModal, type MediaBattleTarget } from '../../battle-map/components/MediaBattleModal.tsx';
 import {
@@ -12,12 +12,13 @@ import {
   useCreaturesCatalog,
 } from '../api/index.ts';
 import type { Creature, CreatureFilter } from '../api/types.ts';
+import { BestiaryCardGrid } from './BestiaryCardGrid.tsx';
 import { BestiaryFilterBar } from './BestiaryFilterBar.tsx';
 import { BestiaryTableView } from './BestiaryTableView.tsx';
 import { CreatureDetailSheet } from './CreatureDetailSheet.tsx';
 import { CreatureFormModal } from './CreatureFormModal.tsx';
 
-export const DMBestiaryView: React.FC = () => {
+export const DMBestiaryView: React.FC = memo(() => {
   const queryClient = useQueryClient();
 
   // Filters State
@@ -26,6 +27,9 @@ export const DMBestiaryView: React.FC = () => {
     pageSize: 30,
     search: '',
   });
+
+  // View mode: default to grid
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   // Query Catalog
   const { data, isLoading, isError, error } = useCreaturesCatalog(filter);
@@ -38,11 +42,11 @@ export const DMBestiaryView: React.FC = () => {
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
 
   // Filter Handlers
-  const handleFilterChange = (updates: Partial<CreatureFilter>) => {
+  const handleFilterChange = useCallback((updates: Partial<CreatureFilter>) => {
     setFilter((prev) => ({ ...prev, ...updates }));
-  };
+  }, []);
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setFilter({
       page: 1,
       pageSize: 30,
@@ -53,10 +57,10 @@ export const DMBestiaryView: React.FC = () => {
       threatMin: undefined,
       threatMax: undefined,
     });
-  };
+  }, []);
 
   // Actions
-  const handleSendToTable = async (creature: Creature) => {
+  const handleSendToTable = useCallback(async (creature: Creature) => {
     try {
       await sendCreatureToTable(creature);
       toast.success(`Token de "${creature.name}" colocado na Mesa de Batalha!`, {
@@ -65,9 +69,9 @@ export const DMBestiaryView: React.FC = () => {
     } catch (err: any) {
       toast.error(`Falha ao colocar na mesa: ${err.message || 'Erro desconhecido'}`);
     }
-  };
+  }, []);
 
-  const handleSendToBattle = async (creature: Creature) => {
+  const handleSendToBattle = useCallback(async (creature: Creature) => {
     try {
       const res = await sendCreatureToBattle(creature, 1);
       toast.success(`"${creature.name}" adicionado ao combate ativo!`, {
@@ -76,9 +80,9 @@ export const DMBestiaryView: React.FC = () => {
     } catch (err: any) {
       toast.error(`Falha ao adicionar ao combate: ${err.message || 'Erro desconhecido'}`);
     }
-  };
+  }, []);
 
-  const handleOpenMedia = (creature: Creature) => {
+  const handleOpenMedia = useCallback((creature: Creature) => {
     const target: MediaBattleTarget = {
       id: creature.id,
       name: creature.name,
@@ -95,38 +99,36 @@ export const DMBestiaryView: React.FC = () => {
     };
     setMediaTarget(target);
     setMediaModalOpen(true);
-  };
+  }, []);
 
-  const handleMediaSaved = (updatedTarget: MediaBattleTarget) => {
-    if (selectedCreature && selectedCreature.id === updatedTarget.id) {
-      setSelectedCreature((prev) =>
-        prev
-          ? {
-              ...prev,
-              idle_mp4_url: updatedTarget.idle_mp4_url,
-              idle_webm_url: updatedTarget.idle_webm_url,
-              poster_url: updatedTarget.poster_url,
-              media_chroma: updatedTarget.media_chroma as string,
-              media_anchor_x: updatedTarget.media_anchor_x,
-              media_anchor_y: updatedTarget.media_anchor_y,
-              media_size: updatedTarget.media_size,
-              media_facing: updatedTarget.media_facing,
-            }
-          : null,
-      );
-    }
+  const handleMediaSaved = useCallback((updatedTarget: MediaBattleTarget) => {
+    setSelectedCreature((prev) =>
+      prev && prev.id === updatedTarget.id
+        ? {
+            ...prev,
+            idle_mp4_url: updatedTarget.idle_mp4_url,
+            idle_webm_url: updatedTarget.idle_webm_url,
+            poster_url: updatedTarget.poster_url,
+            media_chroma: updatedTarget.media_chroma as string,
+            media_anchor_x: updatedTarget.media_anchor_x,
+            media_anchor_y: updatedTarget.media_anchor_y,
+            media_size: updatedTarget.media_size,
+            media_facing: updatedTarget.media_facing,
+          }
+        : prev,
+    );
     queryClient.invalidateQueries({ queryKey: ['creatures_catalog'] });
-  };
+  }, [queryClient]);
 
-  const handleCreateNew = () => {
+  const handleCreateNew = useCallback(() => {
     setCreatureToEdit(null);
     setFormModalOpen(true);
-  };
+  }, []);
 
-  const handleEdit = (creature: Creature) => {
+  const handleEdit = useCallback((creature: Creature) => {
     setCreatureToEdit(creature);
     setFormModalOpen(true);
-  };
+  }, []);
 
   const handleArchive = async (creature: Creature) => {
     if (
@@ -190,12 +192,38 @@ export const DMBestiaryView: React.FC = () => {
           </p>
         </div>
 
-        {/* Quick Stats Pill */}
-        <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-2 self-start sm:self-auto">
-          <BookOpen className="h-4 w-4 text-[#f5b65b]" />
-          <div className="text-xs font-mono">
-            <span className="text-white/40">Total Catálogo:</span>{' '}
-            <b className="text-[#f5b65b] tabular-nums">{totalCount}</b> feras
+        {/* Quick Stats & View Mode Toggle */}
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <div className="flex items-center rounded-xl border border-[#423326] bg-[#14110e] p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              title="Exibição em Grade"
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-[#c5a36a] text-[#100e0c]'
+                  : 'text-[#a99a82] hover:text-[#e2d5bd]'
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              title="Exibição em Lista"
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewMode === 'table'
+                  ? 'bg-[#c5a36a] text-[#100e0c]'
+                  : 'text-[#a99a82] hover:text-[#e2d5bd]'
+              }`}
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 bg-[#191512] border border-[#423326] rounded-xl px-3 py-1.5 text-xs font-mono text-[#a99a82]">
+            <BookOpen className="h-3.5 w-3.5 text-[#c5a36a]" />
+            <span><strong className="text-[#e4c894]">{totalCount}</strong> criaturas</span>
           </div>
         </div>
       </header>
@@ -209,13 +237,27 @@ export const DMBestiaryView: React.FC = () => {
         totalCount={totalCount}
       />
 
-      {/* Main Dense Table View */}
+      {/* Main View: Grid by default, Table on toggle */}
       <main>
         {isError ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-center text-red-200">
             <p className="font-semibold text-sm">Erro ao carregar bestiário</p>
             <p className="text-xs text-red-300/80 mt-1">{(error as any)?.message || 'Erro de conexão'}</p>
           </div>
+        ) : viewMode === 'grid' ? (
+          <BestiaryCardGrid
+            creatures={creatures}
+            totalCount={totalCount}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={(newPage) => handleFilterChange({ page: newPage })}
+            onSelectCreature={(c) => setSelectedCreature(c)}
+            onEditCreature={(c) => handleEdit(c)}
+            onSendToTable={handleSendToTable}
+            onSendToBattle={handleSendToBattle}
+            onOpenMedia={handleOpenMedia}
+            isLoading={isLoading}
+          />
         ) : (
           <BestiaryTableView
             creatures={creatures}
@@ -262,4 +304,4 @@ export const DMBestiaryView: React.FC = () => {
       />
     </div>
   );
-};
+});

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { memo, useMemo, useState, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Search,
@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   Flame,
   Globe,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import type { GrimorioSpell } from '../../grimoire/api';
 import {
@@ -37,7 +39,7 @@ interface DMSpellsCatalogTabProps {
   selectedHeroId: string;
 }
 
-export const DMSpellsCatalogTab: React.FC<DMSpellsCatalogTabProps> = ({
+export const DMSpellsCatalogTab: React.FC<DMSpellsCatalogTabProps> = memo(({
   selectedHeroId,
 }) => {
   const { data: catalog = [], isLoading: isLoadingCatalog } = useAllSpellsCatalog();
@@ -48,6 +50,7 @@ export const DMSpellsCatalogTab: React.FC<DMSpellsCatalogTabProps> = ({
   const [filterFonte, setFilterFonte] = useState('todas');
   const [filterRaridade, setFilterRaridade] = useState('todas');
   const [filterStatus, setFilterStatus] = useState('todas');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   const [inspectMagia, setInspectMagia] = useState<GrimorioSpell | null>(null);
   const [editingMagia, setEditingMagia] = useState<GrimorioSpell | null>(null);
@@ -121,9 +124,39 @@ export const DMSpellsCatalogTab: React.FC<DMSpellsCatalogTabProps> = ({
             />
           </div>
 
-          <span className="text-xs text-white/50 font-serif whitespace-nowrap self-center">
-            {filteredSpells.length} de {catalog.length} magias
-          </span>
+          <div className="flex items-center gap-2 self-center">
+            {/* View Mode Toggle */}
+            <div className="flex items-center rounded-lg border border-white/10 bg-black/40 p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                title="Exibição em Grade"
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-[var(--gold)] text-black'
+                    : 'text-white/50 hover:text-white'
+                }`}
+              >
+                <LayoutGrid size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                title="Exibição em Tabela"
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === 'table'
+                    ? 'bg-[var(--gold)] text-black'
+                    : 'text-white/50 hover:text-white'
+                }`}
+              >
+                <List size={15} />
+              </button>
+            </div>
+
+            <span className="text-xs text-white/50 font-serif whitespace-nowrap">
+              {filteredSpells.length} de {catalog.length} magias
+            </span>
+          </div>
         </div>
 
         {/* Dropdown Filters */}
@@ -200,10 +233,124 @@ export const DMSpellsCatalogTab: React.FC<DMSpellsCatalogTabProps> = ({
         </div>
       </div>
 
-      {/* Virtualized Spells Table/List */}
+      {/* Virtualized Spells Table/List or Grid */}
       {filteredSpells.length === 0 ? (
         <div className="p-12 text-center rounded-xl border border-dashed border-white/10 text-white/40 text-xs bg-[var(--surface)]">
           Nenhuma magia encontrada com os filtros selecionados.
+        </div>
+      ) : viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+          {filteredSpells.slice(0, 120).map((spell) => {
+            const hm = heroProgressionMap.get(Number(spell.id));
+            const corEscola = spell.cor || FONTE_CORES[spell.fonte || 'Arcana'] || '#8a6414';
+            const isLearned = Boolean(hm?.aprendida);
+            const isLiberada = Boolean(hm?.liberada_pelo_mestre);
+
+            return (
+              <div
+                key={spell.id}
+                data-testid={`dm-spell-card-${spell.id}`}
+                className="group flex flex-col justify-between rounded-xl border border-white/10 bg-[#161412] p-3 transition-all hover:-translate-y-0.5 hover:border-[var(--gold)]/60 hover:shadow-xl"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div
+                      className="w-8 h-8 rounded-lg flex flex-col items-center justify-center shrink-0 border text-white shadow-inner"
+                      style={{
+                        backgroundColor: `${corEscola}33`,
+                        borderColor: corEscola,
+                      }}
+                    >
+                      <span className="text-[9px] font-mono leading-none">C</span>
+                      <span className="text-xs font-bold leading-none">{spell.circulo}</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 justify-end">
+                      {spell.revisar_mestre && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+                          Arbitragem
+                        </span>
+                      )}
+                      {isLearned && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono flex items-center gap-1">
+                          <CheckCircle2 size={10} /> Conhece
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <h4
+                    onClick={() => setInspectMagia(spell)}
+                    className="font-serif font-bold text-sm text-[#ffd700] hover:underline cursor-pointer line-clamp-1"
+                    title={spell.nome}
+                  >
+                    {spell.nome}
+                  </h4>
+
+                  <div className="text-[11px] text-white/50 mt-0.5">
+                    {spell.escola || spell.fonte} · {spell.alcance || 'Toque'}
+                  </div>
+
+                  {spell.resumo && (
+                    <p className="mt-2 text-xs font-serif text-white/60 line-clamp-2 leading-relaxed">
+                      {spell.resumo}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between gap-1">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setInspectMagia(spell)}
+                      title="Ver detalhes da magia"
+                      className="p-1.5 rounded-lg text-white/50 hover:text-[var(--gold)] hover:bg-white/5 transition-colors"
+                    >
+                      <Eye size={15} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditingMagia(spell)}
+                      title="Editar fórmula mágica"
+                      className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      <Edit3 size={15} />
+                    </button>
+                  </div>
+
+                  {!isLearned && (
+                    <div className="flex items-center gap-1">
+                      {!isLiberada && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          data-testid={`dm-liberate-btn-${spell.id}`}
+                          onClick={() => liberarMutation.mutate({ characterId: selectedHeroId, magiaId: spell.id, magiaNome: spell.nome })}
+                          className="text-[10px] py-1 px-2 h-auto text-amber-400 hover:bg-amber-950/40"
+                        >
+                          <Globe size={11} className="mr-1" />
+                          Liberar
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        data-testid={`dm-teach-btn-${spell.id}`}
+                        onClick={() => ensinarMutation.mutate({ characterId: selectedHeroId, magiaId: spell.id, magiaNome: spell.nome })}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] py-1 px-2 h-auto font-serif"
+                      >
+                        <Sparkles size={11} className="mr-1" />
+                        Conceder
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div
@@ -349,4 +496,4 @@ export const DMSpellsCatalogTab: React.FC<DMSpellsCatalogTabProps> = ({
       )}
     </div>
   );
-};
+});

@@ -1,6 +1,5 @@
 import React from 'react';
 import { twMerge } from 'tailwind-merge';
-import { CountUp } from './CountUp';
 
 export interface StatSlabProps extends React.HTMLAttributes<HTMLDivElement> {
   label: string;
@@ -15,7 +14,7 @@ export const StatSlab: React.FC<StatSlabProps> = ({ label, value, unit, classNam
         {label}
       </div>
       <div className="font-['Cinzel',serif] font-bold text-[20px] text-[var(--gold-hi)] tabular-nums leading-tight">
-        {typeof value === 'number' ? <CountUp value={value} duration={260} /> : value}
+        {value}
         {unit && <small className="text-[11px] text-[var(--muted)] ml-1 font-normal">{unit}</small>}
       </div>
     </div>

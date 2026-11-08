@@ -155,11 +155,11 @@ export function MapPanel({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3.5 py-2 rounded-full border border-[#735429] bg-[#1a140f]/95 text-[#ecd395] font-cinzel text-xs tracking-wider shadow-[0_4px_16px_rgba(0,0,0,0.8)] backdrop-blur-md hover:border-[#c9a45c] hover:bg-[#251d14] transition-all"
+          className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3.5 py-2 rounded-md border border-[rgba(201,169,97,0.28)] bg-[#14120e]/95 text-[#f5ede0] font-cinzel text-xs tracking-wider shadow-[0_4px_16px_rgba(0,0,0,0.8)] backdrop-blur-md hover:border-[#c9a961] hover:bg-[#1c1812] transition-all"
           aria-expanded={false}
           aria-label="Abrir catálogo de lugares de Aldrenor"
         >
-          <Compass size={15} className="text-[#c9a45c]" />
+          <Compass size={15} className="text-[#c9a961]" />
           <span>Lugares de Aldrenor</span>
         </button>
       )}
@@ -175,22 +175,23 @@ export function MapPanel({
 
       {/* Painel Lateral / Sheet */}
       <aside
-        className={`fixed md:absolute top-0 left-0 bottom-0 z-40 w-full sm:w-85 md:w-96 bg-[#16120e]/98 border-r border-[#5a462b]/60 flex flex-col shadow-[8px_0_32px_rgba(0,0,0,0.85)] transition-transform duration-300 ${
+        className={`fixed md:absolute top-0 left-0 bottom-0 z-40 w-full sm:w-85 md:w-96 bg-[#14120e] border-r border-[rgba(201,169,97,0.22)] flex flex-col shadow-[8px_0_32px_rgba(0,0,0,0.85)] transition-transform duration-300 ${
           panelVisible ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Cabeçalho com Título e Botão de Fixar 📌 */}
-        <div className="border-b border-[#5a462b]/50 bg-gradient-to-b from-[#211a14] to-[#16120e] p-4 flex items-center justify-between">
+        <div className="relative border-b border-[rgba(201,169,97,0.22)] bg-gradient-to-b from-[#1a1712] to-[#14120e] p-4 flex items-center justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[rgba(201,169,97,0.6)] to-transparent pointer-events-none" />
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-cinzel text-lg font-bold tracking-widest text-[#ecd395] uppercase">
+              <h1 className="font-cinzel text-lg font-bold tracking-widest text-[#f5ede0] uppercase">
                 ALDRENOR
               </h1>
-              <span className="text-[10px] font-cinzel tracking-wider px-1.5 py-0.5 rounded border border-[#735429]/50 bg-[#2b2014] text-[#c9a45c]">
+              <span className="text-[10px] font-cinzel tracking-wider px-1.5 py-0.5 rounded border border-[rgba(201,169,97,0.25)] bg-[#0d0c0a] text-[#c9a961]">
                 Cartografia
               </span>
             </div>
-            <p className="text-[11px] font-serif italic text-[#a89070]">
+            <p className="text-[11px] font-serif italic text-[#9a917f]">
               Lugares, Capitais & Trilhas da Campanha
             </p>
           </div>
@@ -202,8 +203,8 @@ export function MapPanel({
               onClick={() => setIsPinned(!isPinned)}
               className={`p-1.5 rounded-md border transition-all ${
                 isPinned
-                  ? 'border-[#c9a45c] bg-[#c9a45c]/20 text-[#ecd395]'
-                  : 'border-[#4a3828] bg-[#1a140f] text-[#8c7b68] hover:text-[#ecd395]'
+                  ? 'border-[#c9a961] bg-[#c9a961]/20 text-[#f5ede0]'
+                  : 'border-[rgba(201,169,97,0.2)] bg-[#0d0c0a] text-[#9a917f] hover:text-[#f5ede0] hover:border-[#c9a961]'
               }`}
               title={isPinned ? 'Desafixar menu flutuante' : 'Fixar menu lateral aberto'}
               aria-label={isPinned ? 'Desafixar menu' : 'Fixar menu'}
@@ -218,7 +219,7 @@ export function MapPanel({
                 setIsOpen(false);
                 setIsPinned(false);
               }}
-              className="p-1.5 rounded-md border border-[#4a3828] bg-[#1a140f] text-[#8c7b68] hover:text-[#ecd395] transition-colors"
+              className="p-1.5 rounded-md border border-[rgba(201,169,97,0.2)] bg-[#0d0c0a] text-[#9a917f] hover:text-[#f5ede0] hover:border-[#c9a961] transition-colors"
               title="Fechar painel"
               aria-label="Fechar painel"
             >
@@ -229,9 +230,9 @@ export function MapPanel({
 
         {/* Controles do Confessor (Mestre) */}
         {isDM && (
-          <div className="border-b border-[#5a462b]/40 bg-[#1c140d]/90 p-2.5 space-y-2">
+          <div className="border-b border-[rgba(201,169,97,0.22)] bg-[#110f0c] p-2.5 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-cinzel tracking-wider text-[#c9a45c] uppercase">
+              <span className="text-[10px] font-cinzel tracking-wider text-[#c9a961] uppercase">
                 Ferramentas do Confessor
               </span>
               {onTogglePlayerView && (
@@ -240,8 +241,8 @@ export function MapPanel({
                   onClick={onTogglePlayerView}
                   className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-cinzel border ${
                     isPlayerView
-                      ? 'border-[#c9a45c] bg-[#c9a45c]/20 text-[#fef08a]'
-                      : 'border-[#4a3828] bg-[#120d09] text-[#a89070]'
+                      ? 'border-[#c9a961] bg-[#c9a961]/20 text-[#f5ede0]'
+                      : 'border-[rgba(201,169,97,0.2)] bg-[#0d0c0a] text-[#9a917f]'
                   }`}
                 >
                   {isPlayerView ? <Eye size={11} /> : <EyeOff size={11} />}
@@ -256,18 +257,18 @@ export function MapPanel({
                 onClick={onStartSignalMode}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-[11px] font-cinzel font-semibold border ${
                   isSignalMode
-                    ? 'border-[#facc15] bg-[#713f12] text-[#fef08a]'
-                    : 'border-[#5a462b] bg-[#221810] text-[#ecd395] hover:bg-[#2e2015]'
+                    ? 'border-[#c9a961] bg-[#3a2c14] text-[#f5ede0]'
+                    : 'border-[rgba(201,169,97,0.25)] bg-[#181510] text-[#f5ede0] hover:bg-[#201c15]'
                 }`}
               >
-                <Compass size={12} className="text-[#c9a45c]" />
+                <Compass size={12} className="text-[#c9a961]" />
                 <span>{isSignalMode ? 'Toque no mapa...' : 'Sinalizar (Ping)'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={onUndoRoute}
-                className="flex items-center gap-1 py-1.5 px-2 rounded text-[11px] font-cinzel border border-[#5a462b] bg-[#221810] text-[#a89070] hover:text-[#ecd395]"
+                className="flex items-center gap-1 py-1.5 px-2 rounded text-[11px] font-cinzel border border-[rgba(201,169,97,0.25)] bg-[#181510] text-[#9a917f] hover:text-[#f5ede0]"
                 title="Desfazer o último trecho da rota desenhada"
               >
                 <Undo2 size={12} />
@@ -277,7 +278,7 @@ export function MapPanel({
               <button
                 type="button"
                 onClick={() => setShowRegionsManager(!showRegionsManager)}
-                className="flex items-center gap-1 py-1.5 px-2 rounded text-[11px] font-cinzel border border-[#5a462b] bg-[#221810] text-[#a89070] hover:text-[#ecd395]"
+                className="flex items-center gap-1 py-1.5 px-2 rounded text-[11px] font-cinzel border border-[rgba(201,169,97,0.25)] bg-[#181510] text-[#9a917f] hover:text-[#f5ede0]"
               >
                 <Layers size={12} />
                 <span>Névoa</span>
@@ -287,8 +288,8 @@ export function MapPanel({
 
             {/* Subpainel de Névoa de Guerra por Região */}
             {showRegionsManager && (
-              <div className="p-2 rounded bg-[#100c09] border border-[#4a3828] max-h-36 overflow-y-auto space-y-1">
-                <span className="text-[10px] font-cinzel text-[#8c7b68] block mb-1">
+              <div className="p-2 rounded bg-[#0d0c0a] border border-[rgba(201,169,97,0.2)] max-h-36 overflow-y-auto space-y-1">
+                <span className="text-[10px] font-cinzel text-[#8a7850] block mb-1">
                   Interruptor de Descoberta:
                 </span>
                 {mapRegions.map((reg) => {
@@ -296,9 +297,9 @@ export function MapPanel({
                   return (
                     <div
                       key={reg.id}
-                      className="flex items-center justify-between text-xs font-serif py-0.5 px-1 hover:bg-[#1a140f] rounded"
+                      className="flex items-center justify-between text-xs font-serif py-0.5 px-1 hover:bg-[#1a1712] rounded"
                     >
-                      <span className={isDisc ? 'text-[#ecd395]' : 'text-[#6b5844]'}>
+                      <span className={isDisc ? 'text-[#f5ede0]' : 'text-[#6b6255]'}>
                         {reg.name}
                       </span>
                       <button
@@ -307,7 +308,7 @@ export function MapPanel({
                         className={`text-[10px] px-2 py-0.5 rounded border ${
                           isDisc
                             ? 'border-[#22c55e]/40 bg-[#22c55e]/15 text-[#86efac]'
-                            : 'border-[#4a3828] bg-[#120d09] text-[#8c7b68]'
+                            : 'border-[rgba(201,169,97,0.18)] bg-[#14120e] text-[#8a7850]'
                         }`}
                       >
                         {isDisc ? 'Revelada' : 'Oculta'}
@@ -320,20 +321,20 @@ export function MapPanel({
           </div>
         )}
 
-        {/* Busca no topo (Pílula --surface) & Filtros */}
-        <div className="border-b border-[#5a462b]/40 bg-[#16120e] p-3 space-y-2.5">
+        {/* Busca no topo & Filtros */}
+        <div className="border-b border-[rgba(201,169,97,0.22)] bg-[#14120e] p-3 space-y-2.5">
           {/* Pílula de busca */}
           <div className="relative">
             <Search
               size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8c7b68]"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a7850]"
             />
             <input
               type="search"
               placeholder="Buscar cidades, portos, ruínas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-full border border-[#5a462b]/70 bg-[#1e1711] text-xs font-serif text-[#ecd395] placeholder-[#8c7b68] focus:border-[#c9a45c] focus:outline-none transition-colors"
+              className="w-full pl-9 pr-3 py-1.5 rounded-md border border-[rgba(201,169,97,0.2)] bg-[#0d0c0a] text-xs font-serif text-[#f5ede0] placeholder-[#8a7850] focus:border-[#c9a961] focus:outline-none transition-colors"
             />
           </div>
 
@@ -345,7 +346,7 @@ export function MapPanel({
               const r = mapRegions.find((reg) => reg.id === e.target.value);
               if (r) onFlyTo(r.x, r.y, 2.5);
             }}
-            className="w-full px-2.5 py-1.5 rounded border border-[#5a462b]/60 bg-[#1a140f] text-xs font-serif text-[#ecd395] focus:border-[#c9a45c] focus:outline-none"
+            className="w-full px-2.5 py-1.5 rounded-md border border-[rgba(201,169,97,0.2)] bg-[#0d0c0a] text-xs font-serif text-[#f5ede0] focus:border-[#c9a961] focus:outline-none"
           >
             <option value="">Todas as 11 Regiões</option>
             {mapRegions.map((r) => (
@@ -364,10 +365,10 @@ export function MapPanel({
                   key={t}
                   type="button"
                   onClick={() => toggleType(t)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-serif whitespace-nowrap border transition-all ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-serif whitespace-nowrap border transition-all ${
                     active
-                      ? 'border-[#735429] bg-[#241a10] text-[#ecd395]'
-                      : 'border-[#3a2c1d]/40 bg-[#120d09] text-[#6b5844] opacity-50'
+                      ? 'border-[rgba(201,169,97,0.4)] bg-[#1c1812] text-[#f5ede0]'
+                      : 'border-[rgba(201,169,97,0.12)] bg-[#0a0907] text-[#6b6255] opacity-60'
                   }`}
                 >
                   <span dangerouslySetInnerHTML={{ __html: iconSVG(t) }} />
@@ -378,13 +379,13 @@ export function MapPanel({
           </div>
 
           {/* Toggles de Camadas (Rota, Estradas, Fronteiras) */}
-          <div className="flex items-center justify-between text-[11px] font-serif text-[#a89070] pt-1">
+          <div className="flex items-center justify-between text-[11px] font-serif text-[#9a917f] pt-1">
             <label className="flex items-center gap-1 cursor-pointer">
               <input
                 type="checkbox"
                 checked={layers.route}
                 onChange={() => handleLayerToggle('route')}
-                className="accent-[#c9a45c]"
+                className="accent-[#c9a961]"
               />
               <span>Rota</span>
             </label>
@@ -393,7 +394,7 @@ export function MapPanel({
                 type="checkbox"
                 checked={layers.roads}
                 onChange={() => handleLayerToggle('roads')}
-                className="accent-[#c9a45c]"
+                className="accent-[#c9a961]"
               />
               <span>Estradas</span>
             </label>
@@ -402,7 +403,7 @@ export function MapPanel({
                 type="checkbox"
                 checked={layers.borders}
                 onChange={() => handleLayerToggle('borders')}
-                className="accent-[#c9a45c]"
+                className="accent-[#c9a961]"
               />
               <span>Fronteiras</span>
             </label>
@@ -411,11 +412,12 @@ export function MapPanel({
 
         {/* Cartão do Lugar Selecionado */}
         {selectedPlace && (
-          <div className="border-b border-[#c9a45c]/40 bg-[#1f1710] p-4 relative animate-fade-in">
+          <div className="border-b border-[rgba(201,169,97,0.3)] bg-[#17140f] p-4 relative animate-fade-in">
+            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[rgba(201,169,97,0.5)] to-transparent pointer-events-none" />
             <button
               type="button"
               onClick={() => onSelectPlace(null)}
-              className="absolute top-3 right-3 text-[#8c7b68] hover:text-[#ecd395]"
+              className="absolute top-3 right-3 text-[#9a917f] hover:text-[#f5ede0]"
               title="Fechar detalhes"
             >
               ✕
@@ -427,10 +429,10 @@ export function MapPanel({
                 dangerouslySetInnerHTML={{ __html: iconSVG(selectedPlace.type) }}
               />
               <div className="flex-1 pr-4">
-                <h2 className="font-cinzel text-base font-bold text-[#ecd395] leading-tight">
+                <h2 className="font-cinzel text-base font-bold text-[#f5ede0] leading-tight">
                   {selectedPlace.name}
                 </h2>
-                <p className="text-[11px] font-serif text-[#c9a45c] mt-0.5">
+                <p className="text-[11px] font-serif text-[#c9a961] mt-0.5">
                   {typeLabels[selectedPlace.type] || selectedPlace.type} •{' '}
                   {regName[selectedPlace.region_id || selectedPlace.region || ''] || 'Aldrenor'}
                 </p>
@@ -445,20 +447,20 @@ export function MapPanel({
 
             {/* Tag de Visitado */}
             {selectedPlace.visited && (
-              <div className="mt-2.5 inline-flex items-center gap-1 px-2 py-0.5 rounded border border-[#c9a45c]/40 bg-[#c9a45c]/10 text-[10px] font-cinzel text-[#ecd395]">
+              <div className="mt-2.5 inline-flex items-center gap-1 px-2 py-0.5 rounded border border-[rgba(201,169,97,0.3)] bg-[rgba(201,169,97,0.1)] text-[10px] font-cinzel text-[#f5ede0]">
                 <span>✓ A mesa já passou por aqui</span>
               </div>
             )}
 
             {/* BOTÃO PRINCIPAL: CLICAR NUMA CIDADE ABRE O MAPA DA CIDADE */}
             {isCityLike(selectedPlace.type) && (
-              <div className="mt-3 pt-2.5 border-t border-[#4a3828]/50">
+              <div className="mt-3 pt-2.5 border-t border-[rgba(201,169,97,0.18)]">
                 <button
                   type="button"
                   onClick={() => onOpenCityMap?.(selectedPlace)}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded border border-[#c9a45c] bg-gradient-to-r from-[#2e2014] to-[#3a2a19] text-[#ecd395] font-cinzel text-xs font-bold tracking-wider hover:from-[#3a2a19] hover:to-[#4a3828] shadow-[0_2px_10px_rgba(201,164,92,0.25)] transition-all"
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded border border-[rgba(201,169,97,0.35)] bg-gradient-to-r from-[#1c1812] to-[#262017] text-[#f5ede0] font-cinzel text-xs font-bold tracking-wider hover:border-[#c9a961] hover:from-[#262017] hover:to-[#332a1e] shadow-[0_2px_10px_rgba(201,169,97,0.15)] transition-all"
                 >
-                  <Castle size={14} className="text-[#c9a45c]" />
+                  <Castle size={14} className="text-[#c9a961]" />
                   <span>Explorar Mapa da Cidade</span>
                 </button>
               </div>
@@ -466,7 +468,7 @@ export function MapPanel({
 
             {/* Ações do Mestre */}
             {isDM && !isPlayerView && (
-              <div className="mt-3 pt-2 border-t border-[#4a3828]/50 space-y-2">
+              <div className="mt-3 pt-2 border-t border-[rgba(201,169,97,0.18)] space-y-2">
                 {selectedPlace.desc_secret && (
                   <div className="p-2 rounded border border-dashed border-[#dc2626]/60 bg-[#7f1d1d]/15 text-xs font-serif text-[#fca5a5]">
                     <strong className="font-cinzel text-[10px] block text-[#fca5a5] uppercase">
@@ -484,7 +486,7 @@ export function MapPanel({
                         discovered: !selectedPlace.discovered,
                       })
                     }
-                    className="flex-1 py-1 px-2 rounded text-[10px] font-cinzel border border-[#5a462b] bg-[#1a140f] text-[#ecd395]"
+                    className="flex-1 py-1 px-2 rounded text-[10px] font-cinzel border border-[rgba(201,169,97,0.25)] bg-[#14120e] text-[#f5ede0]"
                   >
                     {selectedPlace.discovered ? 'Ocultar' : 'Revelar'}
                   </button>
@@ -496,7 +498,7 @@ export function MapPanel({
                         visited: !selectedPlace.visited,
                       })
                     }
-                    className="flex-1 py-1 px-2 rounded text-[10px] font-cinzel border border-[#5a462b] bg-[#1a140f] text-[#ecd395]"
+                    className="flex-1 py-1 px-2 rounded text-[10px] font-cinzel border border-[rgba(201,169,97,0.25)] bg-[#14120e] text-[#f5ede0]"
                   >
                     {selectedPlace.visited ? 'Não Visitado' : 'Marcar Visitado'}
                   </button>
@@ -515,7 +517,7 @@ export function MapPanel({
         )}
 
         {/* Contador */}
-        <div className="px-4 py-2 border-b border-[#5a462b]/30 bg-[#120e0b] text-[11px] font-serif text-[#8c7b68] flex items-center justify-between">
+        <div className="px-4 py-2 border-b border-[rgba(201,169,97,0.18)] bg-[#0d0c0a] text-[11px] font-serif text-[#9a917f] flex items-center justify-between">
           <span>{filteredPlaces.length} lugares encontrados</span>
           <span>{mapRegions.length} províncias</span>
         </div>
@@ -536,7 +538,7 @@ export function MapPanel({
 
             return (
               <div key={r.id} className="space-y-1">
-                <div className="text-[10px] font-cinzel font-bold tracking-wider text-[#c9a45c] uppercase px-2 py-0.5 bg-[#1f1710]/60 rounded">
+                <div className="text-[10px] font-cinzel font-bold tracking-wider text-[#c9a961] uppercase px-2 py-0.5 bg-[#17140f] rounded border border-[rgba(201,169,97,0.15)]">
                   {r.name}
                 </div>
 
@@ -553,8 +555,8 @@ export function MapPanel({
                         }}
                         className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-left transition-all ${
                           isSelected
-                            ? 'bg-[#2b2014] border border-[#c9a45c]/60 shadow-[0_1px_4px_rgba(201,164,92,0.2)]'
-                            : 'hover:bg-[#1a140f] border border-transparent'
+                            ? 'bg-[#1e1913] border border-[rgba(201,169,97,0.4)] shadow-[0_1px_4px_rgba(201,169,97,0.2)]'
+                            : 'hover:bg-[#14120e] border border-transparent'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -564,13 +566,13 @@ export function MapPanel({
                           />
                           <span
                             className={`text-xs font-serif truncate ${
-                              isSelected ? 'text-[#fef08a] font-bold' : 'text-[#ecd395]'
+                              isSelected ? 'text-[#f5ede0] font-bold' : 'text-[#cfc1ad]'
                             }`}
                           >
                             {p.name}
                           </span>
                         </div>
-                        <span className="text-[10px] font-serif text-[#8c7b68] shrink-0 ml-2">
+                        <span className="text-[10px] font-serif text-[#8a7850] shrink-0 ml-2">
                           {typeLabels[p.type] || p.type}
                         </span>
                       </button>

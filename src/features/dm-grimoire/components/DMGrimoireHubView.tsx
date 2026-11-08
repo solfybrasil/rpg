@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import {
   BookOpen,
   Sparkles,
@@ -15,18 +15,20 @@ import { useAllSpellsCatalog } from '../api/useDMGrimoire';
 
 type DMSubTab = 'grimorio' | 'catalogo' | 'provacoes' | 'arvores';
 
-export const DMGrimoireHubView: React.FC = () => {
+export const DMGrimoireHubView: React.FC = memo(() => {
   const [activeTab, setActiveTab] = useState<DMSubTab>('grimorio');
   const [selectedHeroId, setSelectedHeroId] = useState<string>('kaelis_moonfire');
 
   const { data: catalog = [] } = useAllSpellsCatalog();
 
-  // Pending count for arbitration badge
-  const pendingArbitrationCount = catalog.filter(
-    (s) =>
-      Boolean(s.revisar_mestre) ||
-      (Array.isArray(s.efeitos) && s.efeitos.some((e: any) => e.bloco === 'narrativo')),
-  ).length;
+  // Pending count for arbitration badge (memoizado para evitar re-scan de 1000 magias)
+  const pendingArbitrationCount = useMemo(() => {
+    return catalog.filter(
+      (s) =>
+        Boolean(s.revisar_mestre) ||
+        (Array.isArray(s.efeitos) && s.efeitos.some((e: any) => e.bloco === 'narrativo')),
+    ).length;
+  }, [catalog]);
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-1)] p-4 sm:p-6 lg:p-8 space-y-6">
@@ -135,4 +137,4 @@ export const DMGrimoireHubView: React.FC = () => {
       </div>
     </div>
   );
-};
+});

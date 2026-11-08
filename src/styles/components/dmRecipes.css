@@ -1,0 +1,596 @@
+/* ==========================================================================
+   DM RECIPES TAB — Apple Dark Glassmorphism Standard
+   Compêndio de Fórmulas da Forja, Alquimia & Culinária (Grade 3x3)
+   ========================================================================== */
+
+.apple-recipes-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+/* ── Banner Superior do Compêndio ── */
+.apple-recipes-header-banner {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.018) 100%);
+  border: 1px solid var(--hair);
+  border-radius: var(--r-xl, 24px);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.6);
+  background: rgba(18, 16, 14, 0.95);
+}
+
+.apple-recipes-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.apple-recipes-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(245, 182, 91, 0.12);
+  border: 1px solid rgba(245, 182, 91, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(245, 182, 91, 0.12);
+}
+
+.apple-recipes-header-title {
+  margin: 0;
+  font-family: 'Cinzel', 'Inter', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.apple-recipes-header-desc {
+  margin: 3px 0 0;
+  font-size: 0.76rem;
+  color: var(--text-2);
+}
+
+.apple-recipes-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Segmented Control Apple ── */
+.apple-recipes-seg-control {
+  display: flex;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm, 10px);
+  padding: 3px;
+  gap: 2px;
+}
+
+.apple-recipes-seg-btn {
+  padding: 0.38rem 0.85rem;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--text-2);
+  background: transparent;
+}
+
+.apple-recipes-seg-btn:hover {
+  color: var(--text);
+}
+
+.apple-recipes-seg-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Botões Apple da Aba de Receitas ── */
+.apple-recipes-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0.45rem 0.95rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--hair-2);
+  border-radius: var(--r-sm, 10px);
+  color: var(--text);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.apple-recipes-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.apple-recipes-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1208;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(245, 182, 91, 0.25);
+}
+
+.apple-recipes-btn.primary:hover {
+  background: #fcd58b;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(245, 182, 91, 0.35);
+}
+
+/* ── Barra de Estações e Filtros Apple ── */
+.apple-recipes-filters-bar {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--hair);
+  border-radius: var(--r-lg, 16px);
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.apple-recipes-filters-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Pílulas de Estações em Scroll Horizontal */
+.apple-recipes-station-pills {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.apple-recipes-station-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.apple-station-pill-btn {
+  padding: 0.34rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  border: 1px solid var(--hair);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-station-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  border-color: var(--hair-2);
+}
+
+.apple-station-pill-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.25);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Campo de Busca Spotlight */
+.apple-recipes-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 220px;
+  max-width: 360px;
+}
+
+.apple-recipes-search-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 30px 0 32px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--hair-2);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.78rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.apple-recipes-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(245, 182, 91, 0.18);
+}
+
+.apple-recipes-filters-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.apple-recipes-select {
+  padding: 0.35rem 0.65rem;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--hair-2);
+  border-radius: var(--r-sm, 8px);
+  color: var(--text);
+  font-size: 0.72rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.apple-recipes-select:focus {
+  border-color: var(--accent);
+}
+
+/* ── Barra de Metadados & Paginação ── */
+.apple-recipes-meta-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 4px;
+  font-size: 0.74rem;
+  color: var(--text-2);
+}
+
+.apple-recipes-pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.apple-page-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm, 8px);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hair);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+}
+
+.apple-page-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--hair-2);
+}
+
+.apple-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Grade de Cards de Receitas ── */
+.apple-recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.apple-recipe-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--hair);
+  border-radius: var(--r-md, 16px);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, background 0.2s, box-shadow 0.25s;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.apple-recipe-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--hair-2);
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.55);
+}
+
+.apple-recipe-card.inactive {
+  opacity: 0.6;
+}
+
+.apple-recipe-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.apple-recipe-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.apple-recipe-station-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--hair);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.apple-recipe-title-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.apple-recipe-name {
+  font-family: 'Cinzel', 'Inter', serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.apple-recipe-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 0.68rem;
+  color: var(--text-2);
+}
+
+.apple-recipe-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Mini Grade 3x3 no Card ── */
+.apple-recipe-card-body {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--r-sm, 12px);
+  padding: 8px 10px;
+}
+
+.apple-mini-grid-3x3 {
+  display: grid;
+  grid-template-columns: repeat(3, 14px);
+  grid-template-rows: repeat(3, 14px);
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.apple-mini-slot {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.15s ease;
+}
+
+.apple-mini-slot.filled-forja {
+  background: rgba(245, 182, 91, 0.55);
+  border-color: var(--accent);
+}
+
+.apple-mini-slot.filled-alquimia {
+  background: rgba(48, 209, 88, 0.55);
+  border-color: #30d158;
+}
+
+.apple-mini-slot.filled-cozinha {
+  background: rgba(255, 159, 10, 0.55);
+  border-color: #ff9f0a;
+}
+
+.apple-recipe-ingredients-summary {
+  font-size: 0.72rem;
+  color: var(--text-2);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* ── Rodapé do Card ── */
+.apple-recipe-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.apple-card-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.apple-card-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Modais Apple de Receitas ── */
+.apple-recipes-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 1.25rem;
+  animation: appleModalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-recipes-modal-window {
+  background: linear-gradient(180deg, rgba(28, 25, 23, 0.98) 0%, rgba(16, 14, 12, 0.99) 100%);
+  border: 1px solid var(--hair-2);
+  border-radius: var(--r-xl, 24px);
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hair-2) transparent;
+  padding: 1.75rem;
+  box-shadow: 0 32px 80px -16px rgba(0, 0, 0, 0.95);
+  animation: appleModalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.apple-recipes-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+.apple-recipes-modal-title {
+  margin: 0;
+  font-family: 'Cinzel', 'Inter', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Grade 3x3 Interativa Grande (Detalhes & Editor) */
+.apple-workbench-3x3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.apple-workbench-slot {
+  height: 85px;
+  border-radius: var(--r-sm, 12px);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--hair);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  cursor: pointer;
+  position: relative;
+  text-align: center;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.apple-workbench-slot:hover {
+  border-color: var(--accent);
+  background: rgba(245, 182, 91, 0.08);
+}
+
+.apple-workbench-slot.has-item {
+  border-color: rgba(245, 182, 91, 0.4);
+  background: rgba(245, 182, 91, 0.06);
+}
+
+.apple-workbench-slot-num {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 0.58rem;
+  color: var(--text-3);
+  font-weight: 700;
+}
+
+.apple-workbench-slot-text {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+/* Feed de Tentativas da Bancada (Histórico) */
+.apple-craft-attempts-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.apple-craft-attempt-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--hair);
+  border-radius: var(--r-md, 14px);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.18s ease;
+}
+
+.apple-craft-attempt-card:hover {
+  border-color: var(--hair-2);
+}

@@ -11,7 +11,7 @@ import {
   Sparkles,
   Sword,
 } from 'lucide-react';
-import React from 'react';
+import React, { memo } from 'react';
 import { Badge, type BadgeVariant, Button, CoinsBadge } from '../../../shared/ui/index.ts';
 import type { ItemCatalog } from '../api/types.ts';
 
@@ -70,7 +70,7 @@ interface ItemCatalogCardGridProps {
   isLoading?: boolean;
 }
 
-export const ItemCatalogCardGrid: React.FC<ItemCatalogCardGridProps> = ({
+export const ItemCatalogCardGrid: React.FC<ItemCatalogCardGridProps> = memo(({
   items,
   totalCount,
   page,
@@ -314,4 +314,4 @@ export const ItemCatalogCardGrid: React.FC<ItemCatalogCardGridProps> = ({
       </div>
     </div>
   );
-};
+});

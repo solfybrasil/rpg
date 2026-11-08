@@ -1,4 +1,5 @@
-import { Gift, Loader2, Package, Search, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import type React from 'react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { searchItemCatalog } from '../api/dmService';
@@ -31,7 +32,6 @@ export function GiveItemModal({ hero, onClose, onGiveItem }: GiveItemModalProps)
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Busca no catálogo do servidor com debounce
   useEffect(() => {
     let active = true;
     const timer = setTimeout(async () => {
@@ -57,7 +57,7 @@ export function GiveItemModal({ hero, onClose, onGiveItem }: GiveItemModalProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem && !customName.trim()) {
-      toast.error('Selecione um item do catálogo ou informe o nome customizado.');
+      toast.error('Selecione um item do catálogo ou informe um nome customizado.');
       return;
     }
 
@@ -67,7 +67,7 @@ export function GiveItemModal({ hero, onClose, onGiveItem }: GiveItemModalProps)
       const cat = selectedItem ? selectedItem.category : 'Dádiva';
       const desc =
         customDesc.trim() ||
-        (selectedItem ? `Item oficial concedido pelo Mestre.` : 'Dádiva sagrada forjada pelo Mestre.');
+        (selectedItem ? 'Item oficial concedido pelo Mestre.' : 'Dádiva forjada pelo Mestre.');
 
       await onGiveItem(hero.id, {
         name,
@@ -78,67 +78,108 @@ export function GiveItemModal({ hero, onClose, onGiveItem }: GiveItemModalProps)
         rarity: selectedItem?.rarity || 'comum',
       });
 
+      toast.success(`Dádiva "${name}" concedida a ${hero.name}!`);
       onClose();
     } catch (err) {
       console.error(err);
+      toast.error('Erro ao conceder item.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl bg-[#140e0a] border border-[#8c6941]/60 shadow-[0_24px_64px_rgba(0,0,0,0.9)] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-stone-800 bg-[#1a120d]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400">
-              <Gift className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-heading text-lg font-bold text-amber-100">
-                Conceder Dádiva a {hero.name}
-              </h2>
-              <p className="text-xs text-stone-400">
-                Busca direta no catálogo de itens do servidor
-              </p>
-            </div>
-          </div>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        background: 'rgba(8, 6, 4, 0.88)',
+        backdropFilter: 'blur(8px)',
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="panel"
+        style={{
+          width: '100%',
+          maxWidth: '560px',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          borderRadius: 2,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Cabeçalho */}
+        <div className="panel-head">
+          <h2>
+            <span style={{ color: 'var(--gold)', marginRight: 6 }}>♧</span>
+            Conceder Dádiva a {hero.name}
+          </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--muted)',
+              fontSize: 16,
+              cursor: 'pointer',
+            }}
           >
-            <X className="w-5 h-5" />
+            ✕
           </button>
         </div>
 
-        {/* Corpo com busca */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
-          {/* Campo de Busca no Servidor */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+        {/* Corpo do formulário */}
+        <form onSubmit={handleSubmit} style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>Busca no Compêndio</div>
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar item no catálogo oficial..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-stone-900/90 border border-stone-700/80 text-stone-100 text-sm placeholder:text-stone-500 focus:outline-none focus:border-amber-500 transition"
+              placeholder="Buscar arma, poção, pergaminho ou relíquia..."
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                background: '#120e0b',
+                border: '1px solid var(--line-soft)',
+                color: 'var(--text)',
+                fontFamily: 'Crimson Pro, Georgia, serif',
+                fontSize: 16,
+                borderRadius: 2,
+              }}
             />
           </div>
 
-          {/* Lista de resultados do catálogo */}
-          <div className="border border-stone-800/80 rounded-xl overflow-hidden bg-black/40">
-            <div className="p-2 border-b border-stone-800 text-[11px] font-heading uppercase text-stone-400 flex items-center justify-between">
-              <span>Catálogo ({catalogItems.length} itens encontrados)</span>
-              {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />}
+          {/* Lista de itens encontrados */}
+          <div style={{ border: '1px solid var(--line-soft)', borderRadius: 2, background: '#100e0b70' }}>
+            <div style={{
+              padding: '8px 12px',
+              borderBottom: '1px solid var(--line-soft)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              font: '500 11px Cinzel, serif',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--gold)',
+            }}>
+              <span>Itens no Catálogo ({catalogItems.length})</span>
+              {isLoading && <Loader2 size={13} className="animate-spin" />}
             </div>
 
-            <div className="max-h-52 overflow-y-auto divide-y divide-stone-800/60">
+            <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, padding: 4 }}>
               {catalogItems.length === 0 && !isLoading && (
-                <div className="p-4 text-center text-xs text-stone-500">
-                  Nenhum item encontrado no catálogo com o termo pesquisado. Você pode cadastrar um
-                  item customizado abaixo.
+                <div style={{ padding: 14, textAlign: 'center', color: 'var(--muted)', fontSize: 14, fontStyle: 'italic' }}>
+                  Nenhum item encontrado. Preencha o nome customizado abaixo para forjar.
                 </div>
               )}
               {catalogItems.map((item) => {
@@ -147,102 +188,88 @@ export function GiveItemModal({ hero, onClose, onGiveItem }: GiveItemModalProps)
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedItem(isSelected ? null : item);
-                      if (!isSelected) {
-                        setCustomName(item.name);
-                      }
+                    onClick={() => setSelectedItem(isSelected ? null : item)}
+                    className="quick-action"
+                    style={{
+                      padding: '8px 12px',
+                      background: isSelected ? 'linear-gradient(90deg, #59402542, #15110d)' : '#100e0b70',
+                      borderColor: isSelected ? 'var(--gold)' : 'transparent',
                     }}
-                    className={`w-full text-left p-3 flex items-center justify-between transition ${
-                      isSelected
-                        ? 'bg-amber-950/60 text-amber-200'
-                        : 'hover:bg-stone-900/80 text-stone-300'
-                    }`}
                   >
-                    <div>
-                      <div className="font-heading font-semibold text-xs sm:text-sm">
-                        {item.name}
-                      </div>
-                      <div className="text-[11px] text-stone-400">
-                        {item.category} • {item.rarity || 'comum'}
-                      </div>
+                    <span className="qicon" style={{ fontSize: 16 }}>{item.category === 'arma' ? '⚔' : item.category === 'armadura' ? '♜' : '♧'}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <strong style={{ display: 'block', fontSize: 14, color: isSelected ? 'var(--gold-light)' : 'var(--text)' }}>{item.name}</strong>
+                      <span style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>{item.category} · {item.rarity || 'comum'}</span>
                     </div>
-                    {isSelected && (
-                      <span className="text-xs font-heading font-bold text-amber-400">
-                        ✓ Selecionado
-                      </span>
-                    )}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Configuração de Quantidade e Customização */}
-          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-stone-800">
-            <div>
-              <label className="block text-xs font-heading text-stone-400 mb-1">Quantidade</label>
-              <input
-                type="number"
-                min="1"
-                max="99"
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg bg-stone-900 border border-stone-700 text-stone-100 text-sm focus:border-amber-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-heading text-stone-400 mb-1">
-                Nome Customizado (Opcional)
-              </label>
+          {/* Item Customizado caso não seja do catálogo */}
+          {!selectedItem && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 10, background: '#120e0b', border: '1px solid var(--line-soft)', borderRadius: 2 }}>
+              <div className="eyebrow">Ou Forjar Artigo Customizado</div>
               <input
                 type="text"
+                placeholder="Nome do item ou bênção..."
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
-                placeholder="Ex: Poção do Alvorecer"
-                className="w-full px-3 py-2 rounded-lg bg-stone-900 border border-stone-700 text-stone-100 text-sm focus:border-amber-500 focus:outline-none"
+                style={{
+                  width: '100%',
+                  padding: '7px 10px',
+                  background: '#15120f',
+                  border: '1px solid var(--line-soft)',
+                  color: 'var(--text)',
+                  fontSize: 15,
+                  borderRadius: 2,
+                }}
+              />
+              <textarea
+                placeholder="Descrição narrativa ou efeito..."
+                rows={2}
+                value={customDesc}
+                onChange={(e) => setCustomDesc(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '7px 10px',
+                  background: '#15120f',
+                  border: '1px solid var(--line-soft)',
+                  color: 'var(--text)',
+                  fontSize: 14,
+                  borderRadius: 2,
+                  resize: 'none',
+                }}
               />
             </div>
-          </div>
+          )}
 
-          <div>
-            <label className="block text-xs font-heading text-stone-400 mb-1">
-              Descrição ou Nota (Opcional)
-            </label>
-            <textarea
-              rows={2}
-              value={customDesc}
-              onChange={(e) => setCustomDesc(e.target.value)}
-              placeholder="Instruções ou efeito especial narrado pelo Mestre..."
-              className="w-full px-3 py-2 rounded-lg bg-stone-900 border border-stone-700 text-stone-100 text-xs focus:border-amber-500 focus:outline-none resize-none"
-            />
-          </div>
-        </div>
+          {/* Quantidade e Ação */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--line-soft)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, color: 'var(--muted)', font: '500 11px Cinzel, serif' }}>QUANTIDADE:</span>
+              <button
+                type="button"
+                className="stepper-btn"
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              >−</button>
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold-light)', minWidth: 20, textAlign: 'center' }}>{quantity}</span>
+              <button
+                type="button"
+                className="stepper-btn"
+                onClick={() => setQuantity((q) => q + 1)}
+              >＋</button>
+            </div>
 
-        {/* Rodapé de Ações */}
-        <div className="flex items-center justify-end gap-3 p-4 border-t border-stone-800 bg-[#1a120d]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-xs font-heading text-stone-400 hover:text-white transition"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-5 py-2 rounded-lg font-heading font-bold text-xs uppercase tracking-wider text-stone-950 bg-gradient-to-b from-amber-400 to-amber-600 hover:brightness-110 active:scale-95 transition flex items-center gap-2 shadow-lg disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Gift className="w-4 h-4" />
-            )}
-            <span>Conceder Item</span>
-          </button>
-        </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn secondary" onClick={onClose}>Cancelar</button>
+              <button type="submit" className="btn" disabled={isSubmitting}>
+                {isSubmitting ? 'Outorgando...' : 'Outorgar Dádiva →'}
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

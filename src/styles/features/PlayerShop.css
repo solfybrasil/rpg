@@ -1,0 +1,460 @@
+/* ==========================================================================
+   PLAYER SHOP — Dark Fantasy Grim, Antique Gold & Obsidian
+   Styled with exact visual fidelity to PlayerInventory.css design system.
+   ========================================================================== */
+
+.player-shop-root {
+  width: 100%;
+  max-width: 1200px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 1rem 1.25rem calc(3.5rem + env(safe-area-inset-bottom, 16px));
+  color: #efe3c8;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 840px) {
+  .player-shop-root {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0.5rem 0.65rem calc(2.5rem + env(safe-area-inset-bottom, 20px));
+    gap: 0.75rem;
+    overflow-x: hidden;
+  }
+}
+
+/* ── ALERTA DE MERCADO FECHADO ── */
+.shop-closed-alert {
+  background: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fca5a5;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.shop-closed-title {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #f87171;
+  letter-spacing: 0.04em;
+}
+
+.shop-closed-desc {
+  font-size: 0.75rem;
+  color: #e2e8f0;
+  margin-top: 2px;
+}
+
+/* ── BANNER PRINCIPAL DA LOJA ── */
+.shop-banner {
+  background: #14120e;
+  border: 1px solid rgba(201, 169, 97, 0.22);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.shop-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(201, 169, 97, 0.6), transparent);
+  pointer-events: none;
+}
+
+.shop-identity-group {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.shop-icon-frame {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: #1e1913;
+  border: 1px solid rgba(201, 169, 97, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c9a961;
+  box-shadow: 0 0 12px rgba(201, 169, 97, 0.15);
+  flex-shrink: 0;
+}
+
+.shop-title-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.shop-title {
+  margin: 0;
+  font-family: var(--font-title, 'Cinzel', serif);
+  color: #f5ede0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.2;
+}
+
+.shop-status-tag {
+  font-size: 0.62rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.shop-status-tag.open {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #86efac;
+}
+
+.shop-status-tag.closed {
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fecaca;
+}
+
+.shop-exchange-sub {
+  margin: 3px 0 0;
+  font-size: 0.72rem;
+  color: #9a917f;
+  font-family: var(--font-title, 'Cinzel', serif);
+}
+
+/* ── BOLSA PESSOAL DE MOEDAS ── */
+.shop-wallet-box {
+  background: #0d0c0a;
+  border: 1px solid rgba(201, 169, 97, 0.2);
+  border-radius: 6px;
+  padding: 0.55rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.shop-wallet-kicker {
+  font-size: 0.58rem;
+  font-family: var(--font-title, 'Cinzel', serif);
+  color: #c9a961;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* ── NAVEGAÇÃO DE ABAS E FILTROS ── */
+.shop-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(201, 169, 97, 0.18);
+  padding-bottom: 0.65rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.shop-tabs-group {
+  display: flex;
+  gap: 6px;
+}
+
+.shop-tab-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 5px;
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.16s ease;
+  user-select: none;
+}
+
+.shop-tab-btn.buy.active {
+  background: linear-gradient(180deg, #8f191d 0%, #5e1013 100%);
+  border: 1px solid #ef4444;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.shop-tab-btn.sell.active {
+  background: linear-gradient(180deg, #ca8a04 0%, #854d0e 100%);
+  border: 1px solid #f59e0b;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.shop-tab-btn:not(.active) {
+  background: #14120e;
+  border: 1px solid rgba(201, 169, 97, 0.2);
+  color: #9a917f;
+}
+
+.shop-tab-btn:not(.active):hover {
+  background: #1c1812;
+  border-color: rgba(201, 169, 97, 0.45);
+  color: #f5ede0;
+}
+
+.shop-filters-group {
+  display: flex;
+  gap: 4px;
+}
+
+.shop-chip {
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-family: var(--font-title, 'Cinzel', serif);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.shop-chip.active {
+  background: #2a2218;
+  border-color: #c9a961;
+  color: #f5ede0;
+  font-weight: 600;
+}
+
+.shop-chip:not(.active) {
+  background: #0d0c0a;
+  border-color: rgba(201, 169, 97, 0.15);
+  color: #8c8272;
+}
+
+.shop-chip:not(.active):hover {
+  color: #e8e2d4;
+  border-color: rgba(201, 169, 97, 0.35);
+}
+
+/* ── GRADE DE ITENS ── */
+.shop-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .shop-items-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+}
+
+/* ── CARTÃO DO ITEM ── */
+.shop-item-card {
+  background: #14120e;
+  border: 1px solid rgba(201, 169, 97, 0.2);
+  border-radius: 6px;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  position: relative;
+  transition: border-color 0.16s ease, transform 0.16s ease;
+}
+
+.shop-item-card:hover {
+  border-color: rgba(201, 169, 97, 0.45);
+  transform: translateY(-1px);
+}
+
+.shop-item-top {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.45rem;
+}
+
+.shop-item-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 5px;
+  background: #0d0c0a;
+  border: 1px solid rgba(201, 169, 97, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.shop-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shop-item-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.shop-item-name {
+  margin: 0;
+  font-family: var(--font-title, 'Cinzel', serif);
+  color: #f5ede0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shop-item-tags {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.shop-tag-rarity {
+  font-size: 0.62rem;
+  background: #241c14;
+  border: 1px solid rgba(201, 169, 97, 0.35);
+  color: #c9a961;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-weight: 600;
+}
+
+.shop-tag-cat {
+  font-size: 0.62rem;
+  color: #94a3b8;
+}
+
+.shop-item-badges {
+  font-size: 0.7rem;
+  color: #c4b59f;
+  margin: 0.4rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-family: var(--font-mono, monospace);
+}
+
+.shop-badge-stat {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.shop-badge-stat.damage {
+  background: rgba(220, 38, 38, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.shop-badge-stat.defense {
+  background: rgba(14, 165, 233, 0.18);
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  color: #7dd3fc;
+}
+
+.shop-badge-stat.neutral {
+  background: rgba(201, 169, 97, 0.12);
+  border: 1px solid rgba(201, 169, 97, 0.28);
+  color: #e6cf94;
+}
+
+.shop-item-desc {
+  margin: 0.4rem 0 0.7rem;
+  font-size: 0.75rem;
+  color: #9a917f;
+  font-family: var(--font-body, Georgia, serif);
+  font-style: italic;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.shop-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(201, 169, 97, 0.14);
+  padding-top: 0.55rem;
+  margin-top: 0.45rem;
+}
+
+.shop-btn-action {
+  padding: 0.35rem 0.85rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.16s ease;
+  user-select: none;
+}
+
+.shop-btn-action.buy {
+  background: linear-gradient(180deg, #ecc05c 0%, #b8860b 100%);
+  border: 1px solid #fef08a;
+  color: #1a140d;
+  box-shadow: 0 0 10px rgba(236, 192, 92, 0.25);
+}
+
+.shop-btn-action.buy:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.shop-btn-action.sell {
+  background: linear-gradient(180deg, #ca8a04 0%, #854d0e 100%);
+  border: 1px solid #f59e0b;
+  color: #f5ede0;
+  box-shadow: 0 0 10px rgba(202, 138, 4, 0.25);
+}
+
+.shop-btn-action.sell:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.shop-btn-action:disabled {
+  background: #1b1712 !important;
+  border-color: rgba(201, 169, 97, 0.15) !important;
+  color: #6b6255 !important;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}

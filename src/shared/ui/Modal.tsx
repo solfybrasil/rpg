@@ -6,6 +6,12 @@ import { X } from 'lucide-react';
 import React from 'react';
 import { twMerge } from 'tailwind-merge';
 
+/** Renderiza modais dentro da tela do mestre (quando aberta) para herdar o tema dela. */
+const getThemeContainer = () =>
+  typeof document === 'undefined'
+    ? undefined
+    : (document.querySelector<HTMLElement>('.mestre-root') ?? undefined);
+
 export interface ModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,7 +31,7 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
+      <DialogPrimitive.Portal container={getThemeContainer()}>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
           className={twMerge(
@@ -81,7 +87,7 @@ export const Sheet: React.FC<SheetProps> = ({
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
+      <DialogPrimitive.Portal container={getThemeContainer()}>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
           className={twMerge(

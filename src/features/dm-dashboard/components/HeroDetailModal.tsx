@@ -1,24 +1,9 @@
-import {
-  AlertTriangle,
-  Award,
-  BookOpen,
-  Camera,
-  Check,
-  Edit3,
-  Heart,
-  Loader2,
-  Package,
-  Plus,
-  Save,
-  Shield,
-  Sparkles,
-  Trash2,
-  X,
-  Zap,
-} from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import type React from 'react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { queryKeys, supabase } from '../../../shared/supabase';
+import { fromBronze, toBronze } from '../../../entities/item';
+import { supabase } from '../../../shared/supabase';
 import type { HeroDashboardItem, InventoryRow } from '../types';
 
 interface HeroDetailModalProps {
@@ -42,6 +27,16 @@ const COMMON_CONDITIONS = [
   'Inconsciente',
 ];
 
+type TabKey = 'sheet' | 'skills' | 'inventory' | 'oath' | 'conditions';
+
+const TABS: { key: TabKey; label: string; icon: string }[] = [
+  { key: 'sheet', label: 'Identidade & Atributos', icon: '♙' },
+  { key: 'skills', label: 'Perícias & Testes D20', icon: '⚔' },
+  { key: 'inventory', label: 'Mochila & Carga', icon: '♧' },
+  { key: 'oath', label: 'Juramento & Lore', icon: '▤' },
+  { key: 'conditions', label: 'Condições & Aflitos', icon: '⚠' },
+];
+
 export function HeroDetailModal({
   hero,
   onClose,
@@ -50,43 +45,98 @@ export function HeroDetailModal({
   onRemoveCondition,
   onSaveHeroDetails,
 }: HeroDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<'inventory' | 'sheet' | 'oath'>('sheet');
+  const [activeTab, setActiveTab] = useState<TabKey>('sheet');
   const [items, setItems] = useState<InventoryRow[]>([]);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Estados locais para edição dos dados da ficha
+  // 1. Identidade
   const [editName, setEditName] = useState('');
+  const [editTitle, setEditTitle] = useState('');
   const [editRace, setEditRace] = useState('');
   const [editCaminho, setEditCaminho] = useState('');
-  const [editMaxHealth, setEditMaxHealth] = useState(10);
-  const [editMaxFocus, setEditMaxFocus] = useState(3);
-  const [editDefense, setEditDefense] = useState(8);
+  const [editLevel, setEditLevel] = useState(1);
+  const [editXp, setEditXp] = useState(0);
+
+  // 2. Atributos Principais
   const [editAttributes, setEditAttributes] = useState({
     corpo: 0,
     astucia: 0,
     vontade: 0,
     presenca: 0,
   });
+
+  // 3. Vitais e Limites
+  const [editHealth, setEditHealth] = useState(10);
+  const [editMaxHealth, setEditMaxHealth] = useState(10);
+  const [editFocus, setEditFocus] = useState(3);
+  const [editMaxFocus, setEditMaxFocus] = useState(3);
+  const [editPlague, setEditPlague] = useState(0);
+  const [editSaciedade, setEditSaciedade] = useState(8);
+  const [editInspiration, setEditInspiration] = useState(0);
+  const [editDefense, setEditDefense] = useState(8);
+  const [editExausto, setEditExausto] = useState(false);
+
+  // 4. Moedas (Ouro, Prata, Bronze)
+  const [editGold, setEditGold] = useState(0);
+  const [editSilver, setEditSilver] = useState(0);
+  const [editBronze, setEditBronze] = useState(0);
+
+  // 5. Perícias & Rolagens
+  const [editSkills, setEditSkills] = useState<Array<{ name: string; bonus: number; nivel?: number }>>([]);
+  const [newSkillName, setNewSkillName] = useState('');
+  const [newSkillBonus, setNewSkillBonus] = useState(1);
+  const [skillRolls, setSkillRolls] = useState<Record<string, { roll: number; raw: number; isCrit: boolean; isFumble: boolean }>>({});
+
+  // 6. Juramento e Lore
+  const [editOathType, setEditOathType] = useState('');
   const [editOath, setEditOath] = useState('');
   const [editOathPower, setEditOathPower] = useState('');
+  const [editOathItem, setEditOathItem] = useState('');
+  const [editGift, setEditGift] = useState('');
   const [editBackstory, setEditBackstory] = useState('');
+
+  // 7. Condição Customizada
   const [customCondName, setCustomCondName] = useState('');
 
   useEffect(() => {
     if (!hero) return;
-    setEditName(hero.name);
-    setEditRace(hero.race);
-    setEditCaminho(hero.caminho);
-    setEditMaxHealth(hero.maxHealth);
-    setEditMaxFocus(hero.maxFocus);
-    setEditDefense(hero.defense);
+
+    setEditName(hero.name || '');
+    setEditTitle(hero.epithet || '');
+    setEditRace(hero.race || '');
+    setEditCaminho(hero.caminho || '');
+    setEditLevel(Number(hero.raw.level ?? 1));
+    setEditXp(Number(hero.raw.xp ?? 0));
+
     setEditAttributes({ ...hero.attributes });
+
+    setEditHealth(hero.health);
+    setEditMaxHealth(hero.maxHealth);
+    setEditFocus(hero.focus);
+    setEditMaxFocus(hero.maxFocus);
+    setEditPlague(hero.plague);
+    setEditSaciedade(hero.saciedade);
+    setEditInspiration(hero.inspiration);
+    setEditDefense(hero.defense);
+    setEditExausto(hero.exausto);
+
+    const coins = fromBronze(hero.coinsBronze);
+    setEditGold(coins.gold);
+    setEditSilver(coins.silver);
+    setEditBronze(coins.bronze);
+
+    setEditSkills(hero.skills || []);
+
+    setEditOathType(hero.oathType || '');
     setEditOath(hero.oath || '');
     setEditOathPower(hero.oathPower || '');
+    setEditOathItem(hero.oathItem || '');
+    setEditGift(hero.gift || '');
     setEditBackstory(hero.backstory || '');
 
-    // Busca inventário do herói
+    setSkillRolls({});
+
     setIsLoadingItems(true);
     supabase
       .from('inventory_items')
@@ -100,25 +150,61 @@ export function HeroDetailModal({
 
   if (!hero) return null;
 
+  const rollSkill = (skillName: string, bonus: number) => {
+    const raw = Math.floor(Math.random() * 20) + 1;
+    const total = raw + bonus;
+    setSkillRolls((prev) => ({
+      ...prev,
+      [skillName]: {
+        roll: total,
+        raw,
+        isCrit: raw === 20,
+        isFumble: raw === 1,
+      },
+    }));
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onSaveHeroDetails(hero.id, {
-        name: editName,
-        race: editRace,
-        caminho: editCaminho,
-        max_health: editMaxHealth,
-        max_focus: editMaxFocus,
-        defense: editDefense,
-        attributes: editAttributes,
-        oath: editOath,
-        oath_power: editOathPower,
-        backstory: editBackstory,
+      const totalCoinsBronze = toBronze({
+        gold: editGold,
+        silver: editSilver,
+        bronze: editBronze,
       });
-      toast.success('Ficha atualizada com sucesso!');
+
+      await onSaveHeroDetails(hero.id, {
+        name: editName.trim() || hero.name,
+        title: editTitle.trim() || null,
+        race: editRace.trim() || hero.race,
+        caminho: editCaminho.trim() || hero.caminho,
+        level: editLevel,
+        xp: editXp,
+        attributes: editAttributes,
+        health: editHealth,
+        max_health: editMaxHealth,
+        focus: editFocus,
+        max_focus: editMaxFocus,
+        plague: editPlague,
+        saciedade: editSaciedade,
+        inspiration: editInspiration,
+        defense: editDefense,
+        exausto: editExausto,
+        coins_bronze: totalCoinsBronze,
+        skills: editSkills,
+        oath_type: editOathType.trim() || hero.oathType,
+        oath: editOath.trim() || hero.oath,
+        oath_power: editOathPower.trim() || null,
+        oath_item: editOathItem.trim() || null,
+        gift: editGift.trim() || null,
+        backstory: editBackstory.trim() || null,
+      });
+
+      toast.success(`Ficha de ${editName} atualizada!`);
       onClose();
     } catch (err) {
-      toast.error('Erro ao salvar ficha.');
+      console.error(err);
+      toast.error('Erro ao salvar ficha do herói.');
     } finally {
       setIsSaving(false);
     }
@@ -128,332 +214,559 @@ export function HeroDetailModal({
     if (!cond.trim()) return;
     await onApplyCondition(hero.id, cond.trim());
     setCustomCondName('');
+    toast.success(`Condição "${cond.trim()}" aplicada.`);
+  };
+
+  const handleAddSkill = () => {
+    if (!newSkillName.trim()) return;
+    setEditSkills((prev) => [...prev, { name: newSkillName.trim(), bonus: newSkillBonus }]);
+    setNewSkillName('');
+    setNewSkillBonus(1);
+    toast.success(`Perícia "${newSkillName.trim()}" vinculada.`);
+  };
+
+  const handleRemoveSkill = (name: string) => {
+    setEditSkills((prev) => prev.filter((s) => s.name !== name));
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl max-h-[92vh] flex flex-col rounded-2xl bg-[#140e0a] border border-[#8c6941]/60 shadow-[0_24px_64px_rgba(0,0,0,0.9)] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-stone-800 bg-[#1a120d]">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl overflow-hidden border border-amber-500/50 bg-[#100b08] flex-shrink-0">
-              {hero.portraitUrl ? (
-                <img src={hero.portraitUrl} alt={hero.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center font-heading font-bold text-amber-300">
-                  {hero.name.slice(0, 2).toUpperCase()}
-                </div>
-              )}
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        background: 'rgba(8, 6, 4, 0.92)',
+        backdropFilter: 'blur(10px)',
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="panel"
+        style={{
+          width: '100%',
+          maxWidth: '1200px',
+          height: '88vh',
+          display: 'grid',
+          gridTemplateColumns: '360px 1fr',
+          overflow: 'hidden',
+          borderRadius: 2,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── COLUNA ESQUERDA: DOSSIÊ & VITAIS FIXOS DO JURADO ── */}
+        <div
+          style={{
+            background: 'linear-gradient(180deg, #18130f 0%, #100d0a 100%)',
+            borderRight: '1px solid var(--line)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+            padding: '24px 20px',
+            gap: 16,
+          }}
+        >
+          {/* Topo do Dossiê */}
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+            <div className="portrait" style={{ width: 68, height: 76, fontSize: 32 }}>
+              {hero.portraitUrl ? <img src={hero.portraitUrl} alt={hero.name} /> : '♙'}
             </div>
             <div>
-              <h2 className="font-heading text-lg sm:text-xl font-bold text-amber-100 flex items-center gap-2">
-                <span>{hero.name}</span>
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    hero.isOnline ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-stone-600'
-                  }`}
-                />
-              </h2>
-              <p className="text-xs text-amber-500/80 font-heading">
-                {hero.race} • {hero.caminho}
-              </p>
+              <div className="eyebrow">Dossiê do Confessor</div>
+              <h2 style={{ fontSize: 18, color: 'var(--gold-light)', margin: '3px 0 2px' }}>{editName}</h2>
+              <div style={{ fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>
+                {editCaminho} · {editRace}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--gold)', marginTop: 4 }}>
+                Nível <strong>{editLevel}</strong> ({editXp} XP)
+              </div>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+          {/* Voto do Juramento */}
+          <div style={{ padding: '10px 12px', background: '#120e0b', border: '1px solid var(--line-soft)', borderRadius: 2 }}>
+            <span style={{ font: '500 10px Cinzel, serif', color: 'var(--gold)', letterSpacing: '0.14em', display: 'block', marginBottom: 4 }}>
+              ◈ VOTO DO JURAMENTO
+            </span>
+            <p style={{ margin: 0, fontStyle: 'italic', fontSize: 13, color: '#c4b59f', lineHeight: 1.4 }}>
+              "{editOath || 'Nenhum voto selado ainda.'}"
+            </p>
+          </div>
 
-        {/* Barra de Abas */}
-        <div className="flex items-center border-b border-stone-800 bg-black/40 px-4 sm:px-5">
-          <button
-            type="button"
-            onClick={() => setActiveTab('sheet')}
-            className={`px-4 py-3 font-heading text-xs uppercase tracking-wider font-semibold border-b-2 transition ${
-              activeTab === 'sheet'
-                ? 'border-amber-500 text-amber-200'
-                : 'border-transparent text-stone-400 hover:text-stone-200'
-            }`}
-          >
-            Ficha & Atributos
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('inventory')}
-            className={`px-4 py-3 font-heading text-xs uppercase tracking-wider font-semibold border-b-2 transition ${
-              activeTab === 'inventory'
-                ? 'border-amber-500 text-amber-200'
-                : 'border-transparent text-stone-400 hover:text-stone-200'
-            }`}
-          >
-            Mochila ({items.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('oath')}
-            className={`px-4 py-3 font-heading text-xs uppercase tracking-wider font-semibold border-b-2 transition ${
-              activeTab === 'oath'
-                ? 'border-amber-500 text-amber-200'
-                : 'border-transparent text-stone-400 hover:text-stone-200'
-            }`}
-          >
-            Juramento & História
-          </button>
-        </div>
+          {/* Medidores Vitais com Steppers Táteis Imediatos */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="eyebrow">Status Vitais & Condição</div>
 
-        {/* Conteúdo da Aba */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
-          {activeTab === 'sheet' && (
-            <div className="space-y-6">
-              {/* Atributos Principais */}
+            {/* Vida */}
+            <div style={{ padding: '8px 10px', background: '#130f0c', border: '1px solid var(--line-soft)', borderRadius: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                <span style={{ color: 'var(--text)', font: '500 11px Cinzel, serif' }}>VIDA (HP)</span>
+                <span style={{ color: editHealth <= 3 ? '#ff453a' : '#30d158', fontWeight: 700 }}>
+                  {editHealth} / {editMaxHealth}
+                </span>
+              </div>
+              <div className="bar" style={{ height: 6, marginBottom: 6 }}>
+                <i style={{
+                  width: `${Math.min(100, Math.round((editHealth / editMaxHealth) * 100))}%`,
+                  background: editHealth <= 3 ? 'linear-gradient(90deg, #5a1414, #a82222)' : 'linear-gradient(90deg, #642a24, #a84c3c)',
+                }} />
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button type="button" className="stepper-btn" onClick={() => setEditHealth((h) => Math.max(0, h - 1))}>-1</button>
+                <button type="button" className="stepper-btn" onClick={() => setEditHealth((h) => Math.min(editMaxHealth, h + 1))}>+1</button>
+                <button type="button" className="stepper-btn" onClick={() => setEditHealth((h) => Math.min(editMaxHealth, h + 5))}>+5</button>
+                <span style={{ flex: 1 }} />
+                <button type="button" className="stepper-btn" title="Ajustar Máximo" onClick={() => setEditMaxHealth((m) => Math.max(1, m + 1))}>+Max</button>
+              </div>
+            </div>
+
+            {/* Foco */}
+            <div style={{ padding: '8px 10px', background: '#130f0c', border: '1px solid var(--line-soft)', borderRadius: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                <span style={{ color: 'var(--text)', font: '500 11px Cinzel, serif' }}>FOCO</span>
+                <span style={{ color: '#64d2ff', fontWeight: 700 }}>
+                  {editFocus} / {editMaxFocus}
+                </span>
+              </div>
+              <div className="bar blue" style={{ height: 6, marginBottom: 6 }}>
+                <i style={{ width: `${Math.min(100, Math.round((editFocus / editMaxFocus) * 100))}%` }} />
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button type="button" className="stepper-btn" onClick={() => setEditFocus((f) => Math.max(0, f - 1))}>-1</button>
+                <button type="button" className="stepper-btn" onClick={() => setEditFocus((f) => Math.min(editMaxFocus, f + 1))}>+1</button>
+              </div>
+            </div>
+
+            {/* Peste */}
+            <div style={{ padding: '8px 10px', background: '#130f0c', border: '1px solid var(--line-soft)', borderRadius: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                <span style={{ color: 'var(--text)', font: '500 11px Cinzel, serif' }}>PESTE (CORRUPÇÃO)</span>
+                <span style={{ color: '#bf5af2', fontWeight: 700 }}>{editPlague} / 10</span>
+              </div>
+              <div className="bar" style={{ height: 6, marginBottom: 6 }}>
+                <i style={{ width: `${Math.min(100, editPlague * 10)}%`, background: 'linear-gradient(90deg, #4a1d6e, #8b3dbc)' }} />
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button type="button" className="stepper-btn" onClick={() => setEditPlague((p) => Math.max(0, p - 1))}>-1</button>
+                <button type="button" className="stepper-btn" onClick={() => setEditPlague((p) => Math.min(10, p + 1))}>+1</button>
+              </div>
+            </div>
+
+            {/* Saciedade */}
+            <div style={{ padding: '8px 10px', background: '#130f0c', border: '1px solid var(--line-soft)', borderRadius: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                <span style={{ color: 'var(--text)', font: '500 11px Cinzel, serif' }}>SACIEDADE</span>
+                <span style={{ color: '#c5a36a', fontWeight: 700 }}>{editSaciedade} / 10</span>
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button type="button" className="stepper-btn" onClick={() => setEditSaciedade((s) => Math.max(0, s - 1))}>-1</button>
+                <button type="button" className="stepper-btn" onClick={() => setEditSaciedade((s) => Math.min(10, s + 1))}>+1</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Moedas */}
+          <div style={{ padding: '10px 12px', background: '#120e0b', border: '1px solid var(--line-soft)', borderRadius: 2 }}>
+            <span style={{ font: '500 10px Cinzel, serif', color: 'var(--gold)', letterSpacing: '0.14em', display: 'block', marginBottom: 6 }}>
+              BOLSA DE MOEDAS
+            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, textAlign: 'center' }}>
               <div>
-                <h4 className="text-xs font-heading uppercase tracking-wider text-amber-500/90 mb-3">
-                  Atributos Principais
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {(['corpo', 'astucia', 'vontade', 'presenca'] as const).map((attr) => (
-                    <div
-                      key={attr}
-                      className="p-3 rounded-xl bg-stone-900/80 border border-stone-800 text-center"
-                    >
-                      <span className="block text-[11px] font-heading uppercase text-stone-400 mb-1">
-                        {attr}
-                      </span>
+                <span style={{ fontSize: 11, color: '#ffd700', display: 'block' }}>OURO</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginTop: 2 }}>
+                  <button type="button" className="stepper-btn" onClick={() => setEditGold((g) => Math.max(0, g - 1))}>-</button>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>{editGold}</span>
+                  <button type="button" className="stepper-btn" onClick={() => setEditGold((g) => g + 1)}>+</button>
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: 11, color: '#e0d8d0', display: 'block' }}>PRATA</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginTop: 2 }}>
+                  <button type="button" className="stepper-btn" onClick={() => setEditSilver((s) => Math.max(0, s - 1))}>-</button>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>{editSilver}</span>
+                  <button type="button" className="stepper-btn" onClick={() => setEditSilver((s) => s + 1)}>+</button>
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: 11, color: '#cd7f32', display: 'block' }}>BRONZE</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginTop: 2 }}>
+                  <button type="button" className="stepper-btn" onClick={() => setEditBronze((b) => Math.max(0, b - 5))}>-</button>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>{editBronze}</span>
+                  <button type="button" className="stepper-btn" onClick={() => setEditBronze((b) => b + 5)}>+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── COLUNA DIREITA: ABAS DE EDIÇÃO & ROLAGENS ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Barra de Sub-abas */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 20px',
+            borderBottom: '1px solid var(--line)',
+            background: '#15110d',
+          }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setActiveTab(t.key)}
+                  style={{
+                    background: activeTab === t.key ? 'linear-gradient(#372a1b99, #17120f99)' : 'transparent',
+                    border: `1px solid ${activeTab === t.key ? '#725936' : 'transparent'}`,
+                    color: activeTab === t.key ? '#f0d6a3' : '#b7a78d',
+                    padding: '8px 12px',
+                    font: '500 11px Cinzel, serif',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span>{t.icon}</span>
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: 18, cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Conteúdo da Aba */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+            {/* ── ABA 1: IDENTIDADE & ATRIBUTOS ── */}
+            {activeTab === 'sheet' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div>
+                  <div className="eyebrow" style={{ marginBottom: 8 }}>Identidade do Jurado</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Nome</label>
                       <input
-                        type="number"
-                        value={editAttributes[attr]}
-                        onChange={(e) =>
-                          setEditAttributes({
-                            ...editAttributes,
-                            [attr]: Number(e.target.value),
-                          })
-                        }
-                        className="w-16 mx-auto text-center font-heading text-lg font-bold text-amber-200 bg-stone-950 border border-stone-700 rounded-md py-1"
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        style={{ width: '100%', padding: '8px 10px', background: '#120e0b', border: '1px solid var(--line-soft)', color: 'var(--text)' }}
                       />
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Vitals Máximos & Defesa */}
-              <div>
-                <h4 className="text-xs font-heading uppercase tracking-wider text-amber-500/90 mb-3">
-                  Limites Vitais & Defesa
-                </h4>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3 rounded-xl bg-stone-900/80 border border-stone-800 text-center">
-                    <span className="block text-[11px] font-heading uppercase text-emerald-400 mb-1">
-                      Vida Máxima
-                    </span>
-                    <input
-                      type="number"
-                      value={editMaxHealth}
-                      onChange={(e) => setEditMaxHealth(Number(e.target.value))}
-                      className="w-16 mx-auto text-center font-heading text-lg font-bold text-emerald-300 bg-stone-950 border border-stone-700 rounded-md py-1"
-                    />
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-stone-900/80 border border-stone-800 text-center">
-                    <span className="block text-[11px] font-heading uppercase text-sky-400 mb-1">
-                      Foco Máximo
-                    </span>
-                    <input
-                      type="number"
-                      value={editMaxFocus}
-                      onChange={(e) => setEditMaxFocus(Number(e.target.value))}
-                      className="w-16 mx-auto text-center font-heading text-lg font-bold text-sky-300 bg-stone-950 border border-stone-700 rounded-md py-1"
-                    />
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-stone-900/80 border border-stone-800 text-center">
-                    <span className="block text-[11px] font-heading uppercase text-amber-400 mb-1">
-                      Defesa
-                    </span>
-                    <input
-                      type="number"
-                      value={editDefense}
-                      onChange={(e) => setEditDefense(Number(e.target.value))}
-                      className="w-16 mx-auto text-center font-heading text-lg font-bold text-amber-200 bg-stone-950 border border-stone-700 rounded-md py-1"
-                    />
+                    <div>
+                      <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Título / Epíteto</label>
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        style={{ width: '100%', padding: '8px 10px', background: '#120e0b', border: '1px solid var(--line-soft)', color: 'var(--text)' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Raça</label>
+                      <input
+                        type="text"
+                        value={editRace}
+                        onChange={(e) => setEditRace(e.target.value)}
+                        style={{ width: '100%', padding: '8px 10px', background: '#120e0b', border: '1px solid var(--line-soft)', color: 'var(--text)' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Caminho</label>
+                      <input
+                        type="text"
+                        value={editCaminho}
+                        onChange={(e) => setEditCaminho(e.target.value)}
+                        style={{ width: '100%', padding: '8px 10px', background: '#120e0b', border: '1px solid var(--line-soft)', color: 'var(--text)' }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Condições & Efeitos */}
-              <div>
-                <h4 className="text-xs font-heading uppercase tracking-wider text-amber-500/90 mb-3">
-                  Condições Ativas
-                </h4>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {hero.conditions.length === 0 && (
-                    <span className="text-xs text-stone-500 italic">Nenhuma condição ativa.</span>
-                  )}
-                  {hero.conditions.map((cond) => (
-                    <span
-                      key={cond}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/50 border border-red-500/50 text-xs font-heading text-red-200"
-                    >
-                      <span>{cond}</span>
-                      <button
-                        type="button"
-                        onClick={() => onRemoveCondition(hero.id, cond)}
-                        className="hover:text-white transition"
+                {/* Atributos Primordiais com Modificadores */}
+                <div>
+                  <div className="eyebrow" style={{ marginBottom: 8 }}>Atributos Primordiais</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                    {Object.entries(editAttributes).map(([attr, val]) => (
+                      <div
+                        key={attr}
+                        style={{
+                          background: '#120e0b',
+                          border: '1px solid var(--line-soft)',
+                          borderRadius: 2,
+                          padding: 12,
+                          textAlign: 'center',
+                        }}
                       >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </span>
-                  ))}
+                        <span style={{ font: '500 11px Cinzel, serif', color: 'var(--gold)', textTransform: 'uppercase', display: 'block' }}>
+                          {attr}
+                        </span>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold-light)', margin: '6px 0' }}>
+                          {val >= 0 ? `+${val}` : val}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+                          <button
+                            type="button"
+                            className="stepper-btn"
+                            onClick={() => setEditAttributes((prev) => ({ ...prev, [attr]: val - 1 }))}
+                          >−</button>
+                          <button
+                            type="button"
+                            className="stepper-btn"
+                            onClick={() => setEditAttributes((prev) => ({ ...prev, [attr]: val + 1 }))}
+                          >＋</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── ABA 2: PERÍCIAS & TESTES D20 ── */}
+            {activeTab === 'skills' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="eyebrow">Perícias Sob Juramento & Rolador D20</div>
+                  <div style={{ fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>
+                    Clique no botão de rolar para executar o teste na hora
+                  </div>
                 </div>
 
-                {/* Adicionar Condição Rápida */}
-                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-stone-800">
+                {/* Grid de Perícias com D20 Instantâneo */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                  {editSkills.map((skill) => {
+                    const last = skillRolls[skill.name];
+                    return (
+                      <div
+                        key={skill.name}
+                        className="quick-action"
+                        style={{ justifyContent: 'space-between', padding: '10px 14px' }}
+                      >
+                        <div>
+                          <strong style={{ fontSize: 15, color: 'var(--text)' }}>{skill.name}</strong>
+                          <span style={{ fontSize: 12, color: 'var(--gold)', display: 'block' }}>
+                            Modificador: +{skill.bonus}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {last && (
+                            <span style={{
+                              font: '700 14px Cinzel, serif',
+                              color: last.isCrit ? '#30d158' : last.isFumble ? '#ff453a' : 'var(--gold-light)',
+                            }}>
+                              🎲 {last.roll} {last.isCrit ? '(CRÍTICO!)' : last.isFumble ? '(FALHA!)' : ''}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className="btn"
+                            style={{ padding: '6px 10px', fontSize: 10 }}
+                            onClick={() => rollSkill(skill.name, skill.bonus)}
+                          >
+                            Rolar D20
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSkill(skill.name)}
+                            style={{ background: 'transparent', border: 'none', color: '#ff453a', cursor: 'pointer', fontSize: 13 }}
+                            title="Remover Perícia"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Adicionar Perícia */}
+                <div style={{ display: 'flex', gap: 10, marginTop: 8, padding: 12, background: '#120e0b', border: '1px solid var(--line-soft)', borderRadius: 2 }}>
+                  <input
+                    type="text"
+                    placeholder="Nome da perícia (ex: Atletismo, Medicina, Ocultismo)..."
+                    value={newSkillName}
+                    onChange={(e) => setNewSkillName(e.target.value)}
+                    style={{ flex: 1, padding: '7px 10px', background: '#16120e', border: '1px solid var(--line-soft)', color: 'var(--text)' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>Bônus:</span>
+                    <button type="button" className="stepper-btn" onClick={() => setNewSkillBonus((b) => Math.max(0, b - 1))}>-</button>
+                    <span style={{ fontWeight: 700, minWidth: 20, textAlign: 'center' }}>+{newSkillBonus}</span>
+                    <button type="button" className="stepper-btn" onClick={() => setNewSkillBonus((b) => b + 1)}>+</button>
+                  </div>
+                  <button type="button" className="btn secondary" onClick={handleAddSkill}>
+                    ＋ Adicionar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── ABA 3: MOCHILA & CARGA ── */}
+            {activeTab === 'inventory' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="eyebrow">Mochila do Jurado ({items.length} itens guardados)</div>
+
+                {isLoadingItems ? (
+                  <div style={{ padding: 20, textAlign: 'center', color: 'var(--gold)' }}>
+                    <Loader2 size={18} className="animate-spin" />
+                  </div>
+                ) : items.length === 0 ? (
+                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted)', fontStyle: 'italic' }}>
+                    A mochila está vazia. Use a ação "Conceder Dádiva" para colocar armas ou relíquias aqui.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="quick-action"
+                        style={{ justifyContent: 'space-between', padding: '10px 14px' }}
+                      >
+                        <div>
+                          <strong style={{ fontSize: 15, color: 'var(--text)' }}>
+                            {item.custom_name || item.item_name || 'Item Desconhecido'}
+                          </strong>
+                          <span style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic', display: 'block' }}>
+                            {item.category || 'Geral'} · Quantidade: {item.quantity || 1}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn secondary"
+                          style={{ color: '#ff453a', borderColor: '#5a2222' }}
+                          onClick={async () => {
+                            await onRemoveItem(item.id, hero.id);
+                            setItems((prev) => prev.filter((i) => i.id !== item.id));
+                            toast.success('Item removido.');
+                          }}
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── ABA 4: JURAMENTO & LORE ── */}
+            {activeTab === 'oath' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <div className="eyebrow" style={{ marginBottom: 4 }}>Texto do Juramento Sagrado</div>
+                  <textarea
+                    rows={3}
+                    value={editOath}
+                    onChange={(e) => setEditOath(e.target.value)}
+                    style={{ width: '100%', padding: '10px', background: '#120e0b', border: '1px solid var(--line-soft)', color: 'var(--text)', fontStyle: 'italic' }}
+                  />
+                </div>
+                <div>
+                  <div className="eyebrow" style={{ marginBottom: 4 }}>Poder Desperto do Voto</div>
+                  <input
+                    type="text"
+                    value={editOathPower}
+                    onChange={(e) => setEditOathPower(e.target.value)}
+                    placeholder="Descrição do poder único..."
+                    style={{ width: '100%', padding: '8px 10px', background: '#120e0b', border: '1px solid var(--line-soft)', color: 'var(--text)' }}
+                  />
+                </div>
+                <div>
+                  <div className="eyebrow" style={{ marginBottom: 4 }}>História / Notas Secretas do Mestre</div>
+                  <textarea
+                    rows={4}
+                    value={editBackstory}
+                    onChange={(e) => setEditBackstory(e.target.value)}
+                    placeholder="Anotações de campanha, passados sombrios ou revelações..."
+                    style={{ width: '100%', padding: '10px', background: '#120e0b', border: '1px solid var(--line-soft)', color: 'var(--text)' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ── ABA 5: CONDIÇÕES & AFLITOS ── */}
+            {activeTab === 'conditions' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="eyebrow">Condições Comuns (Clique para Aplicar)</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {COMMON_CONDITIONS.map((cond) => {
-                    const alreadyHas = hero.conditions.includes(cond);
+                    const has = hero.conditions?.includes(cond);
                     return (
                       <button
                         key={cond}
                         type="button"
-                        disabled={alreadyHas}
-                        onClick={() => handleAddCondition(cond)}
-                        className={`px-2 py-1 rounded text-[11px] font-heading transition ${
-                          alreadyHas
-                            ? 'opacity-40 bg-stone-900 text-stone-600'
-                            : 'bg-stone-900 border border-stone-700 hover:border-amber-500/60 text-stone-300'
-                        }`}
+                        onClick={async () => {
+                          if (has) {
+                            await onRemoveCondition(hero.id, cond);
+                            toast.success(`Condição "${cond}" removida.`);
+                          } else {
+                            await handleAddCondition(cond);
+                          }
+                        }}
+                        className={`btn ${has ? '' : 'secondary'}`}
+                        style={{
+                          borderColor: has ? '#8d302b' : undefined,
+                          background: has ? '#3d1614' : undefined,
+                          color: has ? '#ff8a82' : undefined,
+                        }}
                       >
-                        + {cond}
+                        {has ? '✓ ' : '＋ '} {cond}
                       </button>
                     );
                   })}
                 </div>
-              </div>
-            </div>
-          )}
 
-          {activeTab === 'inventory' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-heading uppercase tracking-wider text-amber-500/90">
-                  Itens no Inventário ({items.length})
-                </h4>
-              </div>
-
-              {isLoadingItems ? (
-                <div className="p-8 text-center text-xs text-stone-400">
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-amber-400" />
-                  Carregando mochila...
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <input
+                    type="text"
+                    placeholder="Condição customizada (ex: Maldição da Cinza)..."
+                    value={customCondName}
+                    onChange={(e) => setCustomCondName(e.target.value)}
+                    style={{ flex: 1, padding: '8px 10px', background: '#120e0b', border: '1px solid var(--line-soft)', color: 'var(--text)' }}
+                  />
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    onClick={() => handleAddCondition(customCondName)}
+                  >
+                    Aplicar
+                  </button>
                 </div>
-              ) : items.length === 0 ? (
-                <div className="p-8 text-center text-xs text-stone-500 border border-dashed border-stone-800 rounded-xl">
-                  A mochila deste herói está vazia no momento.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3 rounded-xl bg-stone-900/80 border border-stone-800 flex items-center justify-between gap-3"
-                    >
-                      <div className="min-w-0">
-                        <div className="font-heading text-xs sm:text-sm font-semibold text-amber-100 truncate">
-                          {item.name}{' '}
-                          {item.quantity && item.quantity > 1 && (
-                            <span className="text-amber-400">×{item.quantity}</span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-stone-400 truncate">
-                          {item.category} • {item.rarity || 'comum'}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (window.confirm(`Remover "${item.name}" da mochila?`)) {
-                            await onRemoveItem(item.id, hero.id);
-                            setItems((prev) => prev.filter((i) => i.id !== item.id));
-                          }
-                        }}
-                        className="p-1.5 rounded-lg text-stone-500 hover:text-red-400 hover:bg-stone-800 transition"
-                        title="Descartar/Remover item"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'oath' && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-heading uppercase text-amber-500/90 mb-1">
-                  Texto do Juramento Sagrado
-                </label>
-                <textarea
-                  rows={3}
-                  value={editOath}
-                  onChange={(e) => setEditOath(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-stone-900 border border-stone-700 text-stone-200 text-xs font-serif italic focus:border-amber-500 focus:outline-none"
-                />
               </div>
-
-              <div>
-                <label className="block text-xs font-heading uppercase text-amber-500/90 mb-1">
-                  Poder / Benefício do Juramento
-                </label>
-                <input
-                  type="text"
-                  value={editOathPower}
-                  onChange={(e) => setEditOathPower(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-stone-900 border border-stone-700 text-stone-200 text-xs focus:border-amber-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-heading uppercase text-amber-500/90 mb-1">
-                  História / Passado (Backstory)
-                </label>
-                <textarea
-                  rows={4}
-                  value={editBackstory}
-                  onChange={(e) => setEditBackstory(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-stone-900 border border-stone-700 text-stone-300 text-xs focus:border-amber-500 focus:outline-none"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Rodapé */}
-        <div className="flex items-center justify-end gap-3 p-4 border-t border-stone-800 bg-[#1a120d]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-xs font-heading text-stone-400 hover:text-white transition"
-          >
-            Fechar
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="px-5 py-2 rounded-lg font-heading font-bold text-xs uppercase tracking-wider text-stone-950 bg-gradient-to-b from-amber-400 to-amber-600 hover:brightness-110 active:scale-95 transition flex items-center gap-2 shadow-lg disabled:opacity-50"
-          >
-            {isSaving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
             )}
-            <span>Salvar Alterações</span>
-          </button>
+          </div>
+
+          {/* Rodapé de Ações */}
+          <div style={{
+            padding: '14px 24px',
+            borderTop: '1px solid var(--line)',
+            background: '#120e0b',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+            <button type="button" className="btn secondary" onClick={onClose}>
+              Cancelar
+            </button>
+            <button type="button" className="btn" disabled={isSaving} onClick={handleSave}>
+              {isSaving ? 'Gravando nos Tomos...' : 'Salvar Alterações na Ficha →'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

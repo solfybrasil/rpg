@@ -159,48 +159,6 @@ body {
   transform: rotate(45deg);
 }
 
-/* Barra superior de status (StatusBar) */
-.status {
-  height: 36px;
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: linear-gradient(180deg, #1b1815, #100e0d);
-  border-bottom: 1px solid #2b251f;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.status .who {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--display);
-  color: var(--text);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-}
-
-.mini-port {
-  width: 22px;
-  height: 22px;
-  border: 1px solid var(--gold);
-  background: radial-gradient(circle at 50% 35%, #5b4328, #1a130b);
-  display: grid;
-  place-items: center;
-}
-
-.status .gold-count {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--display);
-  color: var(--gold-hi);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
 /* Orbes de Vidro nos cantos */
 .orb {
   position: absolute;
@@ -239,11 +197,6 @@ body {
 .orb.mp .liq,
 .orb.focus .liq {
   background: radial-gradient(circle at 35% 10%, #6d9ae6, #2c5fb8 45%, #0d1f45 95%);
-  transition: height 400ms cubic-bezier(0.16, 1, 0.3, 1), filter var(--t-fast) var(--ease-out);
-}
-
-.orb.spending-focus .liq {
-  filter: brightness(0.55) saturate(1.35);
 }
 
 .orb .liq::before {
@@ -455,20 +408,18 @@ button:active,
   transition: transform var(--t-instant), filter var(--t-fast);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .end-turn::before,
-  .btn-gold-macico::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 50%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
-    transform: translateX(-150%) skewX(-25deg);
-    animation: goldShimmer 6s infinite ease-in-out;
-    pointer-events: none;
-  }
+.end-turn::before,
+.btn-gold-macico::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: translateX(-150%) skewX(-25deg);
+  animation: goldShimmer 6s infinite ease-in-out;
+  pointer-events: none;
 }
 
 @keyframes goldShimmer {
@@ -514,26 +465,15 @@ button:active,
   position: absolute;
   top: 0;
   left: 0;
-  width: 60%;
+  right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--gold-hi), transparent);
-  transform: translateX(-120%);
-  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t-fast);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .act:hover::before {
-    animation: actTopSweep 600ms var(--ease-out) 1 forwards;
-  }
-}
-
-@keyframes actTopSweep {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(220%);
-  }
+.act:hover::before {
+  opacity: 1;
 }
 
 .act:active {
@@ -660,30 +600,6 @@ button:active,
 .hero-fallen-filter {
   filter: grayscale(90%) contrast(1.1);
   transition: filter var(--t-slow);
-}
-
-/* Tremor curto de Crítico (3px, SKILL.md Seção 5) */
-@keyframes critShake3px {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  20% {
-    transform: translate(-3px, 2px);
-  }
-  40% {
-    transform: translate(3px, -2px);
-  }
-  60% {
-    transform: translate(-2px, -2px);
-  }
-  80% {
-    transform: translate(2px, 2px);
-  }
-}
-
-.dice-crit-shake {
-  animation: critShake3px 320ms var(--ease-out) 1;
 }
 
 /* Enforçamento de cantos retos para o Design System */

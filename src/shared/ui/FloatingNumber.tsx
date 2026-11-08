@@ -24,7 +24,7 @@ export const FloatingNumberContainer: React.FC<FloatingNumberProps> = ({ items, 
           const isDamage = item.type === 'damage';
           const isHeal = item.type === 'heal';
           const colorClass = isDamage
-            ? 'text-[var(--blood)] [text-shadow:0_0_8px_rgba(163,41,31,0.9)]'
+            ? 'text-[#e8584a] [text-shadow:0_0_8px_rgba(232,88,74,0.8)]'
             : isHeal
               ? 'text-[var(--moss)] [text-shadow:0_0_8px_rgba(127,163,107,0.8)]'
               : 'text-[var(--mist)] [text-shadow:0_0_8px_rgba(127,166,207,0.8)]';
@@ -53,5 +53,3 @@ export const FloatingNumberContainer: React.FC<FloatingNumberProps> = ({ items, 
     </div>
   );
 };
-
-export const FloatingNumber = FloatingNumberContainer;

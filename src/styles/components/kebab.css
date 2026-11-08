@@ -1,0 +1,126 @@
+/* ==========================================================================
+   KEBAB MENU COMPONENT — Elden Ring Minimalist
+   ========================================================================== */
+
+.er-kebab-container {
+  position: relative;
+  display: inline-block;
+}
+
+.er-kebab-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--dur-hover) var(--ease);
+}
+
+.er-kebab-trigger:hover,
+.er-kebab-trigger:focus-visible {
+  color: var(--gold-bright);
+  border-color: var(--line);
+  background: rgba(201, 169, 97, 0.05);
+}
+
+@media (max-width: 900px) {
+  .er-kebab-trigger {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Desktop: dropdown ancorado */
+.er-kebab-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 180px;
+  background-color: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-modal);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  animation: erFadeIn var(--dur-open) var(--ease);
+}
+
+.er-kebab-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  font-family: var(--font-title);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-hover) var(--ease), color var(--dur-hover) var(--ease);
+}
+
+.er-kebab-item:hover,
+.er-kebab-item:focus-visible {
+  background: rgba(201, 169, 97, 0.1);
+  color: var(--gold-bright);
+}
+
+.er-kebab-item.danger {
+  color: var(--crimson-bright);
+}
+
+.er-kebab-item.danger:hover,
+.er-kebab-item.danger:focus-visible {
+  background: rgba(142, 42, 36, 0.15);
+  color: #ff6b6b;
+}
+
+/* Celular: folha de baixo com lista grande de ações */
+@media (max-width: 900px) {
+  .er-kebab-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    z-index: 1100;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .er-kebab-sheet {
+    position: relative;
+    width: 100%;
+    background: var(--surface);
+    border-top: 1px solid var(--line-strong);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: var(--space-3) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: erSlideUp var(--dur-open) var(--ease);
+  }
+
+  .er-kebab-sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--line-strong);
+    border-radius: 2px;
+    margin: 0 auto var(--space-3);
+  }
+
+  .er-kebab-sheet .er-kebab-item {
+    padding: var(--space-3) var(--space-2);
+    font-size: var(--text-base);
+    min-height: 48px;
+    border-bottom: 1px solid var(--line);
+  }
+}

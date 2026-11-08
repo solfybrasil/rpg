@@ -37,44 +37,58 @@ export const SpellCard: React.FC<SpellCardProps> = ({
   const custoFoco = Number(magia.custo_foco ?? circulo);
 
   return (
-    <div className="slab p-3.5 flex flex-col justify-between gap-3 hover:border-[var(--gold-lo)] transition-colors select-none">
+    <div className="grimoire-spell-card select-none">
       {/* Top Header */}
       <div>
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="grimoire-spell-card-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0, flex: 1 }}>
             <span
-              className="w-2.5 h-2.5 rotate-45 shrink-0 shadow-sm"
-              style={{ backgroundColor: corFonte }}
+              style={{
+                width: 9,
+                height: 9,
+                transform: 'rotate(45deg)',
+                flexShrink: 0,
+                backgroundColor: corFonte,
+                boxShadow: '0 0 6px ' + corFonte,
+              }}
               title={`Fonte: ${fonte}`}
             />
             <button
               type="button"
               onClick={onInspect}
-              className="font-['Cinzel',serif] font-bold text-sm text-[var(--text)] hover:text-[var(--gold-hi)] cursor-pointer truncate transition-colors text-left"
+              className="grimoire-spell-title truncate text-left"
             >
               {magia.nome}
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="grimoire-spell-badges shrink-0">
             {/* Focus Pill */}
-            <span className="px-2 py-0.5 border border-[var(--mana)]/60 bg-[var(--mana)]/10 text-[var(--mist)] text-[10px] font-['Cinzel',serif] font-bold tabular-nums">
+            <span
+              className="grimoire-spell-source-tag"
+              style={{
+                background: 'rgba(56, 189, 248, 0.1)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                color: '#7dd3fc',
+                fontWeight: 700,
+              }}
+            >
               {custoFoco} FOCO
             </span>
             {/* Circle Badge */}
-            <span className="px-1.5 py-0.5 border border-[var(--iron)] text-[var(--gold)] text-[10px] font-['Cinzel',serif] font-bold">
+            <span className="grimoire-spell-circle-tag">
               {circulo === 0 ? 'TRUQUE' : `CÍRC ${circulo}`}
             </span>
           </div>
         </div>
 
         {/* Subtitle / School */}
-        <div className="flex items-center gap-2 text-[11px] text-[var(--muted)] font-['EB_Garamond',serif] italic mt-1">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.35rem', fontSize: '0.72rem', color: '#9a917f' }}>
           <span>{magia.escola || fonte}</span>
           {magia.raridade && magia.raridade !== 'Comum' && (
             <>
               <span>•</span>
-              <span className="text-[var(--gold)] font-['Cinzel',serif] text-[9.5px] uppercase">
+              <span style={{ color: '#c9a961', textTransform: 'uppercase', fontWeight: 600 }}>
                 {magia.raridade}
               </span>
             </>
@@ -82,7 +96,7 @@ export const SpellCard: React.FC<SpellCardProps> = ({
           {fonte === 'Peste' && (
             <>
               <span>•</span>
-              <span className="text-[var(--blood)] font-bold flex items-center gap-1">
+              <span style={{ color: '#ef4444', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                 <Skull size={10} /> Risco Peste
               </span>
             </>
@@ -90,17 +104,30 @@ export const SpellCard: React.FC<SpellCardProps> = ({
         </div>
 
         {/* Short Summary */}
-        <p className="text-xs text-[var(--text)] font-['EB_Garamond',serif] line-clamp-2 mt-2 leading-relaxed">
+        <p style={{ fontSize: '0.75rem', color: '#b5aa96', marginTop: '0.45rem', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {magia.resumo || magia.descricao || 'Fórmula mística ancestral.'}
         </p>
       </div>
 
       {/* Bottom Actions */}
-      <div className="flex items-center justify-between pt-2 border-t border-[var(--iron)]/60 gap-2">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid rgba(201, 169, 97, 0.12)', gap: '0.5rem' }}>
         <button
           type="button"
           onClick={onInspect}
-          className="text-[11px] font-['Cinzel',serif] uppercase tracking-wider text-[var(--muted)] hover:text-white px-2 py-1 transition-colors flex items-center gap-1"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#8c7b68',
+            fontSize: '0.72rem',
+            fontFamily: 'var(--font-title, "Cinzel", serif)',
+            letterSpacing: '0.04em',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.3rem',
+            padding: '0.2rem 0.4rem',
+            borderRadius: '4px',
+          }}
         >
           <BookOpen size={12} />
           <span>Detalhes</span>
@@ -110,17 +137,27 @@ export const SpellCard: React.FC<SpellCardProps> = ({
           <button
             type="button"
             onClick={onCast}
-            className="end-turn h-7 px-3 text-[11px] font-bold font-['Cinzel',serif] text-[var(--abyss)] flex items-center gap-1"
+            className="grimoire-card-action-btn primary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              height: '28px',
+              padding: '0 0.65rem',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
           >
-            <Flame size={12} className="fill-current" />
+            <Flame size={12} />
             <span>Conjurar</span>
           </button>
         )}
 
         {mode === 'learn' && avaliacao && (
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             {avaliacao.jaAprendida ? (
-              <span className="text-[11px] text-[var(--gold)] font-['Cinzel',serif]">
+              <span style={{ fontSize: '0.72rem', color: '#c9a961', fontWeight: 600 }}>
                 ✓ Aprendida
               </span>
             ) : (
@@ -128,11 +165,17 @@ export const SpellCard: React.FC<SpellCardProps> = ({
                 type="button"
                 onClick={onInvest}
                 disabled={!avaliacao.pode || inspiracaoAtual <= 0}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-['Cinzel',serif] uppercase tracking-wider border transition-colors ${
-                  avaliacao.pode && inspiracaoAtual > 0
-                    ? 'border-[var(--gold)] text-[var(--gold-hi)] hover:bg-[var(--gold-lo)]/20 cursor-pointer'
-                    : 'border-[var(--iron)] text-[var(--muted)] opacity-50 cursor-not-allowed'
-                }`}
+                className={`grimoire-card-action-btn ${avaliacao.pode && inspiracaoAtual > 0 ? 'primary' : ''}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  height: '28px',
+                  padding: '0 0.65rem',
+                  fontSize: '0.72rem',
+                  cursor: avaliacao.pode && inspiracaoAtual > 0 ? 'pointer' : 'not-allowed',
+                  opacity: avaliacao.pode && inspiracaoAtual > 0 ? 1 : 0.5,
+                }}
                 title={avaliacao.statusText}
               >
                 <Sparkles size={11} />

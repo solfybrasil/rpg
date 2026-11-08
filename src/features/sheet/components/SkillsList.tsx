@@ -86,7 +86,7 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills }) => {
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="text-[11px] text-[var(--gold)] tracking-wider">{dots}</span>
                     {(skill.maestria ?? 0) > 0 && (
-                      <span className="text-[10px] text-[var(--muted)] font-['Cinzel',serif] tabular-nums">
+                      <span className="text-[10px] text-[var(--muted)] font-mono">
                         · Mst {skill.maestria}
                       </span>
                     )}

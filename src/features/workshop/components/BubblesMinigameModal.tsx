@@ -171,14 +171,14 @@ export const BubblesMinigameModal: React.FC<BubblesMinigameModalProps> = ({
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white rounded-full bg-neutral-900 border border-neutral-800"
+        className="absolute top-4 right-4 p-2 text-[#9a917f] hover:text-[#f5ede0] rounded-full bg-[#14120e] border border-[rgba(201,169,97,0.3)] transition-colors cursor-pointer"
       >
         <X size={20} />
       </button>
 
       {/* Caldeirão Central */}
       <div className="relative mb-3">
-        <div className="w-24 h-24 rounded-2xl border-2 border-purple-500/60 bg-neutral-950 flex items-center justify-center shadow-[0_0_30px_rgba(192,132,252,0.3)]">
+        <div className="w-24 h-24 rounded-2xl border-2 border-[rgba(168,85,247,0.5)] bg-[#14120e] flex items-center justify-center shadow-[0_0_30px_rgba(192,132,252,0.3)]">
           <img
             src="/assets/alquimia/caldeirao.webp"
             alt="Caldeirão"
@@ -190,21 +190,21 @@ export const BubblesMinigameModal: React.FC<BubblesMinigameModalProps> = ({
         </div>
       </div>
 
-      <h2 className="text-xl font-mono font-bold text-purple-200 mb-1 tracking-wider uppercase">
+      <h2 className="text-xl font-['Cinzel',serif] font-bold text-[#f5ede0] mb-1 tracking-wider uppercase">
         Minigame das Bolhas
       </h2>
-      <p className="text-xs text-neutral-400 font-serif italic mb-3 text-center max-w-xs">
+      <p className="text-xs text-[#9a917f] font-serif italic mb-3 text-center max-w-xs">
         Estoure as bolhas de essência e vapor antes que escapem para aumentar o poder do elixir!
       </p>
 
       {/* Estatísticas e Tempo */}
-      <div className="flex items-center gap-4 text-xs font-mono mb-3">
-        <span className="text-amber-400 font-bold">Tempo: {timeLeft}s</span>
-        <span className="text-purple-300">Bolhas: {poppedCount} estouradas</span>
+      <div className="flex items-center gap-4 text-xs font-['Cinzel',serif] mb-3">
+        <span className="text-[#ffd27a] font-bold">Tempo: {timeLeft}s</span>
+        <span className="text-[#c084fc]">Bolhas: {poppedCount} estouradas</span>
       </div>
 
       {/* Câmara de Bolhas (400px x 320px) */}
-      <div className="relative w-[340px] h-[340px] rounded-2xl bg-gradient-to-t from-purple-950/60 via-neutral-950/90 to-neutral-950 border-2 border-purple-800/40 overflow-hidden shadow-2xl mb-4">
+      <div className="relative w-[340px] h-[340px] rounded-2xl bg-gradient-to-t from-[#2a133d] via-[#14120e] to-[#0a0907] border-2 border-[rgba(168,85,247,0.4)] overflow-hidden shadow-2xl mb-4">
         {bubbles.map((b) => (
           <button
             key={b.id}
@@ -233,7 +233,7 @@ export const BubblesMinigameModal: React.FC<BubblesMinigameModalProps> = ({
       </div>
 
       {feedback && (
-        <span className="text-sm font-mono font-bold text-purple-300 tracking-wider animate-in zoom-in-75 duration-150">
+        <span className="text-sm font-['Cinzel',serif] font-bold text-[#ffd27a] tracking-wider animate-in zoom-in-75 duration-150">
           {feedback}
         </span>
       )}

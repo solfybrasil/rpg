@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   MousePointer,
   Pencil,
@@ -28,6 +28,12 @@ import {
   Check,
   X,
   Loader2,
+  Film,
+  Image as ImageIcon,
+  ChevronRight,
+  ChevronLeft,
+  Footprints,
+  Sword,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { BATTLE_MAP_KEY, BATTLE_TOKENS_KEY } from '../api/useBattle.ts';
@@ -53,6 +59,13 @@ import {
   uploadBattleMedia,
 } from '../media/mediaProcessor.ts';
 import { MediaBattleModal, type MediaBattleTarget } from './MediaBattleModal.tsx';
+import {
+  TurnPanel,
+  ToolBar,
+  CameraControls,
+  TopBar,
+  RightPanel,
+} from './DMMapSubComponents.tsx';
 
 export function DMBattleMapEditor() {
   const queryClient = useQueryClient();
@@ -91,6 +104,123 @@ export function DMBattleMapEditor() {
 
   // Debounce autosave ref
   const autosaveTimerRef = useRef<any>(null);
+  const currentMapRef = useRef(currentMap);
+  currentMapRef.current = currentMap;
+
+  // Handler estável e reativo para atualizar bloqueios do mapa
+  const handleUpdateBlocked = useCallback((blocked: string[]) => {
+    const map = currentMapRef.current;
+    if (!map) return;
+    const updated = { ...map, blocked };
+    setCurrentMap(updated);
+    queryClient.setQueryData(BATTLE_MAP_KEY, updated);
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(async () => {
+      try {
+        await updateBattleMap(map.id, { blocked });
+        toast.success(`Bloqueios atualizados (${blocked.length} células)`, { duration: 1200 });
+      } catch (err) {
+        console.warn('[AUTOSAVE BLOCKED]', err);
+      }
+    }, 350);
+  }, [queryClient]);
+
+  const onUpdateBlockedRef = useRef(handleUpdateBlocked);
+  onUpdateBlockedRef.current = handleUpdateBlocked;
+
+  // ── Sistema de Turno & Movimentação ──
+  const [activeTurnIdx, setActiveTurnIdx] = useState(0);
+  const [showTurnDrawer, setShowTurnDrawer] = useState(true);
+  const [showBgModal, setShowBgModal] = useState(false);
+
+  // Fila de iniciativa dos combatentes
+  const turnOrderTokens = useMemo(() => {
+    return [...tokens].sort((a, b) => {
+      if (a.kind === 'heroi' && b.kind !== 'heroi') return -1;
+      if (a.kind !== 'heroi' && b.kind === 'heroi') return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }, [tokens]);
+
+  const activeTurnToken = turnOrderTokens[activeTurnIdx] || turnOrderTokens[0] || null;
+
+  // ── Derived values (memoized) ──
+  const selectedToken = useMemo(
+    () => tokens.find((t) => t.id === selectedTokenId) || null,
+    [tokens, selectedTokenId],
+  );
+  const isLive = useMemo(() => currentMap?.status === 'ao_vivo', [currentMap?.status]);
+
+  // ── useCallback: turn helpers ──
+  const advanceTurn = useCallback(() => {
+    if (turnOrderTokens.length === 0) return;
+    const nextIdx = (activeTurnIdx + 1) % turnOrderTokens.length;
+    setActiveTurnIdx(nextIdx);
+    const nextToken = turnOrderTokens[nextIdx];
+    if (nextToken) {
+      setSelectedTokenId(nextToken.id);
+      if (nextIdx === 0 && currentMap) {
+        handleNovaRodada();
+      } else {
+        toast.info(`Turno de ${nextToken.name}!`, { icon: '⚔' });
+      }
+    }
+  }, [turnOrderTokens, activeTurnIdx, currentMap]);
+
+  const previousTurn = useCallback(() => {
+    if (turnOrderTokens.length === 0) return;
+    const prevIdx = activeTurnIdx <= 0 ? turnOrderTokens.length - 1 : activeTurnIdx - 1;
+    setActiveTurnIdx(prevIdx);
+    const prevToken = turnOrderTokens[prevIdx];
+    if (prevToken) {
+      setSelectedTokenId(prevToken.id);
+      toast.info(`Turno de ${prevToken.name}!`, { icon: '⚔' });
+    }
+  }, [turnOrderTokens, activeTurnIdx]);
+
+  const selectActiveMover = useCallback((token: BattleToken, idx: number) => {
+    setActiveTurnIdx(idx);
+    setSelectedTokenId(token.id);
+  }, []);
+
+  const adjustTokenMoves = useCallback((tokenId: string, delta: number) => {
+    setTokens((prev) =>
+      prev.map((t) => {
+        if (t.id !== tokenId) return t;
+        const maxMoves = currentMap?.move_limit || 6;
+        const cur = t.moves_left ?? maxMoves;
+        const next = Math.max(0, Math.min(maxMoves, cur + delta));
+        updateBattleToken(tokenId, { moves_left: next }).catch(() => {});
+        return { ...t, moves_left: next };
+      }),
+    );
+  }, [currentMap?.move_limit]);
+
+  const resetTokenMoves = useCallback((tokenId: string) => {
+    const maxMoves = currentMap?.move_limit || 6;
+    setTokens((prev) =>
+      prev.map((t) => {
+        if (t.id !== tokenId) return t;
+        updateBattleToken(tokenId, { moves_left: maxMoves }).catch(() => {});
+        return { ...t, moves_left: maxMoves };
+      }),
+    );
+    toast.success('Passos restaurados!');
+  }, [currentMap?.move_limit]);
+
+  // Atalho de teclado para alternar turno (Espaço)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        advanceTurn();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [advanceTurn]);
 
   // ── 1. Carrega Mesas Iniciais ──
   const loadMaps = useCallback(async (selectMapId?: string) => {
@@ -140,7 +270,7 @@ export function DMBattleMapEditor() {
       onSelectTokenId: (id) => setSelectedTokenId(id),
       onSelectToken: (tok) => setSelectedTokenId(tok?.id || null),
       onUpdateBlocked: (blocked) => {
-        queueMapAutosave({ blocked });
+        onUpdateBlockedRef.current(blocked);
       },
       onMoveTokenDirect: (tokenId, c, r) => {
         setTokens((prev) => {
@@ -173,6 +303,7 @@ export function DMBattleMapEditor() {
     engineRef.current.setOptions({
       tool: activeTool,
       selectedTokenId,
+      onUpdateBlocked: (blocked) => onUpdateBlockedRef.current(blocked),
     });
   }, [activeTool, selectedTokenId]);
 
@@ -201,30 +332,20 @@ export function DMBattleMapEditor() {
     return () => window.removeEventListener('peste-media-updated', handleMediaUpdated);
   }, []);
 
-  // ── 6. Busca no Bestiário (Servidor) ──
+  // ── 6. Busca no Bestiário (Servidor) — com debounce ──
   useEffect(() => {
     if (!showAddBeastModal) return;
-
-    let isMounted = true;
-    setBeastSearchLoading(true);
-    const timer = setTimeout(async () => {
-      try {
-        const results = await fetchCreatureCatalog(beastSearch, 20);
-        if (isMounted) setBeastResults(results);
-      } catch (_) {
-      } finally {
-        if (isMounted) setBeastSearchLoading(false);
-      }
-    }, 200);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-    };
-  }, [showAddBeastModal, beastSearch]);
+    const t = setTimeout(() => {
+      setBeastSearchLoading(true);
+      fetchCreatureCatalog(beastSearch, 30)
+        .then(setBeastResults)
+        .finally(() => setBeastSearchLoading(false));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [beastSearch, showAddBeastModal]);
 
   // ── 7. Autosave com Debounce ──
-  const queueMapAutosave = (updates: Partial<BattleMap>) => {
+  const queueMapAutosave = useCallback((updates: Partial<BattleMap>) => {
     if (!currentMap) return;
     const updated = { ...currentMap, ...updates };
     setCurrentMap(updated);
@@ -238,9 +359,9 @@ export function DMBattleMapEditor() {
         console.warn('[AUTOSAVE MAP]', err);
       }
     }, 350);
-  };
+  }, [currentMap, queryClient]);
 
-  const updateSelectedTokenLocally = (updates: Partial<BattleToken>) => {
+  const updateSelectedTokenLocally = useCallback((updates: Partial<BattleToken>) => {
     if (!selectedTokenId) return;
     setTokens((prev) => {
       const next = prev.map((t) => (t.id === selectedTokenId ? { ...t, ...updates } : t));
@@ -258,11 +379,11 @@ export function DMBattleMapEditor() {
         console.warn('[AUTOSAVE TOKEN]', err);
       }
     }, 350);
-  };
+  }, [selectedTokenId, currentMap?.id, queryClient]);
 
   // ── AÇÕES DE MAPA ──
 
-  const handleCreateMap = async () => {
+  const handleCreateMap = useCallback(async () => {
     try {
       const newMap = await createBattleMap({
         name: `Mesa ${maps.length + 1}`,
@@ -279,9 +400,9 @@ export function DMBattleMapEditor() {
     } catch (_) {
       toast.error('Erro ao criar mesa.');
     }
-  };
+  }, [maps.length]);
 
-  const handleDuplicateMap = async () => {
+  const handleDuplicateMap = useCallback(async () => {
     if (!currentMap) return;
     try {
       const copy = await duplicateBattleMap(currentMap.id);
@@ -291,9 +412,9 @@ export function DMBattleMapEditor() {
     } catch (_) {
       toast.error('Erro ao duplicar mesa.');
     }
-  };
+  }, [currentMap]);
 
-  const handleDeleteMap = async () => {
+  const handleDeleteMap = useCallback(async () => {
     if (!currentMap) return;
     if (maps.length <= 1) {
       toast.error('É necessário manter pelo menos uma mesa.');
@@ -311,25 +432,25 @@ export function DMBattleMapEditor() {
     } catch (_) {
       toast.error('Erro ao excluir mesa.');
     }
-  };
+  }, [currentMap, maps]);
 
-  const handleToggleLive = async () => {
+  const handleToggleLive = useCallback(async () => {
     if (!currentMap) return;
-    const isLive = currentMap.status === 'ao_vivo';
+    const live = currentMap.status === 'ao_vivo';
     try {
-      const updated = await setMapLiveStatus(currentMap.id, !isLive);
+      const updated = await setMapLiveStatus(currentMap.id, !live);
       setCurrentMap(updated);
       queryClient.setQueryData(BATTLE_MAP_KEY, updated);
       setMaps((prev) =>
         prev.map((m) =>
           m.id === updated.id
             ? updated
-            : !isLive
+            : !live
               ? { ...m, status: 'rascunho' }
               : m,
         ),
       );
-      if (!isLive) {
+      if (!live) {
         toast.success('MESA AO VIVO! Telão e jogadores sincronizados.', {
           icon: '🔥',
         });
@@ -339,9 +460,9 @@ export function DMBattleMapEditor() {
     } catch (_) {
       toast.error('Erro ao alternar status da mesa.');
     }
-  };
+  }, [currentMap, queryClient]);
 
-  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBgUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !currentMap) return;
 
@@ -371,9 +492,9 @@ export function DMBattleMapEditor() {
     } finally {
       setIsUploadingBg(false);
     }
-  };
+  }, [currentMap]);
 
-  const handleNovaRodada = async () => {
+  const handleNovaRodada = useCallback(async () => {
     if (!currentMap) return;
     try {
       const res = await novaRodadaRPC(currentMap.id);
@@ -389,11 +510,11 @@ export function DMBattleMapEditor() {
     } catch (_) {
       toast.error('Erro ao iniciar nova rodada.');
     }
-  };
+  }, [currentMap]);
 
   // ── AÇÕES DE TOKEN ──
 
-  const handleAddHero = async (heroPreset: {
+  const handleAddHero = useCallback(async (heroPreset: {
     id: string;
     name: string;
     media_url: string;
@@ -431,9 +552,9 @@ export function DMBattleMapEditor() {
     } catch (_) {
       toast.error('Erro ao adicionar herói.');
     }
-  };
+  }, [currentMap, tokens.length]);
 
-  const handleAddBeastFromCatalog = async (beast: any, qty = 1) => {
+  const handleAddBeastFromCatalog = useCallback(async (beast: any, qty = 1) => {
     if (!currentMap) return;
     const count = Math.max(1, Math.min(20, qty));
 
@@ -473,9 +594,9 @@ export function DMBattleMapEditor() {
     } catch (_) {
       toast.error('Erro ao adicionar fera.');
     }
-  };
+  }, [currentMap, tokens.length]);
 
-  const handleRemoveToken = async () => {
+  const handleRemoveToken = useCallback(async () => {
     if (!selectedTokenId) return;
     try {
       await deleteBattleToken(selectedTokenId);
@@ -485,70 +606,32 @@ export function DMBattleMapEditor() {
     } catch (_) {
       toast.error('Erro ao remover peça.');
     }
-  };
+  }, [selectedTokenId]);
 
-  const selectedToken = tokens.find((t) => t.id === selectedTokenId) || null;
-  const isLive = currentMap?.status === 'ao_vivo';
+  // ── Callbacks for CameraControls ──
+  const handleZoomIn = useCallback(() => engineRef.current?.zoomIn(), []);
+  const handleZoomOut = useCallback(() => engineRef.current?.zoomOut(), []);
+  const handleZoomFit = useCallback(() => engineRef.current?.zoomFit(), []);
 
   return (
     <div
       data-testid="dm-battle-editor"
       className="relative flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden bg-[#08080a] text-[#ebe6d6]"
     >
-      {/* ── Top Bar de Navegação / Ações do Mestre ── */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[#26262a] bg-[#111114] z-20">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span
-              className={`w-2.5 h-2.5 rounded-full ${
-                isLive
-                  ? 'bg-[#c8423a] shadow-[0_0_8px_#c8423a]'
-                  : 'bg-[#8a8a93]'
-              }`}
-            />
-            <span className="font-cinzel font-semibold text-sm text-[#ebe6d6]">
-              {currentMap?.name || 'Mesa de Batalha'}
-            </span>
-          </div>
-
-          {isLive && (
-            <span
-              data-testid="live-indicator-badge"
-              className="px-2 py-0.5 rounded text-[11px] font-bold tracking-wider bg-[#c8423a]/20 text-[#c8423a] border border-[#c8423a]/40"
-            >
-              AO VIVO
-            </span>
-          )}
-
-          <div className="hidden sm:flex items-center gap-2 text-xs text-[#8a8a93]">
-            <span>· Rodada {currentMap?.round || 1}</span>
-            <span>· {tokens.length} peças</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Link para TV */}
-          <a
-            href="/batalha"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#26262a] bg-[#16161a] hover:bg-[#26262a] text-xs font-medium text-[#ebe6d6] transition-colors"
-          >
-            <Tv className="w-3.5 h-3.5 text-[#f5b65b]" />
-            <span className="hidden sm:inline">Telão TV</span>
-          </a>
-
-          {/* Botão de Nova Rodada */}
-          <button
-            type="button"
-            onClick={handleNovaRodada}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#26262a] bg-[#16161a] hover:bg-[#26262a] text-xs font-medium text-[#ebe6d6] transition-colors"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-[#4a7c59]" />
-            <span className="hidden sm:inline">Nova Rodada</span>
-          </button>
-        </div>
-      </div>
+      {/* ── Top Bar: Glass-morphism fina estilo LOTR ── */}
+      <TopBar
+        currentMap={currentMap}
+        isLive={isLive}
+        tokens={tokens}
+        setShowBgModal={setShowBgModal}
+        selectedToken={selectedToken}
+        activeTurnToken={activeTurnToken}
+        setMediaModalTarget={setMediaModalTarget}
+        showTurnDrawer={showTurnDrawer}
+        setShowTurnDrawer={setShowTurnDrawer}
+        handleNovaRodada={handleNovaRodada}
+        advanceTurn={advanceTurn}
+      />
 
       {/* ── Área Central do Editor ── */}
       <div className="relative flex-1 flex overflow-hidden">
@@ -557,6 +640,7 @@ export function DMBattleMapEditor() {
           className={`relative flex-1 h-full overflow-hidden transition-all duration-300 ${
             isLive ? 'ring-2 ring-[#f5b65b]/50 shadow-[inset_0_0_40px_rgba(245,182,91,0.15)]' : ''
           }`}
+          style={{ willChange: 'transform' }}
         >
           <canvas
             ref={canvasRef}
@@ -564,625 +648,75 @@ export function DMBattleMapEditor() {
             className="w-full h-full block cursor-crosshair touch-none"
           />
 
+          {/* ── Painel de Turno: Compacto, Flutuante, Estilo LOTR ── */}
+          <TurnPanel
+            activeTurnToken={activeTurnToken}
+            activeTurnIdx={activeTurnIdx}
+            turnOrderTokens={turnOrderTokens}
+            currentMap={currentMap}
+            showTurnDrawer={showTurnDrawer}
+            setShowTurnDrawer={setShowTurnDrawer}
+            advanceTurn={advanceTurn}
+            previousTurn={previousTurn}
+            selectActiveMover={selectActiveMover}
+            adjustTokenMoves={adjustTokenMoves}
+            resetTokenMoves={resetTokenMoves}
+            setMediaModalTarget={setMediaModalTarget}
+          />
+
           {/* Barra de Ferramentas Flutuante em Cima do Mapa */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 rounded-xl bg-[#111114]/90 backdrop-blur-md border border-[#26262a] shadow-xl z-10">
-            <button
-              type="button"
-              data-testid="tool-select"
-              title="Selecionar e mover peças"
-              onClick={() => setActiveTool('select')}
-              className={`p-2 rounded-lg transition-colors ${
-                activeTool === 'select'
-                  ? 'bg-[#f5b65b] text-[#111114]'
-                  : 'text-[#8a8a93] hover:text-white hover:bg-[#1e1e24]'
-              }`}
-            >
-              <MousePointer className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              data-testid="tool-paint"
-              title="Pintar bloqueio de terreno"
-              onClick={() => setActiveTool('paint_block')}
-              className={`p-2 rounded-lg transition-colors ${
-                activeTool === 'paint_block'
-                  ? 'bg-[#c8423a] text-white'
-                  : 'text-[#8a8a93] hover:text-white hover:bg-[#1e1e24]'
-              }`}
-            >
-              <Pencil className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              data-testid="tool-erase"
-              title="Apagar bloqueio de terreno"
-              onClick={() => setActiveTool('erase_block')}
-              className={`p-2 rounded-lg transition-colors ${
-                activeTool === 'erase_block'
-                  ? 'bg-[#c8423a] text-white'
-                  : 'text-[#8a8a93] hover:text-white hover:bg-[#1e1e24]'
-              }`}
-            >
-              <Eraser className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              data-testid="tool-pan"
-              title="Arrastar câmera (Pan)"
-              onClick={() => setActiveTool('pan')}
-              className={`p-2 rounded-lg transition-colors ${
-                activeTool === 'pan'
-                  ? 'bg-[#4a7c59] text-white'
-                  : 'text-[#8a8a93] hover:text-white hover:bg-[#1e1e24]'
-              }`}
-            >
-              <Hand className="w-4 h-4" />
-            </button>
-          </div>
+          <ToolBar activeTool={activeTool} setActiveTool={setActiveTool} />
 
           {/* Controles de Câmera (Zoom) Flutuantes */}
-          <div className="absolute bottom-4 left-4 flex items-center gap-1 p-1 rounded-xl bg-[#111114]/90 backdrop-blur-md border border-[#26262a] shadow-xl z-10">
-            <button
-              type="button"
-              title="Aproximar"
-              onClick={() => engineRef.current?.zoomIn()}
-              className="p-1.5 rounded-lg text-[#8a8a93] hover:text-white hover:bg-[#1e1e24] transition-colors"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              title="Afastar"
-              onClick={() => engineRef.current?.zoomOut()}
-              className="p-1.5 rounded-lg text-[#8a8a93] hover:text-white hover:bg-[#1e1e24] transition-colors"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              title="Enquadrar Mesa Inteira"
-              onClick={() => engineRef.current?.zoomFit()}
-              className="p-1.5 rounded-lg text-[#8a8a93] hover:text-white hover:bg-[#1e1e24] transition-colors"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-            <span ref={fpsRef} className="text-[10px] text-[#8a8a93] px-1 font-mono">
-              60 FPS
-            </span>
-          </div>
+          <CameraControls
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onZoomFit={handleZoomFit}
+            fpsRef={fpsRef}
+          />
         </div>
 
         {/* ── Painel Direito Fino (320px) ── */}
-        <div
-          data-testid="dm-right-panel"
-          className="w-full sm:w-[320px] flex-shrink-0 h-full border-l border-[#26262a] bg-[#111114] flex flex-col z-20"
-        >
-          {/* LIGAR A MESA: Ação Principal Dourada Grande no Topo */}
-          <div className="p-4 border-b border-[#26262a] bg-[#16161a]">
-            <button
-              type="button"
-              data-testid="btn-toggle-live"
-              onClick={handleToggleLive}
-              className={`w-full py-3 px-4 rounded-xl font-cinzel font-bold text-sm tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg ${
-                isLive
-                  ? 'bg-gradient-to-r from-[#c8423a] to-[#9e2a22] text-white shadow-[#c8423a]/30 hover:brightness-110 active:scale-98'
-                  : 'bg-gradient-to-r from-[#f5b65b] to-[#d99a3e] text-[#111114] shadow-[#f5b65b]/25 hover:brightness-110 active:scale-98'
-              }`}
-            >
-              <Radio className={`w-4 h-4 ${isLive ? 'animate-pulse' : ''}`} />
-              {isLive ? 'DESLIGAR MESA' : 'LIGAR MESA'}
-            </button>
-          </div>
-
-          {/* Abas: Mesa, Peças, Terreno, Mídia */}
-          <div className="grid grid-cols-4 border-b border-[#26262a] bg-[#16161a]/60 text-xs font-medium">
-            <button
-              type="button"
-              data-testid="tab-mesa"
-              onClick={() => setActiveTab('mesa')}
-              className={`py-2.5 text-center transition-colors border-b-2 ${
-                activeTab === 'mesa'
-                  ? 'border-[#f5b65b] text-[#f5b65b] bg-[#111114]'
-                  : 'border-transparent text-[#8a8a93] hover:text-[#ebe6d6]'
-              }`}
-            >
-              Mesa
-            </button>
-            <button
-              type="button"
-              data-testid="tab-pecas"
-              onClick={() => setActiveTab('pecas')}
-              className={`py-2.5 text-center transition-colors border-b-2 ${
-                activeTab === 'pecas'
-                  ? 'border-[#f5b65b] text-[#f5b65b] bg-[#111114]'
-                  : 'border-transparent text-[#8a8a93] hover:text-[#ebe6d6]'
-              }`}
-            >
-              Peças
-            </button>
-            <button
-              type="button"
-              data-testid="tab-terreno"
-              onClick={() => setActiveTab('terreno')}
-              className={`py-2.5 text-center transition-colors border-b-2 ${
-                activeTab === 'terreno'
-                  ? 'border-[#f5b65b] text-[#f5b65b] bg-[#111114]'
-                  : 'border-transparent text-[#8a8a93] hover:text-[#ebe6d6]'
-              }`}
-            >
-              Terreno
-            </button>
-            <button
-              type="button"
-              data-testid="tab-midia"
-              onClick={() => setActiveTab('midia')}
-              className={`py-2.5 text-center transition-colors border-b-2 ${
-                activeTab === 'midia'
-                  ? 'border-[#f5b65b] text-[#f5b65b] bg-[#111114]'
-                  : 'border-transparent text-[#8a8a93] hover:text-[#ebe6d6]'
-              }`}
-            >
-              Mídia
-            </button>
-          </div>
-
-          {/* Conteúdo das Abas (Scrollável) */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* ── ABA 1: MESA ── */}
-            {activeTab === 'mesa' && (
-              <div className="space-y-4">
-                {/* Seletor de Mesas */}
-                <div>
-                  <label className="text-xs font-medium text-[#8a8a93] mb-1.5 block">
-                    Mesa Atual
-                  </label>
-                  <select
-                    data-testid="select-map"
-                    value={currentMap?.id || ''}
-                    onChange={(e) => {
-                      const sel = maps.find((m) => m.id === e.target.value);
-                      if (sel) {
-                        setCurrentMap(sel);
-                        queryClient.setQueryData(BATTLE_MAP_KEY, sel);
-                      }
-                    }}
-                    className="w-full bg-[#16161a] border border-[#26262a] rounded-xl px-3 py-2 text-xs text-[#ebe6d6] focus:border-[#f5b65b] focus:outline-none"
-                  >
-                    {maps.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} {m.status === 'ao_vivo' ? '🔥 (AO VIVO)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Ações de Mesas CRUD */}
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    data-testid="btn-create-map"
-                    onClick={handleCreateMap}
-                    className="py-2 px-2.5 rounded-lg border border-[#3b3b40] bg-[#16161a] hover:bg-[#26262a] text-xs font-medium text-[#ebe6d6] flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-[#f5b65b]" />
-                    Nova
-                  </button>
-                  <button
-                    type="button"
-                    data-testid="btn-duplicate-map"
-                    onClick={handleDuplicateMap}
-                    className="py-2 px-2.5 rounded-lg border border-[#3b3b40] bg-[#16161a] hover:bg-[#26262a] text-xs font-medium text-[#ebe6d6] flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Copy className="w-3.5 h-3.5 text-[#8a8a93]" />
-                    Duplicar
-                  </button>
-                  <button
-                    type="button"
-                    data-testid="btn-delete-map"
-                    onClick={handleDeleteMap}
-                    className="py-2 px-2.5 rounded-lg border border-[#c8423a]/30 bg-[#c8423a]/10 hover:bg-[#c8423a]/20 text-xs font-medium text-[#c8423a] flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Excluir
-                  </button>
-                </div>
-
-                {/* Renomear Mesa */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRenameInput(currentMap?.name || '');
-                      setShowRenameModal(true);
-                    }}
-                    className="w-full py-1.5 px-3 rounded-lg border border-[#26262a] bg-[#16161a] hover:bg-[#26262a] text-xs font-medium text-[#8a8a93] hover:text-[#ebe6d6] flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    Renomear Mesa
-                  </button>
-                </div>
-
-                {/* Upload Imagem de Fundo */}
-                <div className="pt-2 border-t border-[#26262a]">
-                  <label className="text-xs font-medium text-[#8a8a93] mb-1.5 block">
-                    Imagem de Fundo (WebP 2048px)
-                  </label>
-                  <input
-                    ref={fileInputBgRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleBgUpload}
-                  />
-                  <button
-                    type="button"
-                    data-testid="btn-upload-bg"
-                    disabled={isUploadingBg}
-                    onClick={() => fileInputBgRef.current?.click()}
-                    className="w-full py-2 px-3 rounded-lg border border-[#3b3b40] bg-[#16161a] hover:bg-[#26262a] text-xs font-medium text-[#ebe6d6] flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                  >
-                    {isUploadingBg ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-[#f5b65b]" />
-                        Otimizando para 2048px…
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 text-[#f5b65b]" />
-                        Alterar Fundo do Mapa
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Sliders da Grade */}
-                <div className="pt-2 border-t border-[#26262a] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-[#8a8a93]">Ajustes de Grade</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        queueMapAutosave({ show_grid: currentMap?.show_grid === false })
-                      }
-                      className="text-[11px] text-[#f5b65b] hover:underline"
-                    >
-                      {currentMap?.show_grid === false ? 'Mostrar Grade' : 'Ocultar Grade'}
-                    </button>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs text-[#8a8a93] mb-1">
-                      <span>Tamanho do Quadrado (tile_size)</span>
-                      <span className="font-mono text-[#ebe6d6]">{currentMap?.tile_size || 86}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="40"
-                      max="140"
-                      step="2"
-                      value={currentMap?.tile_size || 86}
-                      onChange={(e) => queueMapAutosave({ tile_size: Number(e.target.value) })}
-                      className="w-full accent-[#f5b65b] bg-[#26262a] h-1.5 rounded-lg appearance-none cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs text-[#8a8a93] mb-1">
-                      <span>Origem X (origin_x)</span>
-                      <span className="font-mono text-[#ebe6d6]">{currentMap?.origin_x || 690}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max={currentMap?.img_w || 1376}
-                      step="4"
-                      value={currentMap?.origin_x || 690}
-                      onChange={(e) => queueMapAutosave({ origin_x: Number(e.target.value) })}
-                      className="w-full accent-[#f5b65b] bg-[#26262a] h-1.5 rounded-lg appearance-none cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs text-[#8a8a93] mb-1">
-                      <span>Origem Y (origin_y)</span>
-                      <span className="font-mono text-[#ebe6d6]">{currentMap?.origin_y || 418}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max={currentMap?.img_h || 768}
-                      step="4"
-                      value={currentMap?.origin_y || 418}
-                      onChange={(e) => queueMapAutosave({ origin_y: Number(e.target.value) })}
-                      className="w-full accent-[#f5b65b] bg-[#26262a] h-1.5 rounded-lg appearance-none cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs text-[#8a8a93] mb-1">
-                      <span>Limite de Movimento</span>
-                      <span className="font-mono text-[#ebe6d6]">{currentMap?.move_limit || 6}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="12"
-                      step="1"
-                      value={currentMap?.move_limit || 6}
-                      onChange={(e) => queueMapAutosave({ move_limit: Number(e.target.value) })}
-                      className="w-full accent-[#f5b65b] bg-[#26262a] h-1.5 rounded-lg appearance-none cursor-pointer"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── ABA 2: PEÇAS ── */}
-            {activeTab === 'pecas' && (
-              <div className="space-y-4">
-                {/* Botões de Adicionar Herói e Fera */}
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    data-testid="btn-add-hero"
-                    onClick={() => setShowAddHeroModal(true)}
-                    className="py-2 px-3 rounded-lg border border-[#f5b65b]/30 bg-[#f5b65b]/10 hover:bg-[#f5b65b]/20 text-xs font-semibold text-[#f5b65b] flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    + Herói
-                  </button>
-                  <button
-                    type="button"
-                    data-testid="btn-add-beast"
-                    onClick={() => {
-                      setBeastSearch('');
-                      setShowAddBeastModal(true);
-                    }}
-                    className="py-2 px-3 rounded-lg border border-[#c8423a]/30 bg-[#c8423a]/10 hover:bg-[#c8423a]/20 text-xs font-semibold text-[#c8423a] flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Skull className="w-3.5 h-3.5" />
-                    + Fera (Catálogo)
-                  </button>
-                </div>
-
-                {/* Peça Selecionada: Ajustes de Escala, Pés, Facing e Mídia */}
-                {selectedToken ? (
-                  <div className="p-3 rounded-xl border border-[#26262a] bg-[#16161a] space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {selectedToken.kind === 'heroi' ? (
-                          <Shield className="w-4 h-4 text-[#4a7c59]" />
-                        ) : (
-                          <Skull className="w-4 h-4 text-[#c8423a]" />
-                        )}
-                        <span className="font-semibold text-xs text-[#ebe6d6]">
-                          {selectedToken.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          title="Alternar Visibilidade"
-                          onClick={() =>
-                            updateSelectedTokenLocally({ visible: !selectedToken.visible })
-                          }
-                          className="p-1.5 rounded text-[#8a8a93] hover:text-[#ebe6d6]"
-                        >
-                          {selectedToken.visible !== false ? (
-                            <Eye className="w-3.5 h-3.5 text-[#4a7c59]" />
-                          ) : (
-                            <EyeOff className="w-3.5 h-3.5 text-[#c8423a]" />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          title="Inverter direção"
-                          onClick={() =>
-                            updateSelectedTokenLocally({
-                              facing: (selectedToken.facing ?? 1) === 1 ? -1 : 1,
-                            })
-                          }
-                          className="p-1.5 rounded text-[#8a8a93] hover:text-[#ebe6d6]"
-                        >
-                          <ArrowRightLeft className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          title="Remover peça"
-                          onClick={handleRemoveToken}
-                          className="p-1.5 rounded text-[#c8423a] hover:bg-[#c8423a]/10"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 pt-1 border-t border-[#26262a]">
-                      <div>
-                        <div className="flex justify-between text-[11px] text-[#8a8a93]">
-                          <span>Tamanho</span>
-                          <span className="font-mono text-[#ebe6d6]">{selectedToken.size || 160}px</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="80"
-                          max="320"
-                          step="2"
-                          value={selectedToken.size || 160}
-                          onChange={(e) => updateSelectedTokenLocally({ size: Number(e.target.value) })}
-                          className="w-full accent-[#f5b65b] bg-[#26262a] h-1.5 rounded-lg appearance-none cursor-pointer"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between text-[11px] text-[#8a8a93]">
-                          <span>Pés (X)</span>
-                          <span className="font-mono text-[#ebe6d6]">
-                            {((selectedToken.anchor_x ?? 0.5) * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0.1"
-                          max="0.9"
-                          step="0.005"
-                          value={selectedToken.anchor_x ?? 0.5}
-                          onChange={(e) =>
-                            updateSelectedTokenLocally({ anchor_x: Number(e.target.value) })
-                          }
-                          className="w-full accent-[#f5b65b] bg-[#26262a] h-1.5 rounded-lg appearance-none cursor-pointer"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between text-[11px] text-[#8a8a93]">
-                          <span>Pés (Y)</span>
-                          <span className="font-mono text-[#ebe6d6]">
-                            {((selectedToken.anchor_y ?? 0.985) * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0.5"
-                          max="1.0"
-                          step="0.005"
-                          value={selectedToken.anchor_y ?? 0.985}
-                          onChange={(e) =>
-                            updateSelectedTokenLocally({ anchor_y: Number(e.target.value) })
-                          }
-                          className="w-full accent-[#f5b65b] bg-[#26262a] h-1.5 rounded-lg appearance-none cursor-pointer"
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        data-testid="btn-open-media-modal"
-                        onClick={() => {
-                          setMediaModalTarget({
-                            id: selectedToken.hero_id || selectedToken.beast_id || selectedToken.id,
-                            name: selectedToken.name,
-                            kind: selectedToken.kind,
-                            media_url: selectedToken.media_url,
-                            chroma: selectedToken.chroma,
-                            anchor_x: selectedToken.anchor_x,
-                            anchor_y: selectedToken.anchor_y,
-                            size: selectedToken.size,
-                            facing: selectedToken.facing,
-                          });
-                        }}
-                        className="w-full mt-2 py-1.5 px-3 rounded-lg border border-[#f5b65b]/30 bg-[#f5b65b]/10 hover:bg-[#f5b65b]/20 text-xs font-medium text-[#f5b65b] flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Configurar Mídia & Croma
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl border border-dashed border-[#26262a] text-center text-xs text-[#8a8a93]">
-                    Selecione uma peça no mapa ou adicione uma nova.
-                  </div>
-                )}
-
-                {/* Lista Rápida de Peças no Mapa */}
-                <div className="space-y-1.5">
-                  <span className="text-xs font-medium text-[#8a8a93] block">
-                    Peças no Mapa ({tokens.length})
-                  </span>
-                  <div className="max-h-48 overflow-y-auto space-y-1">
-                    {tokens.map((tok) => (
-                      <button
-                        key={tok.id}
-                        type="button"
-                        onClick={() => setSelectedTokenId(tok.id)}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                          selectedTokenId === tok.id
-                            ? 'bg-[#26262a] text-[#f5b65b] font-medium'
-                            : 'hover:bg-[#16161a] text-[#a1a1aa]'
-                        }`}
-                      >
-                        <span className="truncate">{tok.name}</span>
-                        <span className="text-[10px] font-mono text-[#8a8a93]">
-                          ({tok.c ?? 0},{tok.r ?? 0})
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── ABA 3: TERRENO ── */}
-            {activeTab === 'terreno' && (
-              <div className="space-y-4">
-                <div className="p-3 rounded-xl border border-[#26262a] bg-[#16161a] space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-[#8a8a93]">Bloqueios Ativos</span>
-                    <span className="font-mono text-[#c8423a] font-semibold">
-                      {currentMap?.blocked?.length || 0} quadrados
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[#8a8a93] leading-relaxed">
-                    Use a ferramenta do lápis na barra superior para pintar paredes ou obstáculos intransponíveis arrastando pelo mapa.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm('Limpar todos os bloqueios de terreno desta mesa?')) {
-                        queueMapAutosave({ blocked: [] });
-                        toast.success('Bloqueios limpos.');
-                      }
-                    }}
-                    className="w-full py-2 px-3 rounded-lg border border-[#c8423a]/30 bg-[#c8423a]/10 hover:bg-[#c8423a]/20 text-xs font-medium text-[#c8423a] flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Limpar Todos os Bloqueios
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── ABA 4: MÍDIA ── */}
-            {activeTab === 'midia' && (
-              <div className="space-y-4">
-                <div className="p-3 rounded-xl border border-[#26262a] bg-[#16161a] space-y-2">
-                  <span className="text-xs font-semibold text-[#f5b65b] flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4" />
-                    Processador de Mídia ffmpeg.wasm
-                  </span>
-                  <p className="text-[11px] text-[#8a8a93] leading-relaxed">
-                    Envie vídeos (mp4/webm) com fundo verde ou magenta. O sistema detecta a silhueta, corta com margem de 4%, remove o fundo e envia para o bucket do Supabase.
-                  </p>
-                </div>
-
-                {selectedToken && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMediaModalTarget({
-                        id: selectedToken.hero_id || selectedToken.beast_id || selectedToken.id,
-                        name: selectedToken.name,
-                        kind: selectedToken.kind,
-                        media_url: selectedToken.media_url,
-                        chroma: selectedToken.chroma,
-                        anchor_x: selectedToken.anchor_x,
-                        anchor_y: selectedToken.anchor_y,
-                        size: selectedToken.size,
-                        facing: selectedToken.facing,
-                      });
-                    }}
-                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#f5b65b] to-[#d99a3e] text-[#111114] text-xs font-semibold shadow-md hover:brightness-110 flex items-center justify-center gap-2 transition-all"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Editar Mídia da Peça Selecionada
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        <RightPanel
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          currentMap={currentMap}
+          maps={maps}
+          tokens={tokens}
+          selectedToken={selectedToken}
+          selectedTokenId={selectedTokenId}
+          setSelectedTokenId={setSelectedTokenId}
+          isLive={isLive}
+          handleToggleLive={handleToggleLive}
+          handleCreateMap={handleCreateMap}
+          handleDuplicateMap={handleDuplicateMap}
+          handleDeleteMap={handleDeleteMap}
+          handleNovaRodada={handleNovaRodada}
+          setShowRenameModal={setShowRenameModal}
+          setRenameInput={setRenameInput}
+          queueMapAutosave={queueMapAutosave}
+          updateSelectedTokenLocally={updateSelectedTokenLocally}
+          handleRemoveToken={handleRemoveToken}
+          setShowAddHeroModal={setShowAddHeroModal}
+          setShowAddBeastModal={setShowAddBeastModal}
+          setMediaModalTarget={setMediaModalTarget}
+          fileInputBgRef={fileInputBgRef}
+          handleBgUpload={handleBgUpload}
+          isUploadingBg={isUploadingBg}
+          beastSearch={beastSearch}
+          beastResults={beastResults}
+          beastSearchLoading={beastSearchLoading}
+          beastQuantity={beastQuantity}
+          setBeastSearch={setBeastSearch}
+          setBeastQuantity={setBeastQuantity}
+          handleAddHero={handleAddHero}
+          handleAddBeastFromCatalog={handleAddBeastFromCatalog}
+          setCurrentMap={setCurrentMap}
+          queryClient={queryClient}
+          BATTLE_MAP_KEY={BATTLE_MAP_KEY}
+        />
       </div>
 
       {/* ── Modal de Mídia de Batalha (FFmpeg + Croma) ── */}
@@ -1391,6 +925,160 @@ export function DMBattleMapEditor() {
                 className="px-4 py-1.5 rounded-lg bg-[#f5b65b] text-[#111114] text-xs font-semibold"
               >
                 Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── Modal Trocar Imagem de Fundo & Grade ── */}
+      {showBgModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-[#14100c] border border-[#6f5536] rounded-2xl p-6 shadow-2xl text-[#e2d5bd]">
+            <div className="flex items-center justify-between mb-4 border-b border-[#423326] pb-3">
+              <div className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-[#c5a36a]" />
+                <h3 className="font-cinzel font-bold text-base text-[#e4c894]">
+                  Trocar Fundo do Mapa de Batalha
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBgModal(false)}
+                className="text-[#a99a82] hover:text-[#e2d5bd] p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Opção 1: Upload de Nova Imagem */}
+              <div>
+                <label className="text-xs font-cinzel font-bold text-[#c5a36a] uppercase mb-1.5 block">
+                  1. Carregar Arquivo de Imagem
+                </label>
+                <button
+                  type="button"
+                  disabled={isUploadingBg}
+                  onClick={() => fileInputBgRef.current?.click()}
+                  className="w-full py-3 px-4 rounded-xl border border-dashed border-[#6f5536] bg-[#1a1410] hover:bg-[#261f18] text-xs font-serif text-[#e4c894] flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  {isUploadingBg ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#c5a36a]" />
+                      <span>Otimizando e enviando imagem (2048px WebP)...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 text-[#c5a36a]" />
+                      <span>Clique para escolher imagem do computador (JPG, PNG, WebP)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Opção 2: Cenários Prontos / Presets */}
+              <div>
+                <label className="text-xs font-cinzel font-bold text-[#c5a36a] uppercase mb-1.5 block">
+                  2. Cenários Disponíveis
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    {
+                      name: 'Santuário dos Jurados',
+                      desc: 'Pedra ancestral e relíquias',
+                      url: '/batalha/santuario.jpg',
+                    },
+                    {
+                      name: 'Papiro de Cartografia',
+                      desc: 'Pergaminho de mapa antigo',
+                      url: '/parchment-bg.jpg',
+                    },
+                  ].map((preset) => (
+                    <button
+                      key={preset.url}
+                      type="button"
+                      onClick={async () => {
+                        if (!currentMap) return;
+                        const updates = { background_url: preset.url };
+                        await updateBattleMap(currentMap.id, updates);
+                        setCurrentMap((prev) => (prev ? { ...prev, ...updates } : null));
+                        toast.success(`Fundo alterado para: ${preset.name}!`);
+                      }}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        currentMap?.background_url === preset.url
+                          ? 'border-[#c5a36a] bg-[#261f18] shadow-md'
+                          : 'border-[#423326] bg-[#181310] hover:bg-[#201914] text-[#a99a82] hover:text-[#e2d5bd]'
+                      }`}
+                    >
+                      <div className="font-cinzel font-bold text-xs text-[#e4c894] truncate">
+                        {preset.name}
+                      </div>
+                      <div className="text-[11px] font-serif text-[#a99a82] mt-0.5">
+                        {preset.desc}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Opção 3: Ajustes Rápidos da Grade */}
+              <div className="pt-3 border-t border-[#423326] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-cinzel text-[#c5a36a]">Ajustes da Grade Tática</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      queueMapAutosave({ show_grid: currentMap?.show_grid === false })
+                    }
+                    className="text-[11px] font-cinzel text-[#e4c894] hover:underline"
+                  >
+                    {currentMap?.show_grid === false ? 'Mostrar Grade' : 'Ocultar Grade'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <div className="flex justify-between text-[11px] text-[#a99a82] mb-1">
+                      <span>Tamanho do Quadrado</span>
+                      <span className="font-mono text-[#e4c894]">{currentMap?.tile_size || 86}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="40"
+                      max="140"
+                      step="2"
+                      value={currentMap?.tile_size || 86}
+                      onChange={(e) => queueMapAutosave({ tile_size: Number(e.target.value) })}
+                      className="w-full accent-[#c5a36a] bg-[#261f18] h-1.5 rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-[11px] text-[#a99a82] mb-1">
+                      <span>Limite de Passos</span>
+                      <span className="font-mono text-[#e4c894]">{currentMap?.move_limit || 6}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="12"
+                      step="1"
+                      value={currentMap?.move_limit || 6}
+                      onChange={(e) => queueMapAutosave({ move_limit: Number(e.target.value) })}
+                      className="w-full accent-[#c5a36a] bg-[#261f18] h-1.5 rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 mt-2 border-t border-[#423326]">
+              <button
+                type="button"
+                onClick={() => setShowBgModal(false)}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#8c6c3d] to-[#c5a36a] text-[#100e0c] text-xs font-cinzel font-bold hover:brightness-110 shadow-md"
+              >
+                Concluir
               </button>
             </div>
           </div>

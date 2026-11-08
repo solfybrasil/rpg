@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import {
   Volume2,
   BookOpen,
@@ -16,7 +16,7 @@ import { CommandPaletteModal } from './CommandPaletteModal';
 
 export type DMSystemSubTab = 'soundboard' | 'codice' | 'configuracoes' | 'json';
 
-export const DMSystemHubView: React.FC = () => {
+export const DMSystemHubView: React.FC = memo(() => {
   const [activeTab, setActiveTab] = useState<DMSystemSubTab>('soundboard');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
 
@@ -138,4 +138,4 @@ export const DMSystemHubView: React.FC = () => {
       />
     </div>
   );
-};
+});

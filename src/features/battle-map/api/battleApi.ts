@@ -425,6 +425,7 @@ export async function moverTokenRpc(
   c: number,
   r: number,
   path: Array<[number, number]>,
+  currentMovesLeft?: number,
 ): Promise<boolean> {
   try {
     const { data, error } = await battleSupabase.rpc('mover_token', {
@@ -446,7 +447,7 @@ export async function moverTokenRpc(
         c,
         r,
         path,
-        moves_left: Math.max(0, 6 - path.length),
+        moves_left: Math.max(0, (currentMovesLeft ?? 6) - path.length),
         updated_at: new Date().toISOString(),
       })
       .eq('id', tokenId);

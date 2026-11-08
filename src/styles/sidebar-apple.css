@@ -1,0 +1,434 @@
+/* =========================================================
+   APPLE PRO SIDEBAR & NAVIGATION STYLES — PESTE DO JURAMENTO
+   Diretrizes macOS Sonoma/Sequoia & iPadOS 18 (WWDC Fluid UI)
+   ========================================================= */
+
+/* ── Container da Barra Lateral ── */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 252px;
+  min-width: 252px;
+  padding: 18px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 13, 0.68);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  backdrop-filter: blur(40px) saturate(190%);
+  transform: translateZ(0);
+  box-shadow: 1px 0 0 0 rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  user-select: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  z-index: 50;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ── Marca / Cabeçalho Apple Squircle ── */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 2px 8px 6px;
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: #2b1503;
+  background: radial-gradient(circle at 30% 25%, #ffd9a0, #f39a42 55%, #b4421c);
+  box-shadow: 0 8px 20px -6px rgba(243, 154, 66, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.brand-mark:hover {
+  transform: scale(1.04);
+}
+
+.brand-mark .i,
+.brand-mark svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 2.2;
+}
+
+.brand-text-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brand-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brand-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  color: #f5f5f7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(245, 182, 91, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(245, 182, 91, 0.28);
+  line-height: 1.2;
+}
+
+.brand-sub {
+  font-size: 11.5px;
+  color: rgba(235, 235, 245, 0.48);
+  letter-spacing: -0.01em;
+  margin-top: 1px;
+}
+
+/* ── Botão de Busca Spotlight macOS ── */
+.search-btn {
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, 0.16);
+  color: rgba(235, 235, 245, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.search-btn:hover {
+  color: #f5f5f7;
+  background: rgba(118, 118, 128, 0.24);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.search-btn:active {
+  transform: scale(0.98);
+  background: rgba(118, 118, 128, 0.3);
+}
+
+.search-btn kbd {
+  margin-left: auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(235, 235, 245, 0.65);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.02em;
+}
+
+/* ── Grupos e Itens de Navegação ── */
+.nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.nav-group {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(235, 235, 245, 0.38);
+  padding: 12px 10px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-group:first-of-type {
+  padding-top: 2px;
+}
+
+.nav-item {
+  position: relative;
+  z-index: 1;
+  height: 35px;
+  border-radius: 9px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(235, 235, 245, 0.64);
+  font-size: 13.5px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  text-align: left;
+  transition: color 0.14s ease, background-color 0.14s ease, transform 0.08s ease;
+  box-sizing: border-box;
+}
+
+.nav-item:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.nav-item:active {
+  transform: scale(0.975);
+}
+
+.nav-item.on {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Ícone do item */
+.nav-item .i,
+.nav-item svg {
+  flex-shrink: 0;
+  color: rgba(235, 235, 245, 0.55);
+  transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s ease;
+}
+
+.nav-item:hover .i,
+.nav-item:hover svg {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.nav-item.on .i,
+.nav-item.on svg {
+  color: var(--accent);
+}
+
+/* Indicador deslizante ativo Apple Liquid Glass */
+.nav-ind-liquid {
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 2px 6px -1px rgba(0, 0, 0, 0.35);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Micro-barra de sotaque dourada na borda do item ativo */
+.nav-ind-bar {
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, #ffd9a0, var(--accent));
+  box-shadow: 0 0 8px rgba(245, 182, 91, 0.6);
+}
+
+/* Dot pulsante para combate ativo */
+.nav-live {
+  margin-left: auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.65);
+  animation: applePulseRed 1.8s infinite;
+}
+
+@keyframes applePulseRed {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(255, 69, 58, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 69, 58, 0);
+  }
+}
+
+/* ── Rodapé da Barra Lateral ── */
+.side-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.side-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 33px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: rgba(235, 235, 245, 0.68);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.side-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f5f5f7;
+}
+
+.side-row:active {
+  transform: scale(0.98);
+}
+
+.side-row b {
+  margin-left: auto;
+  font-weight: 500;
+  color: rgba(235, 235, 245, 0.42);
+  font-size: 11.5px;
+  letter-spacing: -0.01em;
+}
+
+/* Indicador de status Dot */
+.sdot-s {
+  width: 7.5px;
+  height: 7.5px;
+  border-radius: 50%;
+  background: rgba(235, 235, 245, 0.28);
+  transition: all 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  flex-shrink: 0;
+}
+
+.sdot-s.on {
+  background: var(--green);
+  box-shadow: 0 0 7px rgba(48, 209, 88, 0.75);
+}
+
+/* Live Session Status Pill */
+.live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px 2px;
+  font-size: 11.5px;
+  color: rgba(235, 235, 245, 0.42);
+  letter-spacing: -0.01em;
+}
+
+.live-dot {
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: applePulseGreen 2.4s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes applePulseGreen {
+  0% {
+    box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(48, 209, 88, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(48, 209, 88, 0);
+  }
+}
+
+/* ── Mobile Apple Floating Tab Bar (<860px) ── */
+@media (max-width: 860px) {
+  .er-floating-bar-apple {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 480px;
+    height: 62px;
+    border-radius: 26px;
+    background: rgba(15, 15, 18, 0.82);
+    -webkit-backdrop-filter: blur(35px) saturate(200%);
+    backdrop-filter: blur(35px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+    z-index: 900;
+  }
+
+  .er-nav-tab-apple {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 48px;
+    border-radius: 18px;
+    border: none;
+    background: transparent;
+    color: rgba(235, 235, 245, 0.45);
+    font-size: 10.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .er-nav-tab-apple:active {
+    transform: scale(0.94);
+  }
+
+  .er-nav-tab-apple.active {
+    color: var(--accent);
+    background: rgba(255, 255, 255, 0.08);
+  }
+}

@@ -693,7 +693,7 @@ export function MediaBattleModal({
   );
 
   if (typeof document !== 'undefined') {
-    return createPortal(modalNode, document.body);
+    return createPortal(modalNode, document.querySelector('.mestre-root') ?? document.body);
   }
   return modalNode;
 }

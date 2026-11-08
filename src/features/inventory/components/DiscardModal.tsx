@@ -1,7 +1,6 @@
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Minus, Plus, Trash2, X } from 'lucide-react';
 import React, { useState } from 'react';
 import type { InventoryItemRecord } from '../../../entities/item';
-import { GoldButton, Modal, Parchment, StoneButton } from '../../../shared/ui';
 
 export interface DiscardModalProps {
   item: InventoryItemRecord | null;
@@ -23,9 +22,8 @@ export const DiscardModal: React.FC<DiscardModalProps> = ({
     setQuantity(1);
   }, [item]);
 
-  if (!item) return null;
+  if (!open || !item) return null;
 
-  const itemName = item.name || (item.item_name as string) || 'Artefato';
   const maxQty = Math.max(1, Number(item.quantity || 1));
 
   const handleIncrement = () => {
@@ -50,69 +48,118 @@ export const DiscardModal: React.FC<DiscardModalProps> = ({
   };
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Descartar Item">
-      <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-        <Parchment seed={47} unroll className="p-3">
-          <p className="text-xs font-['EB_Garamond',serif] italic text-[var(--ink)] leading-relaxed">
-            Tem certeza que deseja abandonar <strong>"{itemName}"</strong> nas cinzas da estrada?
-            Esta ação é definitiva e o objeto não poderá ser recuperado.
-          </p>
-        </Parchment>
-
-        {maxQty > 1 && (
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center text-xs font-['Cinzel',serif]">
-              <span className="text-[var(--gold-hi)] font-bold uppercase tracking-wider">
-                Quantidade a Descartar
-              </span>
-              <span className="text-[var(--muted)] tabular-nums">Disponível: {maxQty}</span>
-            </div>
-
-            <div className="flex items-center justify-center gap-4 recess border border-[var(--iron)] p-2">
-              <button
-                type="button"
-                onClick={handleDecrement}
-                disabled={quantity <= 1}
-                className="w-8 h-8 slab flex items-center justify-center text-[var(--text)] disabled:opacity-30 cursor-pointer"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-
-              <span className="font-['Cinzel',serif] tabular-nums text-lg font-bold text-[var(--blood)] w-12 text-center">
-                {quantity}
-              </span>
-
-              <button
-                type="button"
-                onClick={handleIncrement}
-                disabled={quantity >= maxQty}
-                className="w-8 h-8 slab flex items-center justify-center text-[var(--text)] disabled:opacity-30 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Ações (Máximo 1 GoldButton) */}
-        <div className="flex justify-end gap-2 border-t border-[var(--iron)]/60 pt-4">
-          <StoneButton
+    <div className="modern-modal-overlay" onClick={() => onOpenChange(false)}>
+      <div className="modern-modal-box" onClick={(e) => e.stopPropagation()}>
+        <div className="modern-modal-header">
+          <h3 className="modern-modal-title">Descartar Item</h3>
+          <button
             type="button"
-            title="Cancelar"
             onClick={() => onOpenChange(false)}
-            disabled={loading}
-            className="w-auto px-4 py-2"
-          />
-          <GoldButton
-            type="submit"
-            disabled={loading}
-            className="w-auto px-4 py-2 inline-flex items-center gap-1.5 text-xs font-['Cinzel',serif] font-bold uppercase tracking-wider"
+            className="modern-modal-close"
+            title="Fechar"
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>{loading ? 'Descartando...' : 'Confirmar Descarte'}</span>
-          </GoldButton>
+            <X size={16} />
+          </button>
         </div>
-      </form>
-    </Modal>
+
+        <form onSubmit={handleSubmit}>
+          <div className="modern-modal-body">
+            <p style={{ color: '#b5aa96', fontSize: '0.85rem', margin: 0 }}>
+              Tem certeza que deseja abandonar <strong>"{item.name}"</strong>? Esta ação não pode ser desfeita.
+            </p>
+
+            {maxQty > 1 && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.45rem',
+                  borderTop: '1px solid rgba(201, 169, 97, 0.14)',
+                  paddingTop: '0.75rem',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '0.75rem',
+                    color: '#c9a961',
+                    fontWeight: 600,
+                  }}
+                >
+                  <span>QUANTIDADE A DESCARTAR</span>
+                  <span style={{ color: '#8c7b68' }}>Disponível: {maxQty}</span>
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '1rem',
+                    background: '#0d0c0a',
+                    border: '1px solid rgba(201, 169, 97, 0.16)',
+                    borderRadius: '6px',
+                    padding: '0.5rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={handleDecrement}
+                    disabled={quantity <= 1}
+                    className="modern-btn secondary"
+                    style={{ width: '32px', height: '32px', padding: 0 }}
+                  >
+                    <Minus size={14} />
+                  </button>
+
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono, monospace)',
+                      fontSize: '1.15rem',
+                      fontWeight: 700,
+                      color: '#f87171',
+                      width: '40px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {quantity}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={handleIncrement}
+                    disabled={quantity >= maxQty}
+                    className="modern-btn secondary"
+                    style={{ width: '32px', height: '32px', padding: 0 }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="modern-modal-footer">
+            <button
+              type="button"
+              className="modern-btn secondary"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="modern-btn danger"
+              disabled={loading}
+            >
+              <Trash2 size={14} />
+              <span>{loading ? 'Descartando...' : 'Confirmar Descarte'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };

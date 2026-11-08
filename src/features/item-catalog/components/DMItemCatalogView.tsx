@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Download, Package, Plus, Sparkles } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../../../shared/ui/index.ts';
 import {
@@ -76,7 +76,7 @@ export function exportItemsToCSV(items: ItemCatalog[]): void {
   toast.success(`Exportados ${items.length} artigos para CSV com sucesso!`);
 }
 
-export const DMItemCatalogView: React.FC = () => {
+export const DMItemCatalogView: React.FC = memo(() => {
   const queryClient = useQueryClient();
 
   // Filters state
@@ -103,11 +103,11 @@ export const DMItemCatalogView: React.FC = () => {
   const totalPages = data?.totalPages || 1;
   const currentPage = filter.page || 1;
 
-  const handleFilterChange = (updates: Partial<ItemCatalogFilter>) => {
+  const handleFilterChange = useCallback((updates: Partial<ItemCatalogFilter>) => {
     setFilter((prev) => ({ ...prev, ...updates }));
-  };
+  }, []);
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setFilter({
       page: 1,
       pageSize: 40,
@@ -116,30 +116,30 @@ export const DMItemCatalogView: React.FC = () => {
       rarity: undefined,
       sortBy: 'name',
     });
-  };
+  }, []);
 
-  const handleCreateNew = () => {
+  const handleCreateNew = useCallback(() => {
     setItemToEdit(null);
     setFormSheetOpen(true);
-  };
+  }, []);
 
-  const handleEditItem = (item: ItemCatalog) => {
+  const handleEditItem = useCallback((item: ItemCatalog) => {
     setItemToEdit(item);
     setFormSheetOpen(true);
-  };
+  }, []);
 
-  const handleSelectItem = (item: ItemCatalog) => {
+  const handleSelectItem = useCallback((item: ItemCatalog) => {
     // Abre a visualização em sheet com prévia e detalhes
     setItemToEdit(item);
     setFormSheetOpen(true);
-  };
+  }, []);
 
-  const handleGiveItem = (item: ItemCatalog) => {
+  const handleGiveItem = useCallback((item: ItemCatalog) => {
     setItemToGive(item);
     setGiveModalOpen(true);
-  };
+  }, []);
 
-  const handleArchiveItem = async (item: ItemCatalog) => {
+  const handleArchiveItem = useCallback(async (item: ItemCatalog) => {
     const nextArchived = !item.archived;
     const actionLabel = nextArchived ? 'arquivar' : 'desarquivar';
 
@@ -158,7 +158,7 @@ export const DMItemCatalogView: React.FC = () => {
     } catch (err: any) {
       toast.error(`Falha ao alterar arquivamento: ${err.message}`);
     }
-  };
+  }, [queryClient]);
 
   const handleExportCSV = () => {
     exportItemsToCSV(items);
@@ -261,4 +261,4 @@ export const DMItemCatalogView: React.FC = () => {
       />
     </div>
   );
-};
+});

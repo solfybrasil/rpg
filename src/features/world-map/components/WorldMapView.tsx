@@ -334,7 +334,7 @@ export function WorldMapView({ userRole, role: propRole, sessionCode = 'MESA', p
           type="button"
           onClick={() => engineRef.current?.zoomIn()}
           aria-label="Aproximar zoom"
-          className="w-9 h-9 rounded-md border border-[#735429] bg-[#1a140f]/90 text-[#ecd395] hover:bg-[#2e2014] hover:border-[#c9a45c] flex items-center justify-center font-bold text-base transition-colors"
+          className="w-9 h-9 rounded-md border border-[rgba(201,169,97,0.25)] bg-[#14120e] text-[#f5ede0] hover:bg-[#1c1812] hover:border-[#c9a961] shadow-lg flex items-center justify-center font-bold text-base transition-colors"
         >
           <Plus size={16} />
         </button>
@@ -342,7 +342,7 @@ export function WorldMapView({ userRole, role: propRole, sessionCode = 'MESA', p
           type="button"
           onClick={() => engineRef.current?.zoomOut()}
           aria-label="Afastar zoom"
-          className="w-9 h-9 rounded-md border border-[#735429] bg-[#1a140f]/90 text-[#ecd395] hover:bg-[#2e2014] hover:border-[#c9a45c] flex items-center justify-center font-bold text-base transition-colors"
+          className="w-9 h-9 rounded-md border border-[rgba(201,169,97,0.25)] bg-[#14120e] text-[#f5ede0] hover:bg-[#1c1812] hover:border-[#c9a961] shadow-lg flex items-center justify-center font-bold text-base transition-colors"
         >
           <Minus size={16} />
         </button>
@@ -350,7 +350,7 @@ export function WorldMapView({ userRole, role: propRole, sessionCode = 'MESA', p
           type="button"
           onClick={() => engineRef.current?.fit()}
           aria-label="Ver o continente inteiro"
-          className="w-9 h-9 rounded-md border border-[#735429] bg-[#1a140f]/90 text-[#ecd395] hover:bg-[#2e2014] hover:border-[#c9a45c] flex items-center justify-center font-bold text-xs transition-colors"
+          className="w-9 h-9 rounded-md border border-[rgba(201,169,97,0.25)] bg-[#14120e] text-[#f5ede0] hover:bg-[#1c1812] hover:border-[#c9a961] shadow-lg flex items-center justify-center font-bold text-xs transition-colors"
           title="Ver o continente inteiro"
         >
           <Maximize2 size={14} />

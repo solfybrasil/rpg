@@ -1,0 +1,960 @@
+/* ============================================================
+   mestre.css — Fonte da Verdade Visual: confessor_mestre_elden_ring.html
+   COPIADO SEM ALTERAÇÃO DE VALORES
+   ============================================================ */
+
+@import "@fontsource/crimson-pro/400.css";
+@import "@fontsource/crimson-pro/500.css";
+@import "@fontsource/crimson-pro/600.css";
+@import "@fontsource/crimson-pro/400-italic.css";
+@import "@fontsource/cinzel/400.css";
+
+/* ── tokens exatos do HTML fonte (valores idênticos).
+   Escopados em .mestre-root: no :root eles sobrescreviam --gold/--text/--bg
+   da tela do jogador, que usa os mesmos nomes. ── */
+.mestre-root {
+  --bg: #100e0c;
+  --panel: #191512;
+  --panel2: #211b16;
+  --line: #6f5536;
+  --line-soft: #423326;
+  --gold: #c5a36a;
+  --gold-light: #e4c894;
+  --text: #e2d5bd;
+  --muted: #a99a82;
+  --dim: #766a59;
+  --red: #8d302b;
+  --blue: #477d8d;
+  --green: #78834f;
+  --shadow: 0 18px 45px #0009;
+}
+
+/* ── Reset e base ── */
+.mestre-root * {
+  box-sizing: border-box;
+}
+
+.mestre-root {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Crimson Pro", Georgia, serif;
+  font-size: 17px;
+  line-height: 1.35;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Gradiente de fundo do body */
+.mestre-root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 72% 8%, #74532a30, transparent 35%),
+    radial-gradient(ellipse at 10% 65%, #50351c18, transparent 40%),
+    linear-gradient(120deg, #100d0b, #191511 55%, #100e0c);
+}
+
+.mestre-root button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.mestre-root button:focus-visible,
+.mestre-root a:focus-visible {
+  outline: 2px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+/* ── .topbar ── */
+.mestre-root .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 15px clamp(18px, 3vw, 48px);
+  background: #100e0cf0;
+  border-bottom: 1px solid #5a452e;
+  backdrop-filter: blur(12px);
+  flex-shrink: 0;
+}
+
+/* ── .brand ── */
+.mestre-root .brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 245px;
+}
+
+.mestre-root .brand-mark {
+  width: 45px;
+  height: 45px;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--gold-light);
+  font-size: 26px;
+  position: relative;
+}
+
+.mestre-root .brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid #8c6c3d;
+  border-radius: 50%;
+}
+
+.mestre-root .brand-name {
+  font-family: Cinzel, serif;
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+  font-size: 17px;
+  line-height: 1.2;
+  color: var(--gold-light);
+}
+
+.mestre-root .brand-name small {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.19em;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ── .nav ── */
+.mestre-root .nav {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mestre-root .nav a,
+.mestre-root .nav button {
+  text-decoration: none;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 12px 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font: 500 11px Cinzel, serif;
+  color: #b7a78d;
+  transition: 0.2s;
+  border-radius: 2px;
+}
+
+.mestre-root .nav a:hover,
+.mestre-root .nav a.active,
+.mestre-root .nav button:hover,
+.mestre-root .nav button.active {
+  color: #f0d6a3;
+  border-color: #725936;
+  background: linear-gradient(#372a1b99, #17120f99);
+  box-shadow: inset 0 0 18px #b18b3a13;
+}
+
+/* ── .top-actions ── */
+.mestre-root .top-actions {
+  display: flex;
+  gap: 9px;
+}
+
+.mestre-root .icon-btn {
+  width: 39px;
+  height: 39px;
+  border: 1px solid var(--line-soft);
+  background: #181410;
+  color: var(--gold);
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 2px;
+}
+
+/* ── main ── */
+.mestre-root .main-content {
+  flex: 1;
+  padding: 28px clamp(16px, 2.5vw, 38px) 50px;
+  overflow-y: auto;
+}
+
+/* ── .eyebrow ── */
+.mestre-root .eyebrow {
+  font: 500 11px Cinzel, serif;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* ── .page-heading ── */
+.mestre-root .page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 2px 0 24px;
+}
+
+.mestre-root .page-heading h1 {
+  font: 500 clamp(24px, 3vw, 37px) Cinzel, serif;
+  letter-spacing: 0.02em;
+  margin: 7px 0 0;
+  color: #e5d2af;
+}
+
+.mestre-root .page-heading p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+/* ── .btn ── */
+.mestre-root .btn {
+  background: linear-gradient(180deg, #2b2118, #17120f);
+  border: 1px solid #80633d;
+  color: #d9bd88;
+  padding: 11px 17px;
+  font: 500 11px Cinzel, serif;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  transition: background 0.2s, border-color 0.2s;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.mestre-root .btn:hover {
+  background: #38291a;
+  border-color: #c19a5c;
+}
+
+.mestre-root .btn.secondary {
+  background: #15120f;
+  border-color: #493929;
+  color: #b8a58a;
+}
+
+/* ── .dashboard ── */
+.mestre-root .dashboard {
+  display: grid;
+  grid-template-columns: minmax(245px, 0.82fr) minmax(450px, 1.7fr) minmax(245px, 0.82fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+/* ── .panel ── */
+.mestre-root .panel {
+  position: relative;
+  min-width: 0;
+  background: linear-gradient(135deg, #211a14f2, #15120ff7 75%);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  isolation: isolate;
+}
+
+.mestre-root .panel::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid #6d523323;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.mestre-root .panel::after {
+  content: "✧";
+  position: absolute;
+  top: -10px;
+  left: -7px;
+  color: var(--gold);
+  font-size: 17px;
+  text-shadow: 0 0 10px #c5a36a30;
+}
+
+/* ── .panel-head ── */
+.mestre-root .panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px 18px 13px;
+  border-bottom: 1px solid #59432d;
+}
+
+.mestre-root .panel-head h2,
+.mestre-root .panel-head h3 {
+  margin: 0;
+  font: 500 14px Cinzel, serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+}
+
+.mestre-root .panel-head span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ── .roster ── */
+.mestre-root .roster {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── .character-list ── */
+.mestre-root .character-list {
+  padding: 8px 11px;
+  display: grid;
+  gap: 5px;
+  flex: 1;
+}
+
+/* ── .character ── */
+.mestre-root .character {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  background: #100e0b70;
+  border: 1px solid transparent;
+  text-align: left;
+  transition: 0.2s;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 0;
+}
+
+.mestre-root .character:hover,
+.mestre-root .character.selected {
+  border-color: #a17c48;
+  background: linear-gradient(90deg, #59402542, #15110d);
+}
+
+/* ── .portrait ── */
+.mestre-root .portrait {
+  height: 70px;
+  width: 64px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #3c2b1e, #16120f);
+  border: 1px solid #685034;
+  color: #c7a46a;
+  font: 500 25px Cinzel, serif;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.mestre-root .portrait::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid #b08b5033;
+}
+
+.mestre-root .portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── .char-name, .char-class, .level ── */
+.mestre-root .char-name {
+  font: 500 15px Cinzel, serif;
+  color: #e0cfb0;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.mestre-root .char-class {
+  color: #b6a58b;
+  font-size: 15px;
+  display: block;
+}
+
+.mestre-root .level {
+  font-size: 13px;
+  color: var(--gold);
+  margin-top: 1px;
+  display: block;
+}
+
+/* ── .mini-bars ── */
+.mestre-root .mini-bars {
+  display: grid;
+  gap: 4px;
+  margin-top: 7px;
+}
+
+/* ── .bar ── */
+.mestre-root .bar {
+  height: 5px;
+  background: #090807;
+  border: 1px solid #57432e;
+  overflow: hidden;
+}
+
+.mestre-root .bar i {
+  height: 100%;
+  display: block;
+  background: linear-gradient(90deg, #642a24, #a84c3c);
+}
+
+.mestre-root .bar.blue i {
+  background: linear-gradient(90deg, #284d59, #52879a);
+}
+
+.mestre-root .bar.green i {
+  background: linear-gradient(90deg, #2d4a1a, #567a2c);
+}
+
+/* ── .roster-footer ── */
+.mestre-root .roster-footer {
+  padding: 0 12px 14px;
+}
+
+.mestre-root .roster-footer .btn {
+  width: 100%;
+}
+
+/* ── .hero-card ── */
+.mestre-root .hero-card {
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  min-height: 490px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, #14100dbb 0%, #14100d90 44%, #15110df5 61%, #15110dfc 100%),
+    radial-gradient(ellipse at 25% 38%, #8b67382b, transparent 50%),
+    repeating-linear-gradient(135deg, #ffffff03 0 1px, transparent 1px 5px);
+}
+
+/* ── .hero-art ── */
+.mestre-root .hero-art {
+  position: relative;
+  min-height: 490px;
+  display: flex;
+  align-items: flex-end;
+  padding: 24px;
+  background:
+    linear-gradient(0deg, #100d0bed, transparent 45%),
+    radial-gradient(ellipse at 48% 36%, #84613c55, transparent 44%),
+    linear-gradient(135deg, #33251a, #17120e 65%, #0e0c0a);
+}
+
+.mestre-root .hero-art::before {
+  content: "";
+  position: absolute;
+  inset: 13px;
+  border: 1px solid #b391583d;
+  pointer-events: none;
+}
+
+.mestre-root .hero-sigil {
+  position: absolute;
+  top: 28px;
+  left: 27px;
+  width: 56px;
+  height: 56px;
+  border: 1px solid #bd96564c;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  color: #d1ad70;
+}
+
+.mestre-root .hero-caption {
+  position: relative;
+}
+
+.mestre-root .hero-caption .eyebrow {
+  color: #c3a16b;
+}
+
+.mestre-root .hero-caption h2 {
+  font: 500 clamp(21px, 2vw, 29px) Cinzel, serif;
+  margin: 7px 0;
+  color: #f0dfc0;
+}
+
+.mestre-root .hero-caption p {
+  margin: 0;
+  color: #b7a58a;
+  font-style: italic;
+}
+
+/* ── .hero-info ── */
+.mestre-root .hero-info {
+  padding: 27px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mestre-root .hero-info h2 {
+  font: 500 clamp(22px, 2.1vw, 30px) Cinzel, serif;
+  color: #ead5af;
+  margin: 5px 0 4px;
+}
+
+.mestre-root .hero-info .subtitle {
+  font-size: 19px;
+  color: #bda780;
+}
+
+/* ── .level-seal ── */
+.mestre-root .level-seal {
+  align-self: flex-start;
+  margin: 18px 0 16px;
+  width: 70px;
+  height: 70px;
+  border: 1px solid #a17b43;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #dfc18a;
+  font: 14px Cinzel, serif;
+  background: radial-gradient(circle, #3a2a1a, #17120e);
+}
+
+.mestre-root .level-seal b {
+  font-size: 22px;
+  display: block;
+  font-weight: 500;
+}
+
+/* ── .flavor ── */
+.mestre-root .flavor {
+  font-size: 18px;
+  color: #b8a78f;
+  font-style: italic;
+  max-width: 280px;
+  margin: 0 0 18px;
+}
+
+/* ── .vitals ── */
+.mestre-root .vitals {
+  display: grid;
+  gap: 13px;
+  margin-top: auto;
+}
+
+/* ── .vital ── */
+.mestre-root .vital {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.mestre-root .vital-icon {
+  font-size: 17px;
+  color: var(--gold);
+}
+
+.mestre-root .vital-name {
+  font: 12px Cinzel, serif;
+  color: #cdbb9c;
+}
+
+.mestre-root .vital-value {
+  font-size: 13px;
+  color: #b6a58b;
+}
+
+.mestre-root .vital .bar {
+  grid-column: 2 / 4;
+  height: 6px;
+}
+
+.mestre-root .hero-info .btn {
+  margin-top: 20px;
+}
+
+/* ── .side-stack ── */
+.mestre-root .side-stack {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 18px;
+}
+
+/* ── .quick-list ── */
+.mestre-root .quick-list {
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+/* ── .quick-action ── */
+.mestre-root .quick-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  background: #110e0b9c;
+  border: 1px solid #493827;
+  color: #d4c09b;
+  font-size: 16px;
+  transition: 0.2s;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.mestre-root .quick-action:hover {
+  background: #302316;
+  border-color: #997346;
+}
+
+.mestre-root .quick-action .qicon {
+  width: 28px;
+  text-align: center;
+  font-size: 20px;
+  color: #b89357;
+}
+
+/* ── .notifications ── */
+.mestre-root .notifications {
+  padding: 5px 17px 13px;
+}
+
+/* ── .notice ── */
+.mestre-root .notice {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  padding: 13px 0;
+  border-bottom: 1px solid #382b20;
+}
+
+.mestre-root .notice:last-child {
+  border-bottom: 0;
+}
+
+.mestre-root .notice-icon {
+  color: var(--gold);
+  font-size: 17px;
+}
+
+.mestre-root .notice strong {
+  font-weight: 600;
+  color: #ded0b8;
+  display: block;
+  font-size: 16px;
+}
+
+.mestre-root .notice p {
+  color: #ad9d85;
+  font-size: 15px;
+  margin: 3px 0;
+}
+
+.mestre-root .notice time {
+  color: #776b5a;
+  font-size: 13px;
+}
+
+/* ── .modules & .module-card (Copiado de confessor_mestre_elden_ring.html) ── */
+.mestre-root .modules {
+  display: grid;
+  grid-template-columns: 1.25fr repeat(5, 1fr);
+  gap: 15px;
+  margin-top: 19px;
+}
+
+.mestre-root .module-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(150deg, #211a14, #13100d 75%);
+  border: 1px solid #655035;
+  box-shadow: 0 12px 30px #0007;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.22s, border-color 0.22s;
+}
+
+.mestre-root .module-card:hover {
+  transform: translateY(-3px);
+  border-color: #bd9559;
+}
+
+.mestre-root .module-card::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid #80613b26;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mestre-root .module-title {
+  padding: 13px 14px 9px;
+  font: 500 12px Cinzel, serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #d3b47b;
+}
+
+.mestre-root .module-art {
+  height: 112px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(ellipse at center, #70502b45, transparent 55%),
+    linear-gradient(135deg, #33261b, #17120e);
+  border-top: 1px solid #5c452b;
+  border-bottom: 1px solid #5c452b;
+  overflow: hidden;
+}
+
+.mestre-root .module-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, #100d0cf0, transparent 70%);
+}
+
+.mestre-root .module-symbol {
+  position: relative;
+  color: #c5a36a;
+  font-size: 49px;
+  text-shadow: 0 3px 16px #000;
+  filter: drop-shadow(0 0 8px #bd95592b);
+}
+
+.mestre-root .module-body {
+  padding: 12px 13px 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.mestre-root .module-body h3 {
+  font: 500 16px Cinzel, serif;
+  color: #e0ceb0;
+  margin: 0 0 5px;
+}
+
+.mestre-root .module-body p {
+  font-size: 15px;
+  color: #a99980;
+  margin: 0 0 13px;
+  flex: 1;
+}
+
+.mestre-root .module-body .btn {
+  width: 100%;
+  padding: 10px 7px;
+  font-size: 10px;
+}
+
+/* ── .activity ── */
+.mestre-root .activity {
+  margin-top: 22px;
+}
+
+.mestre-root .activity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  padding: 14px;
+}
+
+.mestre-root .activity-item {
+  padding: 14px;
+  background: #100d0b80;
+  border-left: 2px solid #85643b;
+}
+
+.mestre-root .activity-item strong {
+  display: block;
+  font: 500 12px Cinzel, serif;
+  color: #d6b980;
+  margin-bottom: 5px;
+}
+
+.mestre-root .activity-item p {
+  margin: 0;
+  color: #aa9b83;
+  font-size: 15px;
+}
+
+/* ── .toast ── */
+.mestre-root .mestre-toast {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 50;
+  background: #211910;
+  border: 1px solid var(--gold);
+  padding: 14px 20px;
+  color: #e4d0a8;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: 0.25s;
+}
+
+.mestre-root .mestre-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── .footer ── */
+.mestre-root .footer {
+  padding: 17px 0;
+  border-top: 1px solid #493727;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  color: #786d5b;
+  font-size: 13px;
+  margin-top: 32px;
+}
+
+/* ── Animação fadein das sections ── */
+@keyframes mestre-fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mestre-root .section-view {
+  display: none;
+  animation: mestre-fadein 0.3s ease;
+}
+
+.mestre-root .section-view.active {
+  display: block;
+}
+
+/* ── Steppers de vitais (adicionados para React) ── */
+.mestre-root .vital-steppers {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  grid-column: 2 / 4;
+}
+
+.mestre-root .stepper-btn {
+  width: 26px;
+  height: 22px;
+  background: #1a1410;
+  border: 1px solid #5a422c;
+  color: #d4c09b;
+  font-size: 13px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  border-radius: 2px;
+}
+
+.mestre-root .stepper-btn:hover {
+  border-color: var(--gold);
+  background: #2c1f12;
+}
+
+.mestre-root .stepper-btn:active {
+  transform: scale(0.92);
+}
+
+/* ── Responsive (copiado do HTML fonte) ── */
+@media (max-width: 1250px) {
+  .mestre-root .dashboard {
+    grid-template-columns: minmax(220px, 0.8fr) minmax(420px, 1.5fr);
+  }
+  .mestre-root .side-stack {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+  }
+}
+
+@media (max-width: 780px) {
+  .mestre-root .topbar {
+    position: relative;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .mestre-root .brand {
+    min-width: 0;
+    flex: 1;
+  }
+  .mestre-root .nav {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .mestre-root .nav a,
+.mestre-root .nav button {
+  text-decoration: none;
+    white-space: nowrap;
+    padding: 10px;
+  }
+  .mestre-root .dashboard {
+    grid-template-columns: 1fr;
+  }
+  .mestre-root .hero-card {
+    grid-template-columns: 1fr 1fr;
+    min-height: 420px;
+  }
+  .mestre-root .hero-art {
+    min-height: 420px;
+  }
+  .mestre-root .side-stack {
+    grid-column: auto;
+  }
+  .mestre-root .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .mestre-root .main-content {
+    padding: 18px 12px 32px;
+  }
+  .mestre-root .brand-name {
+    font-size: 14px;
+  }
+  .mestre-root .hero-card {
+    grid-template-columns: 1fr;
+  }
+  .mestre-root .hero-art {
+    min-height: 220px;
+  }
+  .mestre-root .hero-info {
+    padding: 22px;
+  }
+  .mestre-root .side-stack {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mestre-root *,
+  .mestre-root *::before,
+  .mestre-root *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

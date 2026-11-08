@@ -6,7 +6,7 @@ import {
   Store,
   Utensils,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import { useGameState } from '../../../shared/hooks/baseHooks';
 import { DMShopControlTab } from '../../shop/components/DMShopControlTab.tsx';
 import { DMRecipesTab } from './DMRecipesTab.tsx';
@@ -14,7 +14,7 @@ import { DMWorkshopControlTab } from './DMWorkshopControlTab.tsx';
 
 export type WorkshopHubTab = 'oficina' | 'receitas' | 'loja';
 
-export const DMWorkshopHubView: React.FC = () => {
+export const DMWorkshopHubView: React.FC = memo(() => {
   const [activeTab, setActiveTab] = useState<WorkshopHubTab>('oficina');
   const { gameState } = useGameState();
 
@@ -140,4 +140,4 @@ export const DMWorkshopHubView: React.FC = () => {
       {activeTab === 'loja' && <DMShopControlTab />}
     </div>
   );
-};
+});

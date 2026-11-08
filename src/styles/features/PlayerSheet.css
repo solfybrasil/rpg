@@ -1,0 +1,835 @@
+/* ==========================================================================
+   PLAYER SHEET HUD — Obsidian, Antique Gold & Grim Fantasy
+   Directly matching C:\Users\leona\Downloads\rpg\src\components\player-tabs\PlayerSheet.jsx
+   ========================================================================== */
+
+/* ── CONTAINER DA FICHA MODULADA (HUD DE GAME) ── */
+.game-hud-sheet-container {
+  max-width: 580px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Módulo de cabeçalho do herói */
+.game-hud-header-module {
+  background: linear-gradient(180deg, #18130e 0%, #100d0a 100%);
+  border: 2px solid #3d3020;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(0, 0, 0, 0.7);
+}
+
+@media (max-width: 600px) {
+  .game-hud-sheet-container {
+    padding: 0 4px;
+    gap: 0.65rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .game-hud-header-module {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 0.85rem !important;
+    gap: 0.75rem !important;
+  }
+
+  .game-hud-header-top-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    text-align: left;
+  }
+
+  .game-hud-avatar-box {
+    width: 110px !important;
+    height: 135px !important;
+    border-width: 2.5px !important;
+    border-radius: 9px !important;
+  }
+
+  .game-hud-name-row {
+    justify-content: flex-start;
+  }
+
+  .game-hud-name {
+    font-size: 1.18rem !important;
+  }
+
+  .game-hud-title-text {
+    font-size: 0.75rem !important;
+  }
+
+  .game-hud-btn-switch {
+    width: 100%;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.72rem !important;
+  }
+}
+
+.game-hud-avatar-box {
+  position: relative;
+  width: 165px;
+  height: 200px;
+  border-radius: 12px;
+  border: 3px solid var(--seal-gold);
+  overflow: hidden;
+  background: #0d0b09;
+  flex-shrink: 0;
+  box-shadow: 
+    0 0 0 1px #110d08,
+    0 8px 24px rgba(0, 0, 0, 0.75),
+    0 0 20px rgba(207, 160, 60, 0.4);
+}
+
+.game-hud-portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  transition: transform 0.3s ease;
+}
+
+.game-hud-portrait:hover {
+  transform: scale(1.04);
+}
+
+.game-hud-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.5rem;
+  background: radial-gradient(circle at 40% 30%, #302418 0%, #120d09 100%);
+}
+
+.game-hud-level-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: var(--seal-gold);
+  color: #ffffff;
+  font-family: var(--font-title);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-top-left-radius: 6px;
+  letter-spacing: 0.05em;
+  box-shadow: -1px -1px 4px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.7);
+}
+
+.game-hud-title-info {
+  flex: 1;
+}
+
+.game-hud-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.game-hud-name {
+  margin: 0;
+  font-family: var(--font-title);
+  color: #ffffff;
+  font-size: 1.45rem;
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+}
+
+.game-hud-race-tag {
+  background: rgba(207, 160, 60, 0.15);
+  border: 1px solid rgba(207, 160, 60, 0.35);
+  color: #e5cb93;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  font-family: var(--font-title);
+  font-weight: 700;
+}
+
+.game-hud-title-text {
+  color: #a8947a;
+  font-size: 0.85rem;
+  font-style: italic;
+  margin-top: 0.2rem;
+}
+
+.game-hud-oath-type-pill {
+  margin-top: 0.4rem;
+  display: inline-block;
+  background: rgba(143, 25, 29, 0.2);
+  border: 1px solid rgba(143, 25, 29, 0.4);
+  color: #f7b2b6;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-family: var(--font-title);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.game-hud-btn-switch {
+  background: #2b2115;
+  border: 1px solid #634d31;
+  color: #e5cb93;
+  font-family: var(--font-title);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.45rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.game-hud-btn-switch:hover {
+  background: var(--seal-gold);
+  color: #120d08;
+  border-color: var(--seal-gold);
+}
+
+/* ── PAINEL DE DEFESA, FOCO E INSPIRAÇÃO RÁPIDO ── */
+.game-hud-quick-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+@media (max-width: 480px) {
+  .game-hud-quick-stats-row {
+    gap: 0.45rem;
+  }
+}
+
+.game-hud-stat-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+}
+
+@media (max-width: 420px) {
+  .game-hud-stat-card {
+    padding: 0.5rem 0.4rem;
+    gap: 5px;
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+.game-hud-stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.game-hud-stat-header {
+  font-size: 0.58rem;
+  font-family: var(--font-title);
+  color: #93c5fd;
+  letter-spacing: .06em;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+@media (max-width: 420px) {
+  .game-hud-stat-header {
+    justify-content: center;
+  }
+}
+
+.game-hud-stat-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-family: var(--font-title);
+  line-height: 1;
+}
+
+/* ── MÓDULOS DE VITAIS EM TEMPO REAL ── */
+.game-hud-vitals-dual-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+@media (max-width: 560px) {
+  .game-hud-vitals-dual-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+  }
+}
+
+.game-hud-dual-module {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.game-hud-pips-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .game-hud-dual-module {
+    padding: 0.65rem 0.6rem !important;
+  }
+
+  .game-hud-pips-grid {
+    gap: 2px;
+  }
+
+  .game-hud-dual-module .game-hud-module-label {
+    font-size: 0.68rem !important;
+  }
+
+  .game-hud-dual-module .vital-val {
+    font-size: 0.95rem !important;
+  }
+}
+
+.game-hud-vitals-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .game-hud-vitals-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+}
+
+.game-hud-module {
+  background: #130f0c;
+  border: 1.5px solid #2e2417;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.game-hud-module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.game-hud-module-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-title);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ab977c;
+}
+
+.vital-icon.hp-icon {
+  color: #e63946;
+}
+
+.vital-icon.plague-icon {
+  color: #8c1e22;
+}
+
+.game-hud-vital-score {
+  font-family: var(--font-title);
+  font-weight: 800;
+}
+
+.vital-val {
+  font-size: 1.15rem;
+  color: #ffffff;
+}
+
+.vital-val.danger {
+  color: #ff4d4d;
+  animation: pulse 1.5s infinite;
+}
+
+.vital-val.plague-val.corrupt {
+  color: #e09f3e;
+}
+
+.vital-val.plague-val.transform {
+  color: #e63946;
+}
+
+.vital-max {
+  font-size: 0.85rem;
+  color: #6e5942;
+}
+
+.game-hud-stage-name {
+  font-size: 0.65rem;
+  margin-left: 0.4rem;
+  color: #cfa03c;
+  border: 1px solid rgba(207, 160, 60, 0.3);
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
+}
+
+/* Barra de Vida */
+.game-hud-bar-track {
+  width: 100%;
+  height: 9px;
+  background: #080605;
+  border: 1px solid #291e13;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.65rem;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.game-hud-bar-fill.hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8f191d 0%, #d62828 100%);
+  box-shadow: 0 0 8px rgba(214, 40, 40, 0.6);
+  transition: width 0.3s ease;
+}
+
+.game-hud-bar-fill.hp-fill.danger {
+  background: linear-gradient(90deg, #5e0d10 0%, #8f191d 100%);
+}
+
+/* Pips de Peste */
+.game-hud-plague-pips {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  margin-bottom: 0.65rem;
+}
+
+.game-hud-pip {
+  height: 9px;
+  background: #14100c;
+  border: 1px solid #2b2014;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.game-hud-pip.active.pip-mancha {
+  background: #4a5d78;
+  border-color: #6e84a3;
+  box-shadow: 0 0 4px #4a5d78;
+}
+
+.game-hud-pip.active.pip-corrupt {
+  background: #b88126;
+  border-color: #e09f3e;
+  box-shadow: 0 0 4px #b88126;
+}
+
+.game-hud-pip.active.pip-transform {
+  background: #8f191d;
+  border-color: #d62828;
+  box-shadow: 0 0 6px #d62828;
+}
+
+.game-hud-vital-status-note {
+  font-size: 0.72rem;
+  color: #8c765c;
+  font-style: italic;
+  text-align: center;
+  border-top: 1px dashed rgba(207, 160, 60, 0.15);
+  padding-top: 0.4rem;
+  margin-top: 0.2rem;
+  letter-spacing: 0.02em;
+}
+
+.game-hud-btn-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.game-hud-vital-btn {
+  flex: 1;
+  padding: 0.3rem 0.4rem;
+  border-radius: 4px;
+  font-family: var(--font-title);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.game-hud-vital-btn.minus {
+  background: #2b1717;
+  color: #ff9999;
+  border-color: #592525;
+}
+
+.game-hud-vital-btn.minus:hover {
+  background: #401f1f;
+  color: #ffffff;
+}
+
+.game-hud-vital-btn.plus {
+  background: #192b1b;
+  color: #a3e6aa;
+  border-color: #27522c;
+}
+
+.game-hud-vital-btn.plus:hover {
+  background: #223d25;
+  color: #ffffff;
+}
+
+.game-hud-vital-btn.penance {
+  background: #1f2733;
+  color: #abc9ed;
+  border-color: #354761;
+}
+
+.game-hud-vital-btn.penance:hover {
+  background: #2b3747;
+  color: #ffffff;
+}
+
+.game-hud-vital-btn.tempt {
+  background: #381014;
+  color: #ffb3b8;
+  border-color: #6e1c22;
+}
+
+.game-hud-vital-btn.tempt:hover {
+  background: #4f151b;
+  color: #ffffff;
+}
+
+/* ── MÓDULO DO JURAMENTO SAGRADO ── */
+.game-hud-module.oath-module {
+  background: linear-gradient(180deg, rgba(143, 25, 29, 0.12) 0%, rgba(20, 15, 12, 0.9) 100%);
+  border-color: #5c1f24;
+}
+
+.game-hud-oath-seal-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.game-hud-oath-icon {
+  color: var(--seal-gold);
+  font-size: 1.1rem;
+}
+
+.game-hud-oath-heading {
+  margin: 0;
+  font-family: var(--font-title);
+  color: var(--seal-red);
+  font-size: 0.88rem;
+  letter-spacing: 0.1em;
+}
+
+.game-hud-vow-quote {
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+  font-style: italic;
+  color: #fff1e0;
+  line-height: 1.4;
+  border-left: 3px solid var(--seal-gold);
+  padding-left: 0.75rem;
+  margin: 0.5rem 0 0.85rem 0;
+}
+
+.game-hud-oath-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(207, 160, 60, 0.15);
+  padding: 0.75rem;
+  border-radius: 4px;
+}
+
+@media (max-width: 500px) {
+  .game-hud-oath-details {
+    grid-template-columns: 1fr;
+  }
+}
+
+.game-hud-oath-label {
+  display: block;
+  font-size: 0.7rem;
+  color: #cfa03c;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.2rem;
+}
+
+.game-hud-oath-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #d1c0a8;
+  line-height: 1.35;
+}
+
+.oath-item-glow {
+  color: #fce8c3;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(207, 160, 60, 0.4);
+}
+
+/* ── MÓDULO DE ATRIBUTOS (CARDS DE HUD) ── */
+.game-hud-attr-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+}
+
+@media (max-width: 480px) {
+  .game-hud-attr-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.game-hud-attr-card {
+  background: #1c1611;
+  border: 1px solid #3d2f1f;
+  border-radius: 4px;
+  padding: 0.6rem 0.4rem;
+  text-align: center;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
+  transition: all 0.15s ease;
+}
+
+.game-hud-attr-card:hover {
+  border-color: var(--seal-gold);
+  background: #241c15;
+}
+
+.game-hud-attr-card .attr-tag {
+  display: block;
+  font-family: var(--font-title);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #9e896f;
+  margin-bottom: 0.15rem;
+}
+
+.game-hud-attr-card .attr-score {
+  font-family: var(--font-title);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.game-hud-attr-card .attr-score.positive {
+  color: #90e0ef;
+  text-shadow: 0 0 6px rgba(144, 224, 239, 0.4);
+}
+
+.game-hud-attr-card .attr-score.negative {
+  color: #ff85a1;
+}
+
+/* ── MÓDULO DE LORE & LAÇOS ── */
+.game-hud-lore-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 540px) {
+  .game-hud-lore-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.game-hud-lore-text {
+  margin: 0.35rem 0 0 0;
+  font-size: 0.85rem;
+  color: #c7b69f;
+  line-height: 1.4;
+}
+
+.game-hud-lore-text.italic {
+  font-style: italic;
+}
+
+
+
+/* ── EXTRA SHEET MODULES ── */
+.player-fallen-banner {
+  background: linear-gradient(90deg, #3d0a0d 0%, #701116 50%, #3d0a0d 100%);
+  border: 1.5px solid #ef4444;
+  border-radius: 8px;
+  padding: 0.85rem 1.15rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
+  animation: fallenPulse 1.8s infinite ease-in-out;
+}
+
+/* ── COMPLEMENTOS ESPECÍFICOS DA FICHA ── */
+.player-fallen-banner {
+  background: linear-gradient(90deg, #3d0a0d 0%, #701116 50%, #3d0a0d 100%);
+  border: 1.5px solid #ef4444;
+  border-radius: 8px;
+  padding: 0.85rem 1.15rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
+  animation: fallenPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes fallenPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.7); }
+}
+
+.player-fallen-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.player-fallen-title {
+  margin: 0;
+  font-family: var(--font-title, 'Cinzel', serif);
+  color: #fecaca;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.player-fallen-sub {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.75rem;
+  color: #fca5a5;
+  line-height: 1.35;
+}
+
+.er-sheet-attributes-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+
+@media (max-width: 480px) {
+  .er-sheet-attributes-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+  }
+}
+
+.er-sheet-attribute-box {
+  background: #18130e;
+  border: 1px solid #3d2f20;
+  border-radius: 6px;
+  padding: 0.55rem 0.35rem;
+  text-align: center;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+  transition: all 0.15s ease;
+}
+
+.er-sheet-attribute-box:hover {
+  border-color: #c9a961;
+  background: #221a13;
+}
+
+.er-sheet-attribute-label {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: #c9a961;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.er-sheet-attribute-val {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #f5ede0;
+  margin-top: 2px;
+  line-height: 1.1;
+}
+
+.er-sheet-oath-box {
+  background: linear-gradient(180deg, #18120d 0%, #100b07 100%);
+  border: 1px solid rgba(201, 169, 97, 0.35);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.er-sheet-oath-text {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: #ffd27a;
+  line-height: 1.45;
+  margin: 0.5rem 0;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+.ornamental-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0.45rem 0;
+  gap: 0.65rem;
+}
+
+.ornamental-divider::before,
+.ornamental-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201, 169, 97, 0.4), transparent);
+}
+
+.ornamental-divider .diamond {
+  width: 6px;
+  height: 6px;
+  background-color: #c9a961;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}

@@ -24,39 +24,28 @@ export const JogadorLayout: React.FC = () => {
   const isBattleLive = activeBattleMap?.status === 'ao_vivo';
   const isMesaRoute = currentPath.includes('/jogador/mesa');
 
-  // Estados de Realtime e Animações (SKILL.md Seção 5)
+  // Estados de Realtime e Animações
   const [isDamaged, setIsDamaged] = useState(false);
   const [isHealing, setIsHealing] = useState(false);
-  const [isSpendingFocus, setIsSpendingFocus] = useState(false);
   const [showVignette, setShowVignette] = useState(false);
   const [floatingItems, setFloatingItems] = useState<FloatingItem[]>([]);
-  const [focusFloatingItems, setFocusFloatingItems] = useState<FloatingItem[]>([]);
-  const [epicQueue, setEpicQueue] = useState<Array<'level_up' | 'plague_surge' | 'fallen_hero'>>(
-    [],
-  );
+  const [epicMoment, setEpicMoment] = useState<'level_up' | null>(null);
 
   const prevHealthRef = useRef<number | null>(null);
-  const prevFocusRef = useRef<number | null>(null);
   const prevLevelRef = useRef<number | null>(null);
-  const prevPlagueRef = useRef<number | null>(null);
   const previousStatusRef = useRef<string | null | undefined>(undefined);
 
-  const currentEpicMoment = epicQueue[0] ?? null;
-  const isFallen = hero ? (hero.health ?? 20) <= 0 : false;
-
-  // Reatividade em tempo real aos eventos do herói (SKILL.md Seções 5 e 9.5)
+  // Reatividade em tempo real aos eventos do herói (SKILL.md Seção 9.5)
   useEffect(() => {
     if (!hero) return;
 
     const currentHealth = hero.health ?? 20;
-    const currentFocus = hero.focus ?? 5;
     const currentLevel = hero.level ?? 1;
-    const currentPlague = hero.plague_stage ?? 0;
 
-    // 1. Detecta Dano, Cura ou Herói Caído
+    // Detecta Dano ou Cura do Mestre
     if (prevHealthRef.current !== null && prevHealthRef.current !== currentHealth) {
       const diff = currentHealth - prevHealthRef.current;
-      const id = `hp-${Date.now()}`;
+      const id = Date.now().toString();
 
       if (diff < 0) {
         setIsDamaged(true);
@@ -64,10 +53,6 @@ export const JogadorLayout: React.FC = () => {
         setFloatingItems((prev) => [...prev, { id, value: Math.abs(diff), type: 'damage' }]);
         setTimeout(() => setIsDamaged(false), 400);
         setTimeout(() => setShowVignette(false), 320);
-
-        if (currentHealth <= 0 && prevHealthRef.current > 0) {
-          setEpicQueue((q) => [...q, 'fallen_hero']);
-        }
       } else if (diff > 0) {
         setIsHealing(true);
         setFloatingItems((prev) => [...prev, { id, value: diff, type: 'heal' }]);
@@ -76,29 +61,11 @@ export const JogadorLayout: React.FC = () => {
     }
     prevHealthRef.current = currentHealth;
 
-    // 2. Detecta Foco Gasto (azul escurece por um instante)
-    if (prevFocusRef.current !== null && prevFocusRef.current !== currentFocus) {
-      const diff = currentFocus - prevFocusRef.current;
-      if (diff < 0) {
-        const id = `foc-${Date.now()}`;
-        setIsSpendingFocus(true);
-        setFocusFloatingItems((prev) => [...prev, { id, value: diff, type: 'focus' }]);
-        setTimeout(() => setIsSpendingFocus(false), 420);
-      }
-    }
-    prevFocusRef.current = currentFocus;
-
-    // 3. Detecta Subida de Nível (Fila única epicQueue)
+    // Detecta Subida de Nível
     if (prevLevelRef.current !== null && currentLevel > prevLevelRef.current) {
-      setEpicQueue((q) => [...q, 'level_up']);
+      setEpicMoment('level_up');
     }
     prevLevelRef.current = currentLevel;
-
-    // 4. Detecta Avanço da Peste (Fila única epicQueue)
-    if (prevPlagueRef.current !== null && currentPlague > prevPlagueRef.current) {
-      setEpicQueue((q) => [...q, 'plague_surge']);
-    }
-    prevPlagueRef.current = currentPlague;
   }, [hero]);
 
   // Abre sozinha quando a mesa liga (transição para 'ao_vivo')
@@ -125,20 +92,16 @@ export const JogadorLayout: React.FC = () => {
   }, [inventory]);
 
   return (
-    <div
-      className={`flex-1 flex flex-col h-full w-full bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none font-['EB_Garamond',serif] ${
-        isFallen ? 'hero-fallen-filter' : ''
-      }`}
-    >
+    <div className="flex-1 flex flex-col h-full w-full bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none font-sans">
       {/* Vinheta de Dano na Tela */}
       {showVignette && <div className="damage-vignette" />}
 
-      {/* Fila Única de Momentos Épicos: Subida de Nível, Avanço da Peste, Herói Caído */}
+      {/* Momento Épico: Subida de Nível */}
       <EpicMoment
-        type={currentEpicMoment}
+        type={epicMoment}
         level={hero?.level || 2}
         heroName={hero?.name || 'Jurado'}
-        onClose={() => setEpicQueue((q) => q.slice(1))}
+        onClose={() => setEpicMoment(null)}
       />
 
       {/* Contêiner centralizado no PC (máx 480px), tela cheia no Celular */}
@@ -171,7 +134,7 @@ export const JogadorLayout: React.FC = () => {
           className={`flex-1 flex flex-col relative min-h-0 ${
             isMesaRoute
               ? 'overflow-hidden'
-              : 'overflow-y-auto pb-[calc(155px+env(safe-area-inset-bottom,0px))]'
+              : 'overflow-y-auto pb-[calc(68px+env(safe-area-inset-bottom,0px))]'
           }`}
         >
           <AnimatePresence mode="wait">
@@ -188,40 +151,9 @@ export const JogadorLayout: React.FC = () => {
           </AnimatePresence>
         </main>
 
-        {/* 3. HUD Fixo na Base (150px): Orbes de Vidro, Cinto de Poções e BottomNav */}
+        {/* 3. Navegação Inferior Fixa (Apenas as 5 abas, sem orbes flutuantes cobrindo a tela e sem cinto) */}
         {!isMesaRoute && (
-          <div className="hud" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-            {/* Cinto de poções */}
-            <Belt items={quickItems} />
-
-            {/* Orbe de Vida (Carmim) */}
-            <Orb
-              variant="hp"
-              current={hero?.health ?? 20}
-              max={hero?.max_health ?? 20}
-              label="VIDA"
-              isDamaged={isDamaged}
-              isHealing={isHealing}
-              floatingItems={floatingItems}
-              onFloatingComplete={(id) =>
-                setFloatingItems((prev) => prev.filter((i) => i.id !== id))
-              }
-            />
-
-            {/* Orbe de Foco (Azul Mana) */}
-            <Orb
-              variant="focus"
-              current={hero?.focus ?? 5}
-              max={hero?.max_focus ?? 5}
-              label="FOCO"
-              isSpendingFocus={isSpendingFocus}
-              floatingItems={focusFloatingItems}
-              onFloatingComplete={(id) =>
-                setFocusFloatingItems((prev) => prev.filter((i) => i.id !== id))
-              }
-            />
-
-            {/* 5 Abas: Ficha, Mochila, Grimório, Diário, Mais */}
+          <div className="z-40" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
             <BottomNav />
           </div>
         )}

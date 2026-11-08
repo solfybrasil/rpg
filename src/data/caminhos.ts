@@ -1,0 +1,188 @@
+// Regras 2.0 — Os 9 Caminhos dos Jurados
+export const caminhos = [
+  {
+    id: 'guerreiro',
+    nome: 'Guerreiro',
+    vidaBase: 12,
+    focoBase: 3,
+    armadura: 2,
+    habilidades: [
+      { nome: 'Golpe Poderoso', custoFoco: 1, efeito: '+1d6 de dano no próximo ataque.', effect: { bonus_dano: '1d6' } },
+      { nome: 'Segundo Fôlego', custoFoco: 1, efeito: 'Recupera 1d6 + nível pontos de Vida.', effect: { cura: '1d6+level' } },
+      { nome: 'Postura', custoFoco: 0, tipo: 'reação', efeito: '+2 de Defesa contra um ataque iminente.', effect: { defesa: 2 } },
+      { nivel: 3, nome: 'Ataque Extra', custoFoco: 0, efeito: 'Dois ataques por turno.' },
+      { nivel: 6, nome: 'Fúria de Batalha', custoFoco: 2, efeito: 'Vantagem em ataques por uma cena.', effect: { vantagem_proximo: true } },
+      { nivel: 9, nome: 'Golpe Lendário', custoFoco: 3, efeito: 'Dano máximo automático.' },
+    ],
+    assinaturas: [
+      { nivel: 3, nome: 'Ataque Extra', custoFoco: 0, efeito: 'Dois ataques por turno.' },
+      { nivel: 6, nome: 'Fúria de Batalha', custoFoco: 2, efeito: 'Vantagem em ataques por uma cena.' },
+      { nivel: 9, nome: 'Golpe Lendário', custoFoco: 3, efeito: 'Dano máximo automático.' },
+    ],
+  },
+  {
+    id: 'guardiao',
+    nome: 'Guardião',
+    vidaBase: 14,
+    focoBase: 3,
+    armadura: 3,
+    habilidades: [
+      { nome: 'Provocar', custoFoco: 1, efeito: 'Inimigos próximos focam seus ataques em você.', effect: { condicao: 'Provocado' } },
+      { nome: 'Escudo Vivo', custoFoco: 1, tipo: 'reação', efeito: 'Reduz 1d6 do dano recebido por um aliado adjacente.', effect: { reduz_dano: '1d6' } },
+      { nome: 'Inabalável', custoFoco: 0, efeito: 'Ganha vantagem em testes contra medo e contra ser derrubado.', effect: { vantagem_proximo: true } },
+      { nivel: 3, nome: 'Muralha', custoFoco: 0, efeito: 'Aliados atrás de você ganham +2 de Defesa.', effect: { defesa: 2 } },
+      { nivel: 6, nome: 'Recusa da Morte', custoFoco: 0, efeito: '1x por descanso, aliado que cairia a 0 fica com 1 de Vida.' },
+      { nivel: 9, nome: 'Fortaleza', custoFoco: 3, efeito: 'Metade do dano sofrido por uma cena inteira.' },
+    ],
+    assinaturas: [
+      { nivel: 3, nome: 'Muralha', custoFoco: 0, efeito: 'Aliados atrás de você ganham +2 de Defesa.' },
+      { nivel: 6, nome: 'Recusa da Morte', custoFoco: 0, efeito: '1x por descanso, aliado que cairia a 0 fica com 1 de Vida.' },
+      { nivel: 9, nome: 'Fortaleza', custoFoco: 3, efeito: 'Metade do dano sofrido por uma cena inteira.' },
+    ],
+  },
+  {
+    id: 'artifice',
+    nome: 'Artífice',
+    vidaBase: 12,
+    focoBase: 3,
+    armadura: 2,
+    habilidades: [
+      { nome: 'Runa de Batalha', custoFoco: 1, efeito: 'Arma de um aliado recebe +1d4 de dano pela cena.', effect: { bonus_dano: '1d4' } },
+      { nome: 'Reparo de Campo', custoFoco: 1, efeito: '+1 de Defesa para um aliado pela cena.', effect: { defesa: 1 } },
+      { nome: 'Olho de Ferreiro', custoFoco: 0, efeito: 'Identifica fraquezas estruturais ou vulnerabilidades do alvo.', effect: { vantagem_proximo: true } },
+      { nivel: 3, nome: 'Runas Permanentes', custoFoco: 0, efeito: 'Grava runas mágicas permanentes em armas.' },
+      { nivel: 6, nome: 'Torre de Ferro', custoFoco: 0, efeito: 'Autômato ou balista ataca causando 1d10 por uma cena.', effect: { dano_direto: '1d10' } },
+      { nivel: 9, nome: 'Obra Lendária', custoFoco: 0, efeito: 'Pode forjar um item Lendário por campanha.' },
+    ],
+    assinaturas: [
+      { nivel: 3, nome: 'Runas Permanentes', custoFoco: 0, efeito: 'Grava runas mágicas permanentes em armas.' },
+      { nivel: 6, nome: 'Torre de Ferro', custoFoco: 0, efeito: 'Autômato ou balista ataca causando 1d10 por uma cena.' },
+      { nivel: 9, nome: 'Obra Lendária', custoFoco: 0, efeito: 'Pode forjar um item Lendário por campanha.' },
+    ],
+  },
+  {
+    id: 'sombra',
+    nome: 'Sombra',
+    vidaBase: 10,
+    focoBase: 3,
+    armadura: 1,
+    habilidades: [
+      { nome: 'Ataque Furtivo', custoFoco: 0, efeito: '+2d6 de dano quando ataca com vantagem (1x por turno).', effect: { bonus_dano: '2d6' } },
+      { nome: 'Passo Sombrio', custoFoco: 1, efeito: 'Desaparece da vista dos inimigos nas sombras.', effect: { vantagem_proximo: true } },
+      { nome: 'Esquiva', custoFoco: 1, tipo: 'reação', efeito: 'Reduz o dano sofrido pela metade.', effect: { reduz_dano_metade: true } },
+      { nivel: 3, nome: 'Assassinar', custoFoco: 0, efeito: 'Dano dobrado contra quem ainda não agiu no combate.' },
+      { nivel: 6, nome: 'Mil Rostos', custoFoco: 0, efeito: 'Disfarce místico perfeito por uma cena.' },
+      { nivel: 9, nome: 'Golpe na Alma', custoFoco: 3, efeito: 'Ataque deixa o alvo atordoado.', effect: { condicao: 'Atordoado' } },
+    ],
+    assinaturas: [
+      { nivel: 3, nome: 'Assassinar', custoFoco: 0, efeito: 'Dano dobrado contra quem ainda não agiu no combate.' },
+      { nivel: 6, nome: 'Mil Rostos', custoFoco: 0, efeito: 'Disfarce místico perfeito por uma cena.' },
+      { nivel: 9, nome: 'Golpe na Alma', custoFoco: 3, efeito: 'Ataque deixa o alvo atordoado.' },
+    ],
+  },
+  {
+    id: 'patrulheiro',
+    nome: 'Patrulheiro',
+    vidaBase: 11,
+    focoBase: 3,
+    armadura: 1,
+    habilidades: [
+      { nome: 'Marca do Caçador', custoFoco: 1, efeito: '+1d4 de dano contra o alvo marcado durante a cena.', effect: { bonus_dano: '1d4' } },
+      { nome: 'Tiro Certeiro', custoFoco: 0, efeito: 'Ignora penalidades de cobertura no ataque à distância.', effect: { vantagem_proximo: true } },
+      { nome: 'Rastreador', custoFoco: 0, efeito: 'Vantagem em testes para rastrear pegadas e pistas.', effect: { vantagem_proximo: true } },
+      { nivel: 3, nome: 'Companheiro Animal', custoFoco: 0, efeito: 'Animal fiel luta ao seu lado e auxilia nas buscas.' },
+      { nivel: 6, nome: 'Chuva de Flechas', custoFoco: 2, efeito: 'Ataca todos os inimigos numa área.', effect: { dano_direto: '2d6' } },
+      { nivel: 9, nome: 'Caçador de Dragões', custoFoco: 0, efeito: 'Dano dobrado contra uma espécie escolhida.' },
+    ],
+    assinaturas: [
+      { nivel: 3, nome: 'Companheiro Animal', custoFoco: 0, efeito: 'Animal fiel luta ao seu lado e auxilia nas buscas.' },
+      { nivel: 6, nome: 'Chuva de Flechas', custoFoco: 2, efeito: 'Ataca todos os inimigos numa área.' },
+      { nivel: 9, nome: 'Caçador de Dragões', custoFoco: 0, efeito: 'Dano dobrado contra uma espécie escolhida.' },
+    ],
+  },
+  {
+    id: 'bardo',
+    nome: 'Bardo',
+    vidaBase: 10,
+    focoBase: 4,
+    armadura: 1,
+    habilidades: [
+      { nome: 'Canção de Batalha', custoFoco: 1, efeito: 'Todos os aliados recebem +1 em seus testes.', effect: { bonus_dano: '1' } },
+      { nome: 'Nota Dissonante', custoFoco: 1, efeito: 'Causa 1d8 de dano mental e impõe desvantagem ao alvo.', effect: { dano_direto: '1d8', condicao: 'Desvantagem' } },
+      { nome: 'Lábia', custoFoco: 0, efeito: '1x por cena, ganha vantagem em um teste de Presença.', effect: { vantagem_proximo: true } },
+      { nivel: 3, nome: 'Contracanção', custoFoco: 0, efeito: 'Anula medo e encantamento em todos os aliados.' },
+      { nivel: 6, nome: 'Canção da Ruína', custoFoco: 2, efeito: '3d8 de dano sônico em área.', effect: { dano_direto: '3d8' } },
+      { nivel: 9, nome: 'Balada Lendária', custoFoco: 3, efeito: 'Todos os aliados ganham vantagem por uma cena.', effect: { vantagem_proximo: true } },
+    ],
+    assinaturas: [
+      { nivel: 3, nome: 'Contracanção', custoFoco: 0, efeito: 'Anula medo e encantamento em todos os aliados.' },
+      { nivel: 6, nome: 'Canção da Ruína', custoFoco: 2, efeito: '3d8 de dano sônico em área.' },
+      { nivel: 9, nome: 'Balada Lendária', custoFoco: 3, efeito: 'Todos os aliados ganham vantagem por uma cena.' },
+    ],
+  },
+  {
+    id: 'alquimista',
+    nome: 'Alquimista',
+    vidaBase: 10,
+    focoBase: 4,
+    armadura: 1,
+    habilidades: [
+      { nome: 'Bomba', custoFoco: 1, efeito: '2d6 de dano em área (consome 1 reagente/frasco).', effect: { dano_direto: '2d6' } },
+      { nome: 'Elixir Rápido', custoFoco: 1, efeito: 'Cura 1d6 + Astúcia de um aliado (consome 1 reagente).', effect: { cura: '1d6+astucia' } },
+      { nome: 'Mutagênico', custoFoco: 0, efeito: '1x por descanso: +1d4 de dano e +1 de Corpo durante a cena.', effect: { bonus_dano: '1d4', defesa: 1 } },
+      { nivel: 3, nome: 'Bomba Dupla', custoFoco: 0, efeito: 'Lança duas bombas na mesma ação.' },
+      { nivel: 6, nome: 'Pedra Filosofal Menor', custoFoco: 0, efeito: 'Transforma material comum em raro 1x por descanso.' },
+      { nivel: 9, nome: 'Grande Obra', custoFoco: 0, efeito: 'Elixir místico que remove 2 de Peste (1x por campanha).' },
+    ],
+    assinaturas: [
+      { nivel: 3, nome: 'Bomba Dupla', custoFoco: 0, efeito: 'Lança duas bombas na mesma ação.' },
+      { nivel: 6, nome: 'Pedra Filosofal Menor', custoFoco: 0, efeito: 'Transforma material comum em raro 1x por descanso.' },
+      { nivel: 9, nome: 'Grande Obra', custoFoco: 0, efeito: 'Elixir místico que remove 2 de Peste (1x por campanha).' },
+    ],
+  },
+  {
+    id: 'arcanista',
+    nome: 'Arcanista',
+    vidaBase: 8,
+    focoBase: 5,
+    armadura: 0,
+    habilidades: [
+      { nome: 'Raio Arcano', custoFoco: 0, efeito: '1d8 de dano arcano puro à distância.', effect: { dano_direto: '1d8' } },
+      { nome: 'Escudo Arcano', custoFoco: 1, tipo: 'reação', efeito: '+3 de Defesa contra um ataque iminente.', effect: { defesa: 3 } },
+      { nivel: 3, nome: 'Magias do Círculo 2', custoFoco: 0, efeito: 'Acesso a magias poderosas do Segundo Círculo.' },
+      { nivel: 6, nome: 'Magias do Círculo 3', custoFoco: 0, efeito: 'Acesso a magias devastadoras do Terceiro Círculo.' },
+      { nivel: 9, nome: 'Magia de Arquimago', custoFoco: 0, efeito: 'Conjurações lendárias de escala continental.' },
+    ],
+    assinaturas: [
+      { nivel: 3, nome: 'Magias do Círculo 2', custoFoco: 0, efeito: 'Acesso a magias poderosas do Segundo Círculo.' },
+      { nivel: 6, nome: 'Magias do Círculo 3', custoFoco: 0, efeito: 'Acesso a magias devastadoras do Terceiro Círculo.' },
+      { nivel: 9, nome: 'Magia de Arquimago', custoFoco: 0, efeito: 'Conjurações lendárias de escala continental.' },
+    ],
+  },
+  {
+    id: 'vigilante',
+    nome: 'Vigilante',
+    vidaBase: 11,
+    focoBase: 4,
+    armadura: 2,
+    habilidades: [
+      { nome: 'Palavra de Cura', custoFoco: 1, efeito: 'Cura 1d8 + Vontade pontos de Vida de um aliado.', effect: { cura: '1d8+vontade' } },
+      { nome: 'Luz do Voto', custoFoco: 1, efeito: '2d6 de dano sagrado contra criaturas infectadas pela Peste.', effect: { dano_direto: '2d6' } },
+      { nome: 'Bênção', custoFoco: 1, efeito: 'Concede +1d4 no próximo teste para até 3 aliados.', effect: { bonus_dano: '1d4' } },
+      { nivel: 3, nome: 'Purificar', custoFoco: 0, efeito: 'Remove veneno, doença ou condição debilitante.' },
+      { nivel: 6, nome: 'Restaurar Voto', custoFoco: 0, efeito: 'Ajuda outro Jurado a reduzir 1 de Peste numa cena de reparação.' },
+      { nivel: 9, nome: 'Ressurreição', custoFoco: 0, efeito: 'Traz de volta aliado morto há menos de 1 dia (custa 1 de Peste).' },
+    ],
+    assinaturas: [
+      { nivel: 3, nome: 'Purificar', custoFoco: 0, efeito: 'Remove veneno, doença ou condição debilitante.' },
+      { nivel: 6, nome: 'Restaurar Voto', custoFoco: 0, efeito: 'Ajuda outro Jurado a reduzir 1 de Peste numa cena de reparação.' },
+      { nivel: 9, nome: 'Ressurreição', custoFoco: 0, efeito: 'Traz de volta aliado morto há menos de 1 dia (custa 1 de Peste).' },
+    ],
+  },
+];
+
+export function getCaminho(id) {
+  if (!id) return null;
+  const cleanId = String(id).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return caminhos.find(c => c.id === cleanId || cleanId.includes(c.id)) || null;
+}

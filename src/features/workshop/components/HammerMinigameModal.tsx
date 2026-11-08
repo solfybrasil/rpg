@@ -133,7 +133,7 @@ export const HammerMinigameModal: React.FC<HammerMinigameModalProps> = ({
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white rounded-full bg-neutral-900 border border-neutral-800"
+        className="absolute top-4 right-4 p-2 text-[#9a917f] hover:text-[#f5ede0] rounded-full bg-[#14120e] border border-[rgba(201,169,97,0.3)] transition-colors cursor-pointer"
         title="Cancelar ou fechar"
       >
         <X size={20} />
@@ -142,8 +142,8 @@ export const HammerMinigameModal: React.FC<HammerMinigameModalProps> = ({
       {/* Ícone Central da Bigorna */}
       <div className="relative mb-6">
         <div
-          className={`w-28 h-28 rounded-2xl border-2 border-amber-600/60 bg-neutral-950 flex items-center justify-center transition-transform ${
-            isHit ? 'scale-110 shadow-[0_0_40px_rgba(245,182,91,0.6)]' : 'shadow-2xl'
+          className={`w-28 h-28 rounded-2xl border-2 border-[rgba(201,169,97,0.5)] bg-[#14120e] flex items-center justify-center transition-transform ${
+            isHit ? 'scale-110 shadow-[0_0_40px_rgba(201,169,97,0.6)]' : 'shadow-2xl'
           }`}
         >
           <img
@@ -157,26 +157,26 @@ export const HammerMinigameModal: React.FC<HammerMinigameModalProps> = ({
         </div>
         {isHit && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-ping">
-            <Sparkles size={48} className="text-amber-400 drop-shadow-[0_0_15px_#f5b65b]" />
+            <Sparkles size={48} className="text-[#ffd27a] drop-shadow-[0_0_15px_#ffd27a]" />
           </div>
         )}
       </div>
 
-      <h2 className="text-xl font-mono font-bold text-amber-200 mb-1 tracking-wider uppercase">
+      <h2 className="text-xl font-['Cinzel',serif] font-bold text-[#f5ede0] mb-1 tracking-wider uppercase">
         Minigame da Forja
       </h2>
-      <p className="text-xs text-neutral-400 font-serif italic mb-6 text-center max-w-xs">
+      <p className="text-xs text-[#9a917f] font-serif italic mb-6 text-center max-w-xs">
         Acerte o marcador no centro dourado para receber +2 de bônus na rolagem de forja!
       </p>
 
       {/* Barra de Tempo e Zona Dourada */}
-      <div className="relative w-[340px] h-10 rounded-full bg-neutral-950 border-2 border-neutral-800 overflow-hidden shadow-inner flex items-center mb-6">
+      <div className="relative w-[340px] h-10 rounded-full bg-[#0d0c0a] border-2 border-[rgba(201,169,97,0.3)] overflow-hidden shadow-inner flex items-center mb-6">
         {/* Zona Prata / Firme (30% a 70%) */}
-        <div className="absolute left-[30%] w-[40%] h-full bg-amber-900/30 border-x border-amber-700/40" />
+        <div className="absolute left-[30%] w-[40%] h-full bg-[#c9a961]/20 border-x border-[#c9a961]/40" />
 
         {/* Zona Dourada Perfeita (40% a 60%) */}
-        <div className="absolute left-[40%] w-[20%] h-full bg-gradient-to-r from-amber-600/50 via-amber-400/80 to-amber-600/50 shadow-[0_0_15px_rgba(245,182,91,0.6)] border-x-2 border-amber-300 flex items-center justify-center">
-          <span className="text-[10px] font-mono font-bold text-black/80 tracking-widest uppercase">
+        <div className="absolute left-[40%] w-[20%] h-full bg-gradient-to-r from-[#8a6a3a] via-[#ffd27a] to-[#8a6a3a] shadow-[0_0_15px_rgba(201,169,97,0.6)] border-x-2 border-[#ffd27a] flex items-center justify-center">
+          <span className="text-[10px] font-['Cinzel',serif] font-bold text-black/80 tracking-widest uppercase">
             GOLPE
           </span>
         </div>
@@ -184,14 +184,14 @@ export const HammerMinigameModal: React.FC<HammerMinigameModalProps> = ({
         {/* Marcador que corre a 60fps */}
         <div
           ref={markerRef}
-          className="absolute left-0 top-0.5 w-4 h-9 bg-white rounded-full border-2 border-amber-400 shadow-[0_0_12px_#ffffff] z-10 will-change-transform"
+          className="absolute left-0 top-0.5 w-4 h-9 bg-white rounded-full border-2 border-[#ffd27a] shadow-[0_0_12px_#ffffff] z-10 will-change-transform"
         />
       </div>
 
       {/* Feedback de Acerto */}
       <div className="h-8 flex items-center justify-center mb-4">
         {hitFeedback && (
-          <span className="text-sm font-mono font-bold text-amber-300 tracking-wider animate-in zoom-in-75 duration-150">
+          <span className="text-sm font-['Cinzel',serif] font-bold text-[#ffd27a] tracking-wider animate-in zoom-in-75 duration-150">
             {hitFeedback}
           </span>
         )}
@@ -202,10 +202,10 @@ export const HammerMinigameModal: React.FC<HammerMinigameModalProps> = ({
         type="button"
         onClick={handleStrike}
         disabled={isHit}
-        className={`flex items-center gap-2 px-8 py-3 rounded-xl font-mono text-sm font-bold uppercase tracking-wider transition-all ${
+        className={`flex items-center gap-2 px-8 py-3 rounded-xl font-['Cinzel',serif] text-sm font-bold uppercase tracking-wider transition-all cursor-pointer ${
           isHit
-            ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
-            : 'bg-gradient-to-b from-amber-500 to-amber-700 text-neutral-950 shadow-[0_0_20px_rgba(245,182,91,0.4)] hover:brightness-110 active:scale-95 cursor-pointer'
+            ? 'bg-[#1e1a14] text-[#8c8272] border border-[rgba(201,169,97,0.2)]'
+            : 'bg-gradient-to-b from-[#2a1d12] to-[#14120e] text-[#f5ede0] border border-[rgba(201,169,97,0.5)] hover:border-[#c9a961] hover:shadow-[0_0_20px_rgba(201,169,97,0.3)] active:scale-95'
         }`}
       >
         <Hammer size={18} />

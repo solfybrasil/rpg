@@ -1,0 +1,112 @@
+/* ==========================================================================
+   BUTTON & ICON BUTTON — Elden Ring Minimalist
+   ========================================================================== */
+
+.er-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 0 var(--space-4);
+  font-family: var(--font-title);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-radius: var(--radius);
+  transition: color var(--dur-hover) var(--ease), background-color var(--dur-hover) var(--ease), border-color var(--dur-hover) var(--ease), transform var(--dur-hover) var(--ease), opacity var(--dur-hover) var(--ease);
+  white-space: nowrap;
+  user-select: none;
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .er-button {
+    height: 44px;
+    padding: 0 var(--space-4);
+  }
+}
+
+/* Primário: fundo transparente, fio --gold, hover com fundo rgba(201,169,97,.08) */
+.er-button-primary {
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold-bright);
+}
+
+.er-button-primary:hover:not(:disabled) {
+  background: rgba(201, 169, 97, 0.08);
+  border-color: var(--gold-bright);
+}
+
+/* Secundário: só texto --text-muted */
+.er-button-secondary {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+}
+
+.er-button-secondary:hover:not(:disabled) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Perigo: fio --crimson */
+.er-button-danger {
+  background: transparent;
+  border: 1px solid var(--crimson);
+  color: var(--crimson-bright);
+}
+
+.er-button-danger:hover:not(:disabled) {
+  background: rgba(142, 42, 36, 0.12);
+  border-color: var(--crimson-bright);
+}
+
+/* Compacto */
+.er-button-compact {
+  height: 32px;
+  padding: 0 var(--space-3);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+.er-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* IconButton 40x40 (44x44 no celular) */
+.er-icon-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  transition: color var(--dur-hover) var(--ease), background-color var(--dur-hover) var(--ease), border-color var(--dur-hover) var(--ease), transform var(--dur-hover) var(--ease);
+}
+
+.er-icon-button:hover:not(:disabled) {
+  border-color: var(--gold-dim);
+  color: var(--gold-bright);
+  background: rgba(201, 169, 97, 0.05);
+}
+
+@media (max-width: 900px) {
+  .er-icon-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

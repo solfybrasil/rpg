@@ -33,37 +33,51 @@ export const SkillsBookDrawer: React.FC<SkillsBookDrawerProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex justify-end animate-in fade-in duration-200"
+      className="modern-modal-overlay animate-in fade-in duration-200"
+      style={{ justifyContent: 'flex-end', padding: 0 }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md h-full bg-[var(--surface)] border-l border-[var(--border)] p-6 shadow-2xl flex flex-col gap-5 overflow-y-auto animate-in slide-in-from-right duration-300"
+        style={{
+          width: '100%',
+          maxWidth: 440,
+          height: '100%',
+          background: '#14120e',
+          borderLeft: '1px solid rgba(201, 169, 97, 0.22)',
+          padding: '1.25rem',
+          boxShadow: '0 0 30px rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+          overflowY: 'auto',
+          position: 'relative',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-[var(--border)] pb-3">
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(201, 169, 97, 0.16)' }}>
           <div>
-            <span className="text-[10px] font-cinzel uppercase text-[var(--gold-dim)] tracking-widest block">
+            <span style={{ fontSize: '0.62rem', color: '#c9a961', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, display: 'block' }}>
               Evolução Infinita
             </span>
-            <h3 className="font-cinzel font-bold text-lg text-[var(--text-1)] mt-0.5">
+            <h3 style={{ fontFamily: 'var(--font-title, "Cinzel", serif)', fontSize: '1.15rem', color: '#f5ede0', margin: '0.2rem 0 0', fontWeight: 600 }}>
               Livro das 13 Perícias
             </h3>
-            <span className="text-xs text-[var(--text-3)] font-cinzel">
-              Inspiração Disponível: <strong className="text-[var(--gold)]">{heroInspiration}</strong>
+            <span style={{ fontSize: '0.72rem', color: '#9a917f' }}>
+              Inspiração Disponível: <strong style={{ color: '#c9a961' }}>{heroInspiration}</strong>
             </span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--card)] transition-colors"
+            className="modern-modal-close"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
         {/* Skills List */}
-        <div className="flex flex-col gap-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           {ALL_13_SKILLS.map((skill) => {
             const sKey = skill.name.toLowerCase().trim();
             const heroSkillData = skillsMap.get(sKey);
@@ -76,48 +90,80 @@ export const SkillsBookDrawer: React.FC<SkillsBookDrawerProps> = ({
             return (
               <div
                 key={skill.name}
-                className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--gold-dim)] transition-colors flex flex-col gap-2.5"
+                style={{
+                  background: '#0d0c0a',
+                  border: '1px solid rgba(201, 169, 97, 0.16)',
+                  borderRadius: '6px',
+                  padding: '0.75rem 0.85rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                     <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: skill.color }}
+                      style={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: '50%',
+                        backgroundColor: skill.color,
+                        boxShadow: `0 0 6px ${skill.color}`,
+                      }}
                     />
-                    <h4 className="font-cinzel font-bold text-sm text-[var(--text-1)]">
+                    <h4 style={{ fontFamily: 'var(--font-title, "Cinzel", serif)', fontSize: '0.88rem', color: '#f5ede0', margin: 0, fontWeight: 600 }}>
                       {skill.name}
                     </h4>
-                    <span className="text-[10px] text-[var(--text-3)] font-cinzel">
+                    <span style={{ fontSize: '0.68rem', color: '#8c8272' }}>
                       ({skill.region})
                     </span>
                   </div>
 
-                  <span className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-[var(--surface)] text-[var(--gold)] border border-[var(--gold-dim)]">
+                  <span style={{ background: '#14120e', border: '1px solid rgba(201, 169, 97, 0.25)', borderRadius: '4px', padding: '0.1rem 0.4rem', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.72rem', color: '#e6cf94', fontWeight: 700 }}>
                     +{bonus} ({level}º Nível)
                   </span>
                 </div>
 
                 {/* Mastery & Marks */}
-                <div className="flex items-center justify-between text-xs text-[var(--text-3)] pt-1 border-t border-[var(--border)]/60">
-                  <span>
-                    Maestria: <strong className="text-[var(--text-2)]">{mastery}</strong>
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-mono">
-                      Progresso: {marcas}/{custoProximo}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: '#9a917f' }}>
+                  <span>Grau: <strong style={{ color: '#b5aa96' }}>{mastery}</strong></span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    {Array.from({ length: custoProximo }).map((_, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          backgroundColor: i < marcas ? '#c9a961' : 'transparent',
+                          border: '1.5px solid rgba(201, 169, 97, 0.35)',
+                          boxShadow: i < marcas ? '0 0 5px rgba(201, 169, 97, 0.5)' : 'none',
+                        }}
+                      />
+                    ))}
+                    <span style={{ fontFamily: 'var(--font-mono, monospace)', marginLeft: 3 }}>
+                      {marcas}/{custoProximo}
                     </span>
                   </div>
                 </div>
 
-                {/* Invest Button */}
+                {/* Invest Action */}
                 <button
                   type="button"
-                  onClick={() => onInvestSkill(skill.name)}
                   disabled={heroInspiration <= 0}
-                  className="w-full py-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--gold)] hover:text-black border border-[var(--gold-dim)] text-[var(--gold)] font-cinzel text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer"
+                  onClick={() => onInvestSkill(skill.name)}
+                  className="modern-btn primary"
+                  style={{
+                    height: '28px',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    width: '100%',
+                    opacity: heroInspiration > 0 ? 1 : 0.4,
+                    cursor: heroInspiration > 0 ? 'pointer' : 'not-allowed',
+                  }}
                 >
-                  <Sparkles size={12} />
-                  <span>Evoluir Perícia (+1 Inspiração)</span>
+                  <Sparkles size={11} />
+                  <span>Investir 1 Inspiração</span>
                 </button>
               </div>
             );

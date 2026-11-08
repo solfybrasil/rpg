@@ -1,0 +1,2331 @@
+// scripts/generate_showcase.js
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const htmlContent = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Showcase AAA — Confessório do Mestre | Peste do Juramento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-void: #060402;
+      --bg-deep: #0b0704;
+      --bg-surface: #100b07;
+      --bg-card: #150f0a;
+      --bg-card-hover: #1e150e;
+      --bg-slot: #0d0805;
+      
+      --gold-hi: #fceda6;
+      --gold-main: #ecc05c;
+      --gold-deep: #cf9f38;
+      --gold-dim: #8b6820;
+      --gold-border: rgba(207, 159, 56, 0.4);
+      --gold-border-hi: rgba(236, 192, 92, 0.7);
+      --gold-glow: rgba(236, 192, 92, 0.25);
+
+      --border-dark: #20150d;
+      --border-accent: #382415;
+      --border-light: rgba(139, 104, 32, 0.35);
+      
+      --text-main: #ede0c2;
+      --text-muted: #9e8975;
+      --text-dim: #6b5744;
+
+      --hp: #30d158;
+      --hp-dark: #1b7a33;
+      --focus: #64d2ff;
+      --plague: #c084fc;
+      --plague-deep: #7e22ce;
+      --danger: #ff453a;
+      --bronze: #cd7f32;
+      --silver: #e2e8f0;
+      --gold-coin: #fbbf24;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--text-main);
+      font-family: 'Cinzel', serif;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      background-image: 
+        radial-gradient(ellipse at 50% 12%, rgba(70, 44, 22, 0.28) 0%, rgba(6, 4, 2, 0.96) 75%, #040201 100%);
+    }
+
+    /* Marca d'água astrolábio / rúnica idêntica à referência */
+    .astrolabe-bg {
+      position: absolute;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 1050px;
+      height: 1050px;
+      pointer-events: none;
+      opacity: 0.038;
+      z-index: 0;
+    }
+
+    /* ── HEADER SUPERIOR (ESTILO AAA GAME HUD) ── */
+    header {
+      position: relative;
+      z-index: 25;
+      background: linear-gradient(180deg, rgba(18, 12, 8, 0.98) 0%, rgba(11, 7, 4, 0.96) 75%, rgba(6, 4, 2, 0.92) 100%);
+      border-bottom: 1px solid var(--border-accent);
+      padding: 10px 24px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+    }
+
+    .title-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      max-width: 960px;
+      margin-bottom: 8px;
+    }
+
+    .title-banner .hairline {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-dim), var(--gold-deep));
+    }
+    .title-banner .hairline.rev {
+      background: linear-gradient(90deg, var(--gold-deep), var(--gold-dim), transparent);
+    }
+
+    .title-banner h1 {
+      font-size: 13.5px;
+      font-weight: 700;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--gold-main);
+      text-shadow: 0 0 14px var(--gold-glow);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Abas Principais com Bumper [ Q ] e [ E ] */
+    .main-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-bumper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid var(--border-accent);
+      background: #150f0a;
+      color: var(--gold-deep);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+    .nav-bumper:hover {
+      border-color: var(--gold-main);
+      color: var(--gold-hi);
+      transform: translateY(-1px);
+    }
+    .nav-bumper:active {
+      transform: translateY(1px);
+    }
+
+    .tabs-container {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(14, 9, 6, 0.6);
+      padding: 3px 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(56, 36, 21, 0.6);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-family: 'Cinzel', serif;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .tab-btn.active {
+      color: var(--gold-hi);
+      background: linear-gradient(180deg, rgba(46, 32, 19, 0.7) 0%, rgba(20, 14, 9, 0.8) 100%);
+      border: 1px solid var(--gold-border);
+      box-shadow: 0 0 12px rgba(207, 159, 56, 0.25), inset 0 1px 0 rgba(245, 212, 133, 0.3);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 20%;
+      right: 20%;
+      height: 2px;
+      background: var(--gold-main);
+      border-radius: 2px;
+      box-shadow: 0 0 8px var(--gold-main);
+    }
+
+    /* Sub-nav de cada aba */
+    .subnav-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px 20px 0;
+      margin-top: 6px;
+      border-top: 1px solid rgba(56, 36, 21, 0.4);
+    }
+    .subnav-item {
+      background: transparent;
+      border: 1px solid rgba(56, 36, 21, 0.6);
+      color: var(--text-muted);
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .subnav-item:hover {
+      border-color: var(--gold-dim);
+      color: var(--text-main);
+    }
+    .subnav-item.active {
+      background: rgba(207, 159, 56, 0.15);
+      border-color: var(--gold-main);
+      color: var(--gold-hi);
+      font-weight: 700;
+    }
+
+    /* ── CORPO PRINCIPAL DO SHOWCASE ── */
+    main {
+      flex: 1;
+      position: relative;
+      z-index: 10;
+      overflow: hidden;
+      padding: 16px 28px 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen-panel {
+      display: none;
+      height: 100%;
+      width: 100%;
+      flex-direction: column;
+      animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .screen-panel.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── LAYOUT DIVIDIDO QUEST SELECT (ESTILO DO FUNDO DA IMAGEM) ── */
+    .quest-select-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 22px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* Coluna Esquerda: Capítulos & Lista de Itens */
+    .quest-list-panel {
+      background: rgba(14, 10, 6, 0.94);
+      border: 1px solid var(--border-accent);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85);
+    }
+
+    .quest-list-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-accent);
+      background: linear-gradient(90deg, #1b120c, #100b07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: var(--gold-main);
+    }
+
+    .quest-tree-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Accordion de Capítulos */
+    .chapter-card {
+      border: 1px solid var(--border-dark);
+      border-radius: 8px;
+      background: rgba(18, 12, 8, 0.7);
+      overflow: hidden;
+      transition: all 0.15s ease;
+    }
+    .chapter-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      cursor: pointer;
+      background: #140d08;
+      border-bottom: 1px solid rgba(56, 36, 21, 0.4);
+    }
+    .chapter-header:hover {
+      background: #1c130c;
+    }
+    .chapter-title-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chapter-thumb {
+      width: 44px;
+      height: 24px;
+      border-radius: 4px;
+      object-fit: cover;
+      border: 1px solid var(--border-accent);
+    }
+    .chapter-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gold-hi);
+    }
+    .chapter-sub {
+      font-family: 'EB Garamond', serif;
+      font-size: 10px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .quest-items-group {
+      padding: 4px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .quest-item-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-main);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.14s ease;
+      position: relative;
+    }
+    .quest-item-btn:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(139, 104, 32, 0.3);
+    }
+    .quest-item-btn.active {
+      background: linear-gradient(90deg, rgba(56, 36, 21, 0.7) 0%, rgba(20, 14, 9, 0.8) 100%);
+      border-color: var(--gold-main);
+      box-shadow: 0 0 10px rgba(207, 159, 56, 0.2);
+    }
+    .quest-item-btn.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      background: var(--gold-main);
+      border-radius: 0 2px 2px 0;
+      box-shadow: 0 0 6px var(--gold-main);
+    }
+    .quest-item-info h5 {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .quest-item-btn.active .quest-item-info h5 {
+      color: var(--gold-hi);
+    }
+    .quest-item-info span {
+      font-family: 'EB Garamond', serif;
+      font-size: 10.5px;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 1px;
+    }
+    .quest-distance {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      color: var(--gold-deep);
+    }
+
+    /* Coluna Direita: Dossiê Detalhado (Quest Select Briefing) */
+    .quest-dossier-panel {
+      background: rgba(14, 10, 6, 0.96);
+      border: 1px solid var(--border-accent);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.9);
+      min-height: 0;
+    }
+
+    .dossier-header-bar {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border-accent);
+      background: linear-gradient(90deg, #18100a 0%, #100b07 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dossier-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dossier-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: var(--gold-hi);
+      text-transform: uppercase;
+      text-shadow: 0 0 10px var(--gold-glow);
+    }
+    .level-badge {
+      font-family: 'Cinzel', serif;
+      font-size: 9.5px;
+      letter-spacing: 0.1em;
+      color: var(--gold-main);
+      border: 1px solid var(--gold-dim);
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(139, 104, 32, 0.15);
+    }
+
+    .dossier-content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cinematic-banner {
+      width: 100%;
+      height: 160px;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid var(--border-accent);
+      background: #000;
+    }
+    .cinematic-banner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.85;
+      filter: contrast(1.1) brightness(0.9);
+    }
+    .cinematic-banner .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(14, 10, 6, 0.95) 100%);
+    }
+
+    .lore-quote {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #c4b5a0;
+      font-style: italic;
+      padding: 10px 14px;
+      border-left: 2px solid var(--gold-deep);
+      background: rgba(22, 14, 9, 0.45);
+      border-radius: 0 6px 6px 0;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold-deep);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .objective-box {
+      background: #110c08;
+      border: 1px solid var(--border-accent);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rewards-section {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: #110c08;
+      border: 1px solid var(--border-accent);
+      padding: 10px 16px;
+      border-radius: 8px;
+    }
+    .reward-currency {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold-hi);
+    }
+    .reward-slots-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .item-slot-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      border: 1px solid var(--gold-dim);
+      background: #18110b;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+    }
+    .item-slot-box:hover {
+      border-color: var(--gold-main);
+      transform: scale(1.05);
+      box-shadow: 0 0 12px var(--gold-glow);
+    }
+    .slot-qty {
+      position: absolute;
+      bottom: 2px;
+      right: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--gold-hi);
+    }
+
+    /* Rodapé com prompts de controle estilo game */
+    .dossier-actions-footer {
+      padding: 10px 18px;
+      border-top: 1px solid var(--border-accent);
+      background: #0f0a06;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .game-prompt-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-main);
+      font-family: 'Cinzel', serif;
+      font-size: 10.5px;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+    .game-prompt-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--gold-hi);
+    }
+    .key-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      border-radius: 4px;
+      background: #1c130c;
+      border: 1px solid var(--gold-dim);
+      color: var(--gold-hi);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    /* ── LAYOUT DO MAPA (AREA MAP - IDÊNTICO AO TOPO DA IMAGEM) ── */
+    .area-map-container {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 16px;
+      height: 100%;
+      min-height: 0;
+      position: relative;
+    }
+
+    .map-filter-panel {
+      background: rgba(14, 10, 6, 0.94);
+      border: 1px solid var(--border-accent);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: all 0.12s ease;
+    }
+    .filter-item:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .filter-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-eye {
+      opacity: 0.6;
+    }
+
+    .map-canvas-wrapper {
+      position: relative;
+      border: 1px solid var(--border-accent);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #090604;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.9);
+    }
+    .parchment-map-svg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.85;
+    }
+
+    /* Marcador Flutuante no Mapa */
+    .map-marker {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(20, 14, 9, 0.9);
+      border: 2px solid var(--gold-main);
+      display: grid;
+      place-items: center;
+      color: var(--gold-hi);
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 0 14px var(--gold-glow);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 10;
+    }
+    .map-marker:hover, .map-marker.active {
+      transform: scale(1.25);
+      border-color: var(--gold-hi);
+      background: var(--gold-deep);
+      color: #000;
+    }
+    .map-marker::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 1px solid var(--gold-main);
+      animation: pulse-ring 2s infinite ease-out;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    /* Popup Dossiê Sobreposto no Mapa (Meeting with Théoden) */
+    .map-popup-card {
+      position: absolute;
+      top: 35px;
+      left: 50%;
+      transform: translateX(-35%);
+      width: 320px;
+      background: rgba(14, 10, 6, 0.96);
+      border: 1px solid var(--gold-border);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95);
+      z-index: 20;
+      backdrop-filter: blur(10px);
+    }
+    .map-popup-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold-hi);
+      margin-bottom: 2px;
+    }
+    .map-popup-sub {
+      font-size: 10px;
+      color: var(--gold-main);
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    .map-popup-desc {
+      font-family: 'EB Garamond', serif;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #b5a491;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(56, 36, 21, 0.6);
+      padding-bottom: 8px;
+    }
+
+    /* ── GRADE DE JURADOS (CARDS LARGOS DESKTOP) ── */
+    .heroes-grid-desktop {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .hero-wide-card {
+      background: rgba(14, 10, 6, 0.94);
+      border: 1px solid var(--border-accent);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.16s ease;
+      position: relative;
+    }
+    .hero-wide-card:hover {
+      border-color: var(--gold-border);
+      background: #17100b;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
+    }
+    .card-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-hero-id {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      border: 1px solid var(--gold-dim);
+      background: #1a120c;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      color: var(--gold-hi);
+    }
+    .vitals-stepper-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: #0f0a06;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-dark);
+    }
+    .vital-unit {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .vital-unit-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+    .steppers-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+    .step-btn-mini {
+      background: #1b120c;
+      border: 1px solid var(--border-accent);
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .step-btn-mini:hover {
+      border-color: var(--gold-main);
+      color: var(--gold-hi);
+    }
+    .step-btn-mini:active {
+      transform: scale(0.92);
+    }
+
+    /* ── BANCADA 3x3 DA OFICINA ── */
+    .bench-grid-3x3 {
+      display: grid;
+      grid-template-columns: repeat(3, 56px);
+      gap: 8px;
+      background: #0b0704;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border-accent);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+    }
+    .bench-slot {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      border: 1px dashed var(--gold-dim);
+      background: #130d08;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .bench-slot:hover {
+      border-color: var(--gold-main);
+      background: #1c140d;
+    }
+
+    /* ── TURN TRACKER / COMBATE ── */
+    .turn-order-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .turn-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-accent);
+      background: #120c08;
+      transition: all 0.15s ease;
+    }
+    .turn-row.current {
+      border-color: var(--gold-main);
+      background: linear-gradient(90deg, #26180e 0%, #150d08 100%);
+      box-shadow: 0 0 14px rgba(207, 159, 56, 0.25);
+    }
+
+    /* ── SOUNDBOARD GRID ── */
+    .soundboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      padding: 8px;
+    }
+    .sound-card {
+      background: #120c08;
+      border: 1px solid var(--border-accent);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .sound-card:hover {
+      border-color: var(--gold-main);
+      background: #1b120c;
+      transform: translateY(-2px);
+    }
+    .sound-card.playing {
+      border-color: var(--gold-hi);
+      background: linear-gradient(180deg, #2a1b10 0%, #140d08 100%);
+      box-shadow: 0 0 16px var(--gold-glow);
+    }
+
+    /* ── MODAL FICHA COMPLETA ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 2, 1, 0.88);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+    .sheet-modal-box {
+      width: 100%;
+      max-width: 1000px;
+      height: 85vh;
+      background: #0d0805;
+      border: 1px solid var(--gold-border);
+      border-radius: 16px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.95);
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      overflow: hidden;
+      animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── FOOTER HUD COM ATALHOS ── */
+    footer {
+      position: relative;
+      z-index: 20;
+      background: rgba(9, 6, 4, 0.96);
+      border-top: 1px solid var(--border-accent);
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .footer-keys {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .footer-key-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Toast Flutuante de Rolagem */
+    .dice-toast {
+      position: fixed;
+      bottom: 60px;
+      right: 30px;
+      background: rgba(18, 12, 7, 0.96);
+      border: 1px solid var(--gold-main);
+      padding: 12px 20px;
+      border-radius: 10px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px var(--gold-glow);
+      z-index: 200;
+      animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Marca d'água astrolábio rúnico -->
+  <svg class="astrolabe-bg" viewBox="0 0 400 400" fill="none" stroke="currentColor">
+    <circle cx="200" cy="200" r="190" strokeWidth="1" strokeDasharray="4 6" />
+    <circle cx="200" cy="200" r="170" strokeWidth="0.8" />
+    <circle cx="200" cy="200" r="140" strokeWidth="1.2" strokeDasharray="12 4" />
+    <circle cx="200" cy="200" r="100" strokeWidth="0.5" />
+    <circle cx="200" cy="200" r="50" strokeWidth="1" strokeDasharray="3 3" />
+    <line x1="200" y1="5" x2="200" y2="395" strokeWidth="0.5" />
+    <line x1="5" y1="200" x2="395" y2="200" strokeWidth="0.5" />
+    <polygon points="200,30 205,50 195,50" fill="currentColor" />
+    <polygon points="200,370 205,350 195,350" fill="currentColor" />
+    <polygon points="30,200 50,205 50,195" fill="currentColor" />
+    <polygon points="370,200 350,205 350,195" fill="currentColor" />
+  </svg>
+
+  <!-- ── HEADER PRINCIPAL DO MESTRE ── -->
+  <header>
+    <div class="title-banner">
+      <div class="hairline"></div>
+      <h1>
+        <span>◈</span>
+        <span id="header-area-title">CONFESSÓRIO DO MESTRE</span>
+        <span>◈</span>
+      </h1>
+      <div class="hairline rev"></div>
+    </div>
+
+    <!-- Barra de Abas Principais com [ Q ] e [ E ] -->
+    <div class="main-nav">
+      <button class="nav-bumper" title="Aba Anterior (Q)" onclick="prevMainTab()">Q</button>
+      <div class="tabs-container">
+        <button class="tab-btn active" data-tab="jurados" onclick="switchMainTab('jurados')">
+          <span>👥</span> Jurados
+        </button>
+        <button class="tab-btn" data-tab="mesa" onclick="switchMainTab('mesa')">
+          <span>⚔️</span> Mesa
+        </button>
+        <button class="tab-btn" data-tab="bestiario" onclick="switchMainTab('bestiario')">
+          <span>💀</span> Bestiário
+        </button>
+        <button class="tab-btn" data-tab="itens" onclick="switchMainTab('itens')">
+          <span>📦</span> Itens
+        </button>
+        <button class="tab-btn" data-tab="oficina" onclick="switchMainTab('oficina')">
+          <span>🔨</span> Oficina
+        </button>
+        <button class="tab-btn" data-tab="grimorio" onclick="switchMainTab('grimorio')">
+          <span>📜</span> Grimórios
+        </button>
+        <button class="tab-btn" data-tab="campanha" onclick="switchMainTab('campanha')">
+          <span>🧭</span> Crônicas
+        </button>
+        <button class="tab-btn" data-tab="sistema" onclick="switchMainTab('sistema')">
+          <span>⚙️</span> Sistema
+        </button>
+      </div>
+      <button class="nav-bumper" title="Próxima Aba (E)" onclick="nextMainTab()">E</button>
+    </div>
+
+    <!-- Barra de Sub-abas Dinâmica -->
+    <div class="subnav-bar" id="subnav-container">
+      <!-- Injetado via JS -->
+    </div>
+  </header>
+
+  <!-- ── CONTEÚDO PRINCIPAL (8 TELAS COM TODAS AS SUB-ABAS) ── -->
+  <main>
+
+    <!-- ═════════════════════════════════════════════════════════════════════════
+         1. JURADOS (HERÓIS & FICHAS)
+         ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="panel-jurados" class="screen-panel active">
+      
+      <!-- Sub-aba 1.1: Painel Tático (Quest Select) -->
+      <div id="subview-jurados-tactical" class="quest-select-layout" style="display: grid;">
+        <!-- Lista de Heróis -->
+        <div class="quest-list-panel">
+          <div class="quest-list-header">
+            <span>◈ JURADOS VINCULADOS</span>
+            <span style="color: var(--text-muted);">3 ATIVOS</span>
+          </div>
+          <div class="quest-tree-scroll">
+            <div class="quest-item-btn active" onclick="selectHero('corvus', this)">
+              <div class="quest-item-info">
+                <h5>◈ Sir Corvus Valerius</h5>
+                <span>Humano • Caminho do Sangue • Nv 3</span>
+              </div>
+              <div class="quest-distance" style="color: var(--hp);">HP 8/10</div>
+            </div>
+            <div class="quest-item-btn" onclick="selectHero('morrigan', this)">
+              <div class="quest-item-info">
+                <h5>◈ Lady Morrigan</h5>
+                <span>Elfa • Caminho das Cinzas • Nv 3</span>
+              </div>
+              <div class="quest-distance" style="color: var(--hp);">HP 6/8</div>
+            </div>
+            <div class="quest-item-btn" onclick="selectHero('bronn', this)">
+              <div class="quest-item-info">
+                <h5>◈ Bronn de Ferro</h5>
+                <span>Anão • Caminho da Bigorna • Nv 4</span>
+              </div>
+              <div class="quest-distance" style="color: var(--danger);">HP 3/14</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dossiê do Herói Selecionado -->
+        <div class="quest-dossier-panel">
+          <div class="dossier-header-bar">
+            <div class="dossier-header-left">
+              <span class="dossier-title" id="dossier-hero-name">◈ Sir Corvus Valerius</span>
+              <span class="level-badge" id="dossier-hero-class">Humano • Sangue • Nv 3</span>
+            </div>
+            <button class="game-prompt-btn" onclick="openSheetModal()">
+              <span class="key-badge">F</span> Ficha Completa
+            </button>
+          </div>
+
+          <div class="dossier-content-scroll">
+            <!-- Banner Cinematográfico -->
+            <div class="cinematic-banner">
+              <img src="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80" alt="Hero Banner" />
+              <div class="overlay"></div>
+            </div>
+
+            <!-- Voto Sagrado -->
+            <div class="lore-quote" id="dossier-hero-oath">
+              "Juro com meu sangue que nenhum inocente tombará sob a Peste enquanto meu pulso pulsar. Minha lâmina será o aço da redenção."
+            </div>
+
+            <!-- Medidores Vitais com Steppers Interativos -->
+            <div>
+              <div class="section-label">◈ Condição Vital & Vigor de Batalha</div>
+              <div class="vitals-stepper-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="vital-unit">
+                  <div class="vital-unit-header">
+                    <span>VIDA</span>
+                    <span id="hero-hp-display" style="color: var(--hp); font-weight: bold;">8/10</span>
+                  </div>
+                  <div class="steppers-row">
+                    <button class="step-btn-mini" onclick="adjustHeroStat('hp', -1)">-1</button>
+                    <button class="step-btn-mini" onclick="adjustHeroStat('hp', 1)">+1</button>
+                    <button class="step-btn-mini" onclick="adjustHeroStat('hp', 5)">+5</button>
+                  </div>
+                </div>
+
+                <div class="vital-unit">
+                  <div class="vital-unit-header">
+                    <span>FOCO</span>
+                    <span id="hero-focus-display" style="color: var(--focus); font-weight: bold;">3/3</span>
+                  </div>
+                  <div class="steppers-row">
+                    <button class="step-btn-mini" onclick="adjustHeroStat('focus', -1)">-1</button>
+                    <button class="step-btn-mini" onclick="adjustHeroStat('focus', 1)">+1</button>
+                  </div>
+                </div>
+
+                <div class="vital-unit">
+                  <div class="vital-unit-header">
+                    <span>PESTE</span>
+                    <span id="hero-plague-display" style="color: var(--plague); font-weight: bold;">2/10</span>
+                  </div>
+                  <div class="steppers-row">
+                    <button class="step-btn-mini" onclick="adjustHeroStat('plague', -1)">-1</button>
+                    <button class="step-btn-mini" onclick="adjustHeroStat('plague', 1)">+1</button>
+                  </div>
+                </div>
+
+                <div class="vital-unit">
+                  <div class="vital-unit-header">
+                    <span>SACIEDADE</span>
+                    <span style="color: #ff9f0a; font-weight: bold;">8/10</span>
+                  </div>
+                  <div class="steppers-row">
+                    <button class="step-btn-mini">-1</button>
+                    <button class="step-btn-mini">+1</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Arsenal e Slots de Recompensa -->
+            <div>
+              <div class="section-label">◈ Arsenal & Dádivas Ativas</div>
+              <div class="rewards-section">
+                <div class="reward-currency">
+                  <span>🪙 142b</span>
+                  <span>🥈 18p</span>
+                  <span>🥇 2o</span>
+                </div>
+                <div class="reward-slots-row">
+                  <div class="item-slot-box" title="Espada de Prata Sagrada">🗡️<span class="slot-qty">1x</span></div>
+                  <div class="item-slot-box" title="Escudo de Carvalho Rúnico">🛡️<span class="slot-qty">1x</span></div>
+                  <div class="item-slot-box" title="Elixir de Foco Puro">🧪<span class="slot-qty">3x</span></div>
+                  <div class="item-slot-box" title="Broche do Corvo">⚜️<span class="slot-qty">✦</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dossier-actions-footer">
+            <div style="display: flex; gap: 12px;">
+              <button class="game-prompt-btn" onclick="rollDice(20)">
+                <span class="key-badge">D</span> Rolar d20 do Jurado
+              </button>
+              <button class="game-prompt-btn" onclick="openGiveItemModal()">
+                <span class="key-badge">G</span> Conceder Item
+              </button>
+            </div>
+            <div>
+              <span class="key-badge">ESC</span> Voltar
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-aba 1.2: Grade Geral de Jurados (Area Map Style) -->
+      <div id="subview-jurados-grid" class="heroes-grid-desktop" style="display: none;">
+        <!-- Card 1 -->
+        <div class="hero-wide-card">
+          <div class="card-top-row">
+            <div class="card-hero-id">
+              <div class="card-avatar">⚔️</div>
+              <div>
+                <h4 style="font-size: 13px; color: var(--gold-hi);">Sir Corvus Valerius</h4>
+                <p style="font-size: 11px; color: var(--text-muted); font-family: 'EB Garamond';">Humano • Sangue • Nível 3</p>
+              </div>
+            </div>
+            <button class="game-prompt-btn" onclick="openSheetModal()">Ficha</button>
+          </div>
+          <div class="vitals-stepper-grid">
+            <div class="vital-unit">
+              <div class="vital-unit-header"><span>VIDA</span><span style="color: var(--hp);">8/10</span></div>
+              <div class="steppers-row">
+                <button class="step-btn-mini">-1</button><button class="step-btn-mini">+1</button>
+              </div>
+            </div>
+            <div class="vital-unit">
+              <div class="vital-unit-header"><span>PESTE</span><span style="color: var(--plague);">2/10</span></div>
+              <div class="steppers-row">
+                <button class="step-btn-mini">-1</button><button class="step-btn-mini">+1</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="hero-wide-card">
+          <div class="card-top-row">
+            <div class="card-hero-id">
+              <div class="card-avatar">✦</div>
+              <div>
+                <h4 style="font-size: 13px; color: var(--gold-hi);">Lady Morrigan</h4>
+                <p style="font-size: 11px; color: var(--text-muted); font-family: 'EB Garamond';">Elfa • Cinzas • Nível 3</p>
+              </div>
+            </div>
+            <button class="game-prompt-btn" onclick="openSheetModal()">Ficha</button>
+          </div>
+          <div class="vitals-stepper-grid">
+            <div class="vital-unit">
+              <div class="vital-unit-header"><span>VIDA</span><span style="color: var(--hp);">6/8</span></div>
+              <div class="steppers-row">
+                <button class="step-btn-mini">-1</button><button class="step-btn-mini">+1</button>
+              </div>
+            </div>
+            <div class="vital-unit">
+              <div class="vital-unit-header"><span>PESTE</span><span style="color: var(--plague);">4/10</span></div>
+              <div class="steppers-row">
+                <button class="step-btn-mini">-1</button><button class="step-btn-mini">+1</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="hero-wide-card">
+          <div class="card-top-row">
+            <div class="card-hero-id">
+              <div class="card-avatar">🛡️</div>
+              <div>
+                <h4 style="font-size: 13px; color: var(--danger);">Bronn de Ferro</h4>
+                <p style="font-size: 11px; color: var(--text-muted); font-family: 'EB Garamond';">Anão • Bigorna • Nível 4</p>
+              </div>
+            </div>
+            <button class="game-prompt-btn" onclick="openSheetModal()">Ficha</button>
+          </div>
+          <div class="vitals-stepper-grid">
+            <div class="vital-unit">
+              <div class="vital-unit-header"><span>VIDA</span><span style="color: var(--danger);">3/14 (Perigo)</span></div>
+              <div class="steppers-row">
+                <button class="step-btn-mini">-1</button><button class="step-btn-mini">+1</button>
+              </div>
+            </div>
+            <div class="vital-unit">
+              <div class="vital-unit-header"><span>PESTE</span><span style="color: var(--plague);">8/10</span></div>
+              <div class="steppers-row">
+                <button class="step-btn-mini">-1</button><button class="step-btn-mini">+1</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════════════
+         2. MESA (COMBATE & GRID TÁTICO)
+         ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="panel-mesa" class="screen-panel">
+      <!-- Sub-aba 2.1: Grid Tático de Combate -->
+      <div id="subview-mesa-grid" class="quest-select-layout" style="display: grid;">
+        <div class="quest-list-panel" style="width: 320px;">
+          <div class="quest-list-header">
+            <span>◈ ORDEM DE INICIATIVA</span>
+            <span style="color: var(--gold-hi);">ROUND 2</span>
+          </div>
+          <div class="turn-order-list">
+            <div class="turn-row current">
+              <div>
+                <h5 style="color: var(--gold-hi); font-size: 11.5px;">#1 Sir Corvus</h5>
+                <span style="font-size: 10px; color: var(--hp);">Turno Ativo • 8 PV</span>
+              </div>
+              <span class="key-badge">21</span>
+            </div>
+            <div class="turn-row">
+              <div>
+                <h5 style="color: var(--danger); font-size: 11.5px;">#2 Aberração Menor</h5>
+                <span style="font-size: 10px; color: var(--danger);">Sangrando (-2 PV/t)</span>
+              </div>
+              <span class="key-badge">17</span>
+            </div>
+            <div class="turn-row">
+              <div>
+                <h5 style="color: var(--text-main); font-size: 11.5px;">#3 Lady Morrigan</h5>
+                <span style="font-size: 10px; color: var(--text-muted);">Aguardando • 6 PV</span>
+              </div>
+              <span class="key-badge">14</span>
+            </div>
+          </div>
+          <div style="padding: 10px; border-top: 1px solid var(--border-accent);">
+            <button class="game-prompt-btn" style="width: 100%; justify-content: center; background: var(--gold-dim); color: #000; font-weight: bold;" onclick="advanceTurn()">
+              ⏭ Avançar Turno
+            </button>
+          </div>
+        </div>
+
+        <div class="quest-dossier-panel" style="background: #080503; position: relative; overflow: hidden;">
+          <div class="dossier-header-bar">
+            <span class="dossier-title">◈ ARENA DA CRIPTA ABANDONADA</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="game-prompt-btn" onclick="alert('Névoa de Guerra Alternada')">👁 Névoa: Ativa</button>
+              <button class="game-prompt-btn" onclick="alert('Iluminação: Tocha')">🔥 Luz: Tocha</button>
+            </div>
+          </div>
+          <div style="flex: 1; display: grid; place-items: center; position: relative;">
+            <div style="width: 90%; height: 80%; border: 1px solid var(--border-accent); border-radius: 12px; background: radial-gradient(circle, #1a120b 0%, #080503 80%); display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(6, 1fr); gap: 2px; padding: 10px;">
+              <!-- Grid interativo de tokens -->
+              <div style="border: 1px dashed rgba(139, 104, 32, 0.2); border-radius: 4px; display: grid; place-items: center;"></div>
+              <div style="border: 1px dashed rgba(139, 104, 32, 0.2); border-radius: 4px; display: grid; place-items: center;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #30d158; border: 2px solid #fff; display: grid; place-items: center; font-weight: bold; color: #000; cursor: grab;" title="Sir Corvus (HP 8/10)">⚔️</div>
+              </div>
+              <div style="border: 1px dashed rgba(139, 104, 32, 0.2); border-radius: 4px; display: grid; place-items: center;"></div>
+              <div style="border: 1px dashed rgba(139, 104, 32, 0.2); border-radius: 4px; display: grid; place-items: center;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #ff453a; border: 2px solid #fff; display: grid; place-items: center; font-weight: bold; color: #000; cursor: grab;" title="Aberração (HP 18/24)">💀</div>
+              </div>
+              <!-- Demais células decorativas do grid -->
+              <div style="border: 1px dashed rgba(139, 104, 32, 0.2); border-radius: 4px;"></div>
+              <div style="border: 1px dashed rgba(139, 104, 32, 0.2); border-radius: 4px;"></div>
+              <div style="border: 1px dashed rgba(139, 104, 32, 0.2); border-radius: 4px;"></div>
+              <div style="border: 1px dashed rgba(139, 104, 32, 0.2); border-radius: 4px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-aba 2.2: Relógio do Mundo & Clima -->
+      <div id="subview-mesa-relogio" style="display: none; height: 100%; flex-direction: column; gap: 16px;">
+        <div class="quest-dossier-panel" style="padding: 24px; align-items: center; justify-content: center; text-align: center;">
+          <span class="dossier-title" style="margin-bottom: 12px;">◈ CICLO ASTRONÔMICO DOS ERMOS</span>
+          <div style="width: 180px; height: 180px; border-radius: 50%; border: 3px double var(--gold-main); display: grid; place-items: center; margin-bottom: 16px; background: radial-gradient(circle, #24160c 0%, #0a0604 80%); box-shadow: 0 0 30px var(--gold-glow);">
+            <div style="font-size: 28px;">🌘</div>
+            <div style="font-size: 12px; color: var(--gold-hi); font-weight: bold;">HORA DAS BRUMAS</div>
+            <div style="font-size: 10px; color: var(--text-muted);">02:45 da Madrugada</div>
+          </div>
+          <p style="font-family: 'EB Garamond'; font-size: 14px; color: var(--text-main); max-width: 500px;">
+            A Peste intensifica seus efeitos na calada da noite. Todos os Jurados em áreas abertas devem realizar um teste de Constituição ou acumular +1 de Peste por exposição.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════════════
+         3. BESTIÁRIO (AMEAÇAS & CRIATURAS)
+         ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="panel-bestiario" class="screen-panel">
+      <div class="quest-select-layout">
+        <div class="quest-list-panel">
+          <div class="quest-list-header">
+            <span>◈ AMEAÇAS REGISTRADAS</span>
+            <span>ND</span>
+          </div>
+          <div class="quest-tree-scroll">
+            <div class="quest-item-btn active" onclick="selectCreature('rastejador', this)">
+              <div class="quest-item-info">
+                <h5 style="color: var(--danger);">◈ Rastejador da Peste</h5>
+                <span>Aberração • Fase da Corrupção</span>
+              </div>
+              <span class="quest-distance" style="color: var(--gold-main);">ND 2</span>
+            </div>
+            <div class="quest-item-btn" onclick="selectCreature('cavaleiro', this)">
+              <div class="quest-item-info">
+                <h5>◈ Cavaleiro Corrompido</h5>
+                <span>Morto-vivo • Armadura Profanada</span>
+              </div>
+              <span class="quest-distance" style="color: var(--gold-main);">ND 4</span>
+            </div>
+            <div class="quest-item-btn" onclick="selectCreature('abominacao', this)">
+              <div class="quest-item-info">
+                <h5>◈ Abominação do Juramento</h5>
+                <span>Monstruosidade • Chefe de Ato</span>
+              </div>
+              <span class="quest-distance" style="color: var(--danger);">ND 8</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="quest-dossier-panel">
+          <div class="dossier-header-bar">
+            <div class="dossier-header-left">
+              <span class="dossier-title" id="creature-name">◈ RASTEJADOR DA PESTE</span>
+              <span class="level-badge" id="creature-nd" style="color: var(--danger); border-color: var(--danger);">ND 2 (450 XP)</span>
+            </div>
+            <button class="game-prompt-btn" onclick="alert('Criatura enviada para a Arena de Combate!')">
+              ⚔ Projetar na Mesa
+            </button>
+          </div>
+
+          <div class="dossier-content-scroll">
+            <div class="cinematic-banner" style="height: 140px;">
+              <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80" alt="Monstro" />
+              <div class="overlay"></div>
+            </div>
+
+            <div class="lore-quote">
+              "Criaturas geradas a partir de carne exposta aos esporos da Peste. Seus membros se fundem em garras retorcidas que buscam o calor do sangue dos fiéis."
+            </div>
+
+            <div class="vitals-stepper-grid" style="grid-template-columns: repeat(4, 1fr);">
+              <div class="vital-unit">
+                <div class="vital-unit-header"><span>PONTOS DE VIDA</span></div>
+                <span style="color: var(--danger); font-size: 14px; font-weight: bold;">24 PV</span>
+              </div>
+              <div class="vital-unit">
+                <div class="vital-unit-header"><span>CLASSE ARMADURA</span></div>
+                <span style="color: var(--gold-main); font-size: 14px; font-weight: bold;">13 CA</span>
+              </div>
+              <div class="vital-unit">
+                <div class="vital-unit-header"><span>DESLOCAMENTO</span></div>
+                <span style="font-size: 14px; font-weight: bold;">9 metros</span>
+              </div>
+              <div class="vital-unit">
+                <div class="vital-unit-header"><span>INFECÇÃO</span></div>
+                <span style="color: var(--plague); font-size: 14px; font-weight: bold;">+2 Peste</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-label">◈ Ações & Ataques em Combate</div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="objective-box" style="justify-content: space-between;">
+                  <div>
+                    <strong>Mordida Contaminada</strong> — +4 para acertar, alcance 1.5m. Dano: 1d6 + 2 perfurante.
+                  </div>
+                  <button class="game-prompt-btn" onclick="rollDice(6, 2)">🎲 Rolar (1d6+2)</button>
+                </div>
+                <div class="objective-box" style="justify-content: space-between;">
+                  <div>
+                    <strong>Salto das Sombras</strong> — Se mover 3m em linha reta, alvo deve passar em Força CD 12 ou cai derrubado.
+                  </div>
+                  <button class="game-prompt-btn" onclick="rollDice(20)">🎲 CD 12</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════════════
+         4. ITENS & TESOUROS
+         ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="panel-itens" class="screen-panel">
+      <div class="quest-select-layout">
+        <div class="quest-list-panel" style="width: 300px;">
+          <div class="quest-list-header">
+            <span>◈ CATEGORIAS DE ITENS</span>
+          </div>
+          <div class="quest-tree-scroll">
+            <div class="quest-item-btn active"><h5>🗡️ Armas & Lâminas (12)</h5></div>
+            <div class="quest-item-btn"><h5>🛡️ Armaduras & Escudos (8)</h5></div>
+            <div class="quest-item-btn"><h5>🧪 Poções & Alquimia (15)</h5></div>
+            <div class="quest-item-btn"><h5>⚜️ Relíquias Sagradas (6)</h5></div>
+            <div class="quest-item-btn"><h5>🪵 Materiais de Forja (24)</h5></div>
+          </div>
+        </div>
+
+        <div class="quest-dossier-panel">
+          <div class="dossier-header-bar">
+            <span class="dossier-title">◈ COMPÊNDIO GERAL DE EQUIPAMENTOS</span>
+            <button class="game-prompt-btn" onclick="alert('Modal de criação de item aberto!')">+ Novo Item</button>
+          </div>
+          <div class="dossier-content-scroll">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+              <div class="objective-box" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                  <span style="color: var(--gold-hi); font-weight: bold;">🗡️ Espada de Prata Antiga</span>
+                  <span style="color: var(--gold-coin); font-size: 11px;">25p</span>
+                </div>
+                <p style="font-family: 'EB Garamond'; font-size: 12px; color: var(--text-muted);">Dano: 1d8 cortante • Causa dano dobrado em infectados.</p>
+              </div>
+
+              <div class="objective-box" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                  <span style="color: #64d2ff; font-weight: bold;">🛡️ Broquel de Ferro Noturno</span>
+                  <span style="color: var(--gold-coin); font-size: 11px;">1o 10p</span>
+                </div>
+                <p style="font-family: 'EB Garamond'; font-size: 12px; color: var(--text-muted);">+2 Defesa • Absorve 2 pontos de dano físico.</p>
+              </div>
+
+              <div class="objective-box" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                  <span style="color: #bf5af2; font-weight: bold;">🧪 Elixir da Chama Alva</span>
+                  <span style="color: var(--gold-coin); font-size: 11px;">50p</span>
+                </div>
+                <p style="font-family: 'EB Garamond'; font-size: 12px; color: var(--text-muted);">Cura 1d8+2 de Vida e extingue 1 ponto de Peste.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════════════
+         5. OFICINA & FORJA (BANCADA 3x3)
+         ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="panel-oficina" class="screen-panel">
+      <div class="quest-select-layout">
+        <!-- Bancada 3x3 -->
+        <div class="quest-dossier-panel" style="padding: 24px; align-items: center; justify-content: center; text-align: center;">
+          <span class="dossier-title" style="margin-bottom: 12px;">◈ BANCADA DE FORJA & ALQUIMIA 3x3</span>
+          
+          <div class="bench-grid-3x3" id="craft-grid">
+            <div class="bench-slot" onclick="toggleCraftSlot(this, '🧪')">🧪</div>
+            <div class="bench-slot" onclick="toggleCraftSlot(this, '🌿')">🌿</div>
+            <div class="bench-slot" onclick="toggleCraftSlot(this, '')"></div>
+            <div class="bench-slot" onclick="toggleCraftSlot(this, '🔥')">🔥</div>
+            <div class="bench-slot" onclick="toggleCraftSlot(this, '💎')">💎</div>
+            <div class="bench-slot" onclick="toggleCraftSlot(this, '')"></div>
+            <div class="bench-slot" onclick="toggleCraftSlot(this, '')"></div>
+            <div class="bench-slot" onclick="toggleCraftSlot(this, '')"></div>
+            <div class="bench-slot" onclick="toggleCraftSlot(this, '')"></div>
+          </div>
+
+          <div style="margin-top: 16px; display: flex; gap: 12px;">
+            <button class="game-prompt-btn" style="background: var(--gold-main); color: #000; font-weight: bold; padding: 8px 18px;" onclick="forgeRecipe()">
+              🔨 Forjar Relíquia
+            </button>
+            <button class="game-prompt-btn" onclick="clearCraftGrid()">
+              Limpar Grade
+            </button>
+          </div>
+        </div>
+
+        <!-- Receitas Descobertas -->
+        <div class="quest-list-panel">
+          <div class="quest-list-header">
+            <span>◈ LIVRO DE RECEITAS ANCESTRAIS</span>
+          </div>
+          <div class="quest-tree-scroll">
+            <div class="quest-item-btn active">
+              <div class="quest-item-info">
+                <h5>◈ Pomada de Fogo Fátuo</h5>
+                <span>Alquimia • Ilumina o invisível por 1 hora</span>
+              </div>
+            </div>
+            <div class="quest-item-btn">
+              <div class="quest-item-info">
+                <h5>◈ Lâmina das Cinzas</h5>
+                <span>Metalurgia • Fogo temperado (+1d4 fogo)</span>
+              </div>
+            </div>
+            <div class="quest-item-btn">
+              <div class="quest-item-info">
+                <h5>◈ Tintura da Coruja Cega</h5>
+                <span>Alquimia • Visão no escuro em nevoeiro denso</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════════════
+         6. GRIMÓRIOS & ÁRVORES DE JURAMENTO
+         ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="panel-grimorio" class="screen-panel">
+      <div class="quest-select-layout">
+        <div class="quest-list-panel" style="width: 320px;">
+          <div class="quest-list-header">
+            <span>◈ CÍRCULOS DE RITUAIS</span>
+          </div>
+          <div class="quest-tree-scroll">
+            <div class="quest-item-btn active"><h5>◈ 1º Círculo: Ritos Menores (4)</h5></div>
+            <div class="quest-item-btn"><h5>◈ 2º Círculo: Maldições de Sangue (3)</h5></div>
+            <div class="quest-item-btn"><h5>◈ 3º Círculo: Ritos do Purgatório (2)</h5></div>
+            <div class="quest-item-btn"><h5>◈ 4º Círculo: Votos Proibidos (1)</h5></div>
+          </div>
+        </div>
+
+        <div class="quest-dossier-panel">
+          <div class="dossier-header-bar">
+            <span class="dossier-title">◈ RITO DO EXPURGO SAGRADO</span>
+            <span class="level-badge">Custo: 1 Foco + 1 PV</span>
+          </div>
+          <div class="dossier-content-scroll">
+            <div class="lore-quote">
+              "A carne deve queimar para que a alma permaneça imaculada. O celebrante entoa o versículo das cinzas e toca a chaga do aflito."
+            </div>
+            <div class="objective-box">
+              <span>◈ Tempo de Execução: 1 Ação de Combate</span>
+            </div>
+            <div class="objective-box">
+              <span>◈ Alcance: Toque</span>
+            </div>
+            <div class="objective-box">
+              <span>◈ Efeito: Cura 2d6 pontos de Vida e reduz 2 níveis de infecção por Peste. Se rolar número par nos dados, o conjurador ganha Inspiração.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════════════
+         7. CRÔNICAS & CAMPANHA (MAPA DO MUNDO + MISSÕES - DUPLO ESTILO DA FOTO!)
+         ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="panel-campanha" class="screen-panel">
+      <!-- Sub-aba 7.1: AREA MAP (Idêntico ao topo da imagem de referência!) -->
+      <div id="subview-campanha-areamap" class="area-map-container" style="display: grid;">
+        <!-- Painel Lateral de Filtros com Olhos -->
+        <div class="map-filter-panel">
+          <div style="font-size: 11px; font-weight: 700; color: var(--gold-hi); letter-spacing: 0.14em; margin-bottom: 6px;">
+            FILTER
+          </div>
+          <div class="filter-item">
+            <div class="filter-left"><span>◇</span><span>Quest Available</span></div>
+            <span class="filter-eye">👁</span>
+          </div>
+          <div class="filter-item">
+            <div class="filter-left"><span>?</span><span>Miscellaneous</span></div>
+            <span class="filter-eye">👁</span>
+          </div>
+          <div class="filter-item">
+            <div class="filter-left"><span>🏛</span><span>Mysterious Site</span></div>
+            <span class="filter-eye">👁</span>
+          </div>
+          <div class="filter-item">
+            <div class="filter-left"><span>📦</span><span>Item Chest</span></div>
+            <span class="filter-eye">👁</span>
+          </div>
+          <div class="filter-item">
+            <div class="filter-left"><span style="color: var(--danger);">💀</span><span style="color: var(--danger);">Boss</span></div>
+            <span class="filter-eye">👁</span>
+          </div>
+          <div class="filter-item">
+            <div class="filter-left"><span>📜</span><span>Notice Board</span></div>
+            <span class="filter-eye">👁</span>
+          </div>
+          <div class="filter-item">
+            <div class="filter-left"><span>⚜️</span><span>Custom Marker</span></div>
+            <span class="filter-eye">👁</span>
+          </div>
+        </div>
+
+        <!-- Canvas do Mapa com Parchment e Pins Clicáveis -->
+        <div class="map-canvas-wrapper">
+          <!-- Background SVG Cartográfico Estilo Lord of the Rings -->
+          <svg class="parchment-map-svg" viewBox="0 0 1000 650" fill="none">
+            <!-- Terra / Continente -->
+            <path d="M 120,40 Q 250,90 340,60 T 520,110 T 680,80 T 880,140 Q 950,260 890,380 T 750,490 T 540,580 T 320,530 T 180,420 Z" fill="#140e09" stroke="#3d2a1c" strokeWidth="2" />
+            <!-- Rios -->
+            <path d="M 340,60 Q 420,200 480,310 T 540,580" stroke="#1d2833" strokeWidth="3" fill="none" />
+            <path d="M 680,80 Q 640,240 600,360 T 480,310" stroke="#1d2833" strokeWidth="2" fill="none" />
+            <!-- Montanhas estilizadas -->
+            <path d="M 380,180 L 400,140 L 420,180 L 440,135 L 460,180" stroke="#4a3525" strokeWidth="2" fill="#1e140d" />
+            <path d="M 620,220 L 640,170 L 660,220 L 680,165 L 700,220" stroke="#4a3525" strokeWidth="2" fill="#1e140d" />
+            <!-- Nomes de Regiões -->
+            <text x="320" y="240" fill="#6d533d" font-family="'Cinzel', serif" font-size="14" letter-spacing="4">ENEDWAITH</text>
+            <text x="540" y="320" fill="#8e6d4f" font-family="'Cinzel', serif" font-size="16" font-weight="bold" letter-spacing="6">ROHAN</text>
+            <text x="720" y="440" fill="#6d533d" font-family="'Cinzel', serif" font-size="14" letter-spacing="4">GONDOR</text>
+            <!-- Rosa dos Ventos no Canto Superior Direito -->
+            <g transform="translate(860, 90)">
+              <circle cx="0" cy="0" r="30" stroke="#5d432f" strokeWidth="1" strokeDasharray="2 3" />
+              <polygon points="0,-35 6,-8 0,0 -6,-8" fill="#ecc05c" />
+              <polygon points="0,35 6,8 0,0 -6,8" fill="#5d432f" />
+              <polygon points="35,0 8,6 0,0 8,-6" fill="#5d432f" />
+              <polygon points="-35,0 -8,6 0,0 -8,-6" fill="#5d432f" />
+              <text x="-4" y="-40" fill="#ecc05c" font-size="10" font-weight="bold">N</text>
+            </g>
+          </svg>
+
+          <!-- Pin Marcador Clicável (Meeting with Théoden) -->
+          <div class="map-marker active" style="top: 290px; left: 510px;" onclick="toggleMapPopup()" title="Meeting with Théoden">
+            ◈
+          </div>
+
+          <!-- Pin Boss (Herege da Peste) -->
+          <div class="map-marker" style="top: 410px; left: 740px; border-color: var(--danger); color: var(--danger);" onclick="alert('Chefe: Herege da Peste do Pântano!')" title="Chefe de Área">
+            💀
+          </div>
+
+          <!-- Popup de Dossiê Sobreposto (Exatamente como na foto: Meeting with Théoden) -->
+          <div class="map-popup-card" id="map-popup">
+            <div class="map-popup-title">Meeting with Théoden</div>
+            <div class="map-popup-sub">RECOMMENDED LEVEL 24</div>
+            <div class="map-popup-desc">
+              Meet Théoden, king of Rohan, and get a chance to join the mounted party. The soldiers there might give you unexpected information for the journey ahead.
+            </div>
+            <div style="font-size: 10px; color: var(--gold-deep); letter-spacing: 0.1em; margin-bottom: 4px;">CURRENT OBJECTIVE</div>
+            <div style="font-size: 11.5px; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+              <span style="color: var(--gold-main);">◈</span> Meeting Rohan's Guard
+            </div>
+            <div style="font-size: 10px; color: var(--gold-deep); letter-spacing: 0.1em; margin-bottom: 4px;">REWARDS</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="reward-slots-row">
+                <div class="item-slot-box" style="width: 38px; height: 38px;">🗡️</div>
+                <div class="item-slot-box" style="width: 38px; height: 38px;">💍</div>
+              </div>
+              <button class="game-prompt-btn" style="background: var(--gold-dim); color: #000; font-weight: bold;" onclick="alert('Missão rastreada no HUD!')">
+                Track (X)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-aba 7.2: QUEST SELECT (Idêntico ao fundo da imagem de referência!) -->
+      <div id="subview-campanha-questselect" class="quest-select-layout" style="display: none;">
+        <!-- Coluna Esquerda: Acordeão de Capítulos -->
+        <div class="quest-list-panel">
+          <div class="quest-list-header">
+            <span>◈ CAPÍTULOS DE ROHAN</span>
+          </div>
+          <div class="quest-tree-scroll">
+            <div class="chapter-card">
+              <div class="chapter-header">
+                <div class="chapter-title-box">
+                  <span style="color: var(--gold-main);">▼</span>
+                  <div>
+                    <div class="chapter-name">The Rohirrim</div>
+                    <div class="chapter-sub">Chapter 1: Protection</div>
+                  </div>
+                </div>
+                <img class="chapter-thumb" src="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=120&q=80" alt="thumb" />
+              </div>
+              <div class="quest-items-group">
+                <div class="quest-item-btn active">
+                  <div class="quest-item-info">
+                    <h5>◈ What The Rohirrim were protecting</h5>
+                    <span>Rohan</span>
+                  </div>
+                  <span class="quest-distance">460m</span>
+                </div>
+                <div class="quest-item-btn">
+                  <div class="quest-item-info">
+                    <h5>The qualifications of monarch</h5>
+                    <span>Rohan</span>
+                  </div>
+                  <span class="quest-distance">1.2km</span>
+                </div>
+                <div class="quest-item-btn">
+                  <div class="quest-item-info">
+                    <h5>The White Horse</h5>
+                    <span>Plains of Rohan</span>
+                  </div>
+                  <span class="quest-distance">3km</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="chapter-card">
+              <div class="chapter-header">
+                <div class="chapter-title-box">
+                  <span style="color: var(--text-muted);">▶</span>
+                  <div>
+                    <div class="chapter-name">Edoras</div>
+                    <div class="chapter-sub">Chapter 1: Golden Hall of Meduseld</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chapter-card">
+              <div class="chapter-header">
+                <div class="chapter-title-box">
+                  <span style="color: var(--text-muted);">▶</span>
+                  <div>
+                    <div class="chapter-name">Glory of Dale</div>
+                    <div class="chapter-sub">Chapter 1: Trouble</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna Direita: Dossiê Completo da Missão -->
+        <div class="quest-dossier-panel">
+          <div class="dossier-header-bar">
+            <div class="dossier-header-left">
+              <span class="dossier-title">◈ What The Rohirrim were protecting</span>
+              <span class="level-badge">Recommended Level 24</span>
+            </div>
+          </div>
+
+          <div class="dossier-content-scroll">
+            <div class="cinematic-banner" style="height: 180px;">
+              <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80" alt="Cavalry" />
+              <div class="overlay"></div>
+            </div>
+
+            <div class="lore-quote">
+              "We do not serve the Power of the Black Land far away, but neither are we yet at open war with him; and if you are fleeing from him, then you had best leave this land. There is trouble now on all our borders, and we are threatened; but we desire only to be free, and to live as we have lived, keeping our own, and serving no foreign lord, good or evil. We welcomed guests kindly in the better days, but in these times the unbidden stranger finds us swift and hard."
+            </div>
+
+            <div>
+              <div class="section-label">◈ Current Objective</div>
+              <div class="objective-box">
+                <span style="color: var(--gold-main);">◈</span> Meeting Rohan's Guard
+              </div>
+            </div>
+
+            <div>
+              <div class="section-label">◈ Rewards</div>
+              <div class="rewards-section">
+                <div class="reward-currency">
+                  <span>💎 1,400</span>
+                  <span>🪙 27,400</span>
+                </div>
+                <div class="reward-slots-row">
+                  <div class="item-slot-box" title="Adaga dos Cavaleiros">🗡️</div>
+                  <div class="item-slot-box" title="Anel de Ouro de Rohan">💍</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dossier-actions-footer">
+            <div style="display: flex; gap: 12px;">
+              <button class="game-prompt-btn" onclick="alert('Missão ativada!')">
+                <span class="key-badge">A</span> Select
+              </button>
+            </div>
+            <div>
+              <span class="key-badge">B</span> Back
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════════════
+         8. SISTEMA & ÁUDIO (SOUNDBOARD & CÓDICE)
+         ═════════════════════════════════════════════════════════════════════════ -->
+    <section id="panel-sistema" class="screen-panel">
+      <div class="quest-select-layout">
+        <div class="quest-list-panel" style="width: 260px;">
+          <div class="quest-list-header">
+            <span>◈ MÓDULOS DE SISTEMA</span>
+          </div>
+          <div class="quest-tree-scroll">
+            <div class="quest-item-btn active"><h5>🔊 Soundboard & Trilhas</h5></div>
+            <div class="quest-item-btn"><h5>📖 Códice de Regras</h5></div>
+            <div class="quest-item-btn"><h5>💾 Backup & Salvar JSON</h5></div>
+            <div class="quest-item-btn"><h5>⚙️ Configurações da Sessão</h5></div>
+          </div>
+        </div>
+
+        <div class="quest-dossier-panel">
+          <div class="dossier-header-bar">
+            <span class="dossier-title">◈ MESA DE SOM & AMBIÊNCIA DO MESTRE</span>
+            <div style="font-size: 11px; color: var(--gold-hi);">Volume Mestre: 80%</div>
+          </div>
+          <div class="dossier-content-scroll">
+            <div class="section-label">◈ Ambiência dos Ermos</div>
+            <div class="soundboard-grid">
+              <div class="sound-card playing" onclick="toggleSound(this)">
+                <div style="font-size: 22px;">🌪️</div>
+                <div style="font-size: 12px; font-weight: bold; color: var(--gold-hi);">Vento dos Ermos</div>
+                <div style="font-size: 10px; color: var(--hp);">▶ Reproduzindo (Loop)</div>
+              </div>
+              <div class="sound-card" onclick="toggleSound(this)">
+                <div style="font-size: 22px;">☣️</div>
+                <div style="font-size: 12px; font-weight: bold; color: var(--gold-hi);">Sussurros da Peste</div>
+                <div style="font-size: 10px; color: var(--text-muted);">Pausado</div>
+              </div>
+              <div class="sound-card" onclick="toggleSound(this)">
+                <div style="font-size: 22px;">🕯️</div>
+                <div style="font-size: 12px; font-weight: bold; color: var(--gold-hi);">Taberna do Confessor</div>
+                <div style="font-size: 10px; color: var(--text-muted);">Pausado</div>
+              </div>
+            </div>
+
+            <div class="section-label" style="margin-top: 14px;">◈ Efeitos Sonoros Instantâneos (One-Shots)</div>
+            <div class="soundboard-grid">
+              <div class="sound-card" onclick="playOneShot('⚔️ Choque de Espadas!')">
+                <div style="font-size: 22px;">⚔️</div>
+                <div style="font-size: 12px; font-weight: bold;">Lâmina de Prata</div>
+              </div>
+              <div class="sound-card" onclick="playOneShot('🎺 Trompas de Alerta!')">
+                <div style="font-size: 22px;">🎺</div>
+                <div style="font-size: 12px; font-weight: bold;">Trompa de Guerra</div>
+              </div>
+              <div class="sound-card" onclick="playOneShot('💀 Riso Demoníaco!')">
+                <div style="font-size: 22px;">💀</div>
+                <div style="font-size: 12px; font-weight: bold;">Rugido da Besta</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── MODAL SPLIT SCREEN DE FICHA COMPLETA DO JURADO ── -->
+  <div class="modal-backdrop" id="sheet-modal" onclick="closeSheetModal(event)">
+    <div class="sheet-modal-box" onclick="event.stopPropagation()">
+      <!-- Coluna Esquerda: Dossiê Fixo -->
+      <div style="background: #110c07; border-right: 1px solid var(--border-accent); padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 48px; height: 48px; border-radius: 8px; border: 1px solid var(--gold-main); background: #1a120c; display: grid; place-items: center; font-size: 22px;">⚔️</div>
+          <div>
+            <h3 style="font-size: 14px; color: var(--gold-hi);">Sir Corvus Valerius</h3>
+            <p style="font-size: 11px; color: var(--text-muted); font-family: 'EB Garamond';">Humano • Nível 3 (340 XP)</p>
+          </div>
+        </div>
+
+        <div style="background: #090604; border: 1px solid var(--border-dark); padding: 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span>VIDA</span><span style="color: var(--hp); font-weight: bold;">8 / 10</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span>FOCO</span><span style="color: var(--focus); font-weight: bold;">3 / 3</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span>PESTE</span><span style="color: var(--plague); font-weight: bold;">2 / 10</span>
+          </div>
+        </div>
+
+        <div class="lore-quote" style="font-size: 12px;">
+          "O sangue derramado não é uma derrota, mas o preço exigido pelo Juramento da Alva."
+        </div>
+      </div>
+
+      <!-- Coluna Direita: Editor de Atributos & Perícias -->
+      <div style="padding: 22px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto;">
+        <div class="section-label">◈ Atributos Primordiais (Modificadores)</div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+          <div class="objective-box" style="flex-direction: column; text-align: center;">
+            <span style="font-size: 10px; color: var(--text-muted);">CORPO</span>
+            <span style="font-size: 16px; font-weight: bold; color: var(--gold-hi);">+2</span>
+          </div>
+          <div class="objective-box" style="flex-direction: column; text-align: center;">
+            <span style="font-size: 10px; color: var(--text-muted);">ASTÚCIA</span>
+            <span style="font-size: 16px; font-weight: bold; color: var(--gold-hi);">+1</span>
+          </div>
+          <div class="objective-box" style="flex-direction: column; text-align: center;">
+            <span style="font-size: 10px; color: var(--text-muted);">VONTADE</span>
+            <span style="font-size: 16px; font-weight: bold; color: var(--gold-hi);">+2</span>
+          </div>
+          <div class="objective-box" style="flex-direction: column; text-align: center;">
+            <span style="font-size: 10px; color: var(--text-muted);">PRESENÇA</span>
+            <span style="font-size: 16px; font-weight: bold; color: var(--gold-hi);">0</span>
+          </div>
+        </div>
+
+        <div class="section-label">◈ Testes de Perícias Rápidos (com Rolagem d20)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <button class="game-prompt-btn objective-box" style="justify-content: space-between;" onclick="rollSkillTest('Atletismo', 2)">
+            <span>Atletismo (+2)</span><span>🎲 Rolar</span>
+          </button>
+          <button class="game-prompt-btn objective-box" style="justify-content: space-between;" onclick="rollSkillTest('Percepção', 1)">
+            <span>Percepção (+1)</span><span>🎲 Rolar</span>
+          </button>
+          <button class="game-prompt-btn objective-box" style="justify-content: space-between;" onclick="rollSkillTest('Medicina', 1)">
+            <span>Medicina (+1)</span><span>🎲 Rolar</span>
+          </button>
+          <button class="game-prompt-btn objective-box" style="justify-content: space-between;" onclick="rollSkillTest('Intimidação', 0)">
+            <span>Intimidação (0)</span><span>🎲 Rolar</span>
+          </button>
+        </div>
+
+        <div style="margin-top: auto; display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="game-prompt-btn" onclick="closeSheetModal()">Fechar</button>
+          <button class="game-prompt-btn" style="background: var(--gold-deep); color: #000; font-weight: bold;" onclick="closeSheetModal()">Salvar Ficha</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Flutuante de Rolagem de Dados -->
+  <div class="dice-toast" id="dice-toast">
+    <span style="font-size: 24px;">🎲</span>
+    <div>
+      <div id="toast-title" style="font-size: 11px; color: var(--gold-hi); font-weight: bold;">TESTE D20</div>
+      <div id="toast-body" style="font-family: 'JetBrains Mono'; font-size: 13px; color: var(--text-main);">Resultado: 18</div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER HUD COM ATALHOS DE CONTROLE ── -->
+  <footer>
+    <div class="footer-keys">
+      <div class="footer-key-item"><span class="key-badge">Q / E</span><span>Navegar Abas</span></div>
+      <div class="footer-key-item"><span class="key-badge">1 - 8</span><span>Atalho Direto</span></div>
+      <div class="footer-key-item"><span class="key-badge">F</span><span>Ficha do Jurado</span></div>
+      <div class="footer-key-item"><span class="key-badge">D</span><span>Rolar d20</span></div>
+      <div class="footer-key-item"><span class="key-badge">M</span><span>Alternar Modo Mapa/Tático</span></div>
+    </div>
+    <div>
+      <span style="color: var(--gold-deep); letter-spacing: 0.14em;">PESTE DO JURAMENTO • CONFESSÓRIO v2.5</span>
+    </div>
+  </footer>
+
+  <!-- ── SCRIPTS DE INTERATIVIDADE & NAVEGAÇÃO ── -->
+  <script>
+    const subnavConfig = {
+      jurados: [
+        { id: 'tactical', label: 'Painel Tático (Quest Select)' },
+        { id: 'grid', label: 'Grade de Jurados (Area Map)' }
+      ],
+      mesa: [
+        { id: 'grid', label: 'Arena de Batalha' },
+        { id: 'relogio', label: 'Relógio & Clima' }
+      ],
+      bestiario: [
+        { id: 'catalogo', label: 'Ameaças da Peste' },
+        { id: 'forjador', label: '+ Novo Monstro' }
+      ],
+      itens: [
+        { id: 'arsenal', label: 'Arsenal & Compêndio' },
+        { id: 'loja', label: 'Loja do Mercador' }
+      ],
+      oficina: [
+        { id: 'bancada', label: 'Bancada 3x3' },
+        { id: 'receitas', label: 'Livro de Receitas' }
+      ],
+      grimorio: [
+        { id: 'circulos', label: 'Círculos de Rituais' },
+        { id: 'arvore', label: 'Árvore de Votos' }
+      ],
+      campanha: [
+        { id: 'areamap', label: 'Mapa do Mundo (Area Map)' },
+        { id: 'questselect', label: 'Quadro de Missões (Quest Select)' }
+      ],
+      sistema: [
+        { id: 'soundboard', label: 'Soundboard' },
+        { id: 'regras', label: 'Códice de Regras' }
+      ]
+    };
+
+    const mainTabs = ['jurados', 'mesa', 'bestiario', 'itens', 'oficina', 'grimorio', 'campanha', 'sistema'];
+    let currentMainIdx = 0;
+    let currentMainTab = 'jurados';
+    let currentSubTab = 'tactical';
+
+    function renderSubnav() {
+      const container = document.getElementById('subnav-container');
+      container.innerHTML = '';
+      const subs = subnavConfig[currentMainTab] || [];
+      subs.forEach((sub, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'subnav-item' + (idx === 0 ? ' active' : '');
+        btn.innerHTML = '◈ ' + sub.label;
+        btn.onclick = () => switchSubTab(sub.id, btn);
+        container.appendChild(btn);
+      });
+    }
+
+    function switchMainTab(tabId) {
+      currentMainTab = tabId;
+      currentMainIdx = mainTabs.indexOf(tabId);
+
+      // Atualiza botões superiores
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+
+      // Atualiza painéis
+      document.querySelectorAll('.screen-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === 'panel-' + tabId);
+      });
+
+      // Atualiza título da área
+      const titles = {
+        jurados: 'JURADOS & FICHAS',
+        mesa: 'ARENA & COMBATE TÁTICO',
+        bestiario: 'BESTIÁRIO & MONSTROS',
+        itens: 'ITENS & TESOUROS',
+        oficina: 'OFICINA & BANCADA ALQUÍMICA',
+        grimorio: 'GRIMÓRIOS & RITUAIS',
+        campanha: 'CRÔNICAS & ÁREA MAP',
+        sistema: 'SISTEMA & SOUNDBOARD'
+      };
+      document.getElementById('header-area-title').innerText = titles[tabId] || 'CONFESSÓRIO DO MESTRE';
+
+      renderSubnav();
+    }
+
+    function switchSubTab(subId, btnElement) {
+      document.querySelectorAll('.subnav-item').forEach(b => b.classList.remove('active'));
+      btnElement.classList.add('active');
+
+      if (currentMainTab === 'jurados') {
+        document.getElementById('subview-jurados-tactical').style.display = subId === 'tactical' ? 'grid' : 'none';
+        document.getElementById('subview-jurados-grid').style.display = subId === 'grid' ? 'grid' : 'none';
+      } else if (currentMainTab === 'mesa') {
+        document.getElementById('subview-mesa-grid').style.display = subId === 'grid' ? 'grid' : 'none';
+        document.getElementById('subview-mesa-relogio').style.display = subId === 'relogio' ? 'flex' : 'none';
+      } else if (currentMainTab === 'campanha') {
+        document.getElementById('subview-campanha-areamap').style.display = subId === 'areamap' ? 'grid' : 'none';
+        document.getElementById('subview-campanha-questselect').style.display = subId === 'questselect' ? 'grid' : 'none';
+      }
+    }
+
+    function prevMainTab() {
+      currentMainIdx = currentMainIdx <= 0 ? mainTabs.length - 1 : currentMainIdx - 1;
+      switchMainTab(mainTabs[currentMainIdx]);
+    }
+
+    function nextMainTab() {
+      currentMainIdx = currentMainIdx >= mainTabs.length - 1 ? 0 : currentMainIdx + 1;
+      switchMainTab(mainTabs[currentMainIdx]);
+    }
+
+    // Heróis Interativos
+    const heroData = {
+      corvus: {
+        name: '◈ Sir Corvus Valerius',
+        classTitle: 'Humano • Sangue • Nv 3',
+        oath: '"Juro com meu sangue que nenhum inocente tombará sob a Peste enquanto meu pulso pulsar. Minha lâmina será o aço da redenção."',
+        hp: 8, focus: 3, plague: 2
+      },
+      morrigan: {
+        name: '◈ Lady Morrigan',
+        classTitle: 'Elfa • Cinzas • Nv 3',
+        oath: '"Das cinzas fomos erguidos, ao pó retornaremos. Que o fogo queime as impurezas da carne antes que a peste as tome."',
+        hp: 6, focus: 4, plague: 4
+      },
+      bronn: {
+        name: '◈ Bronn de Ferro',
+        classTitle: 'Anão • Bigorna • Nv 4',
+        oath: '"O ferro não verga perante o veneno. Enquanto minha bigorna retumbar, os portões do refúgio permanecerão fechados às trevas."',
+        hp: 3, focus: 1, plague: 8
+      }
+    };
+    let activeHeroId = 'corvus';
+
+    function selectHero(heroId, el) {
+      activeHeroId = heroId;
+      document.querySelectorAll('.quest-tree-scroll .quest-item-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+
+      const data = heroData[heroId];
+      if (!data) return;
+      document.getElementById('dossier-hero-name').innerText = data.name;
+      document.getElementById('dossier-hero-class').innerText = data.classTitle;
+      document.getElementById('dossier-hero-oath').innerText = data.oath;
+      document.getElementById('hero-hp-display').innerText = data.hp + '/10';
+      document.getElementById('hero-focus-display').innerText = data.focus + '/3';
+      document.getElementById('hero-plague-display').innerText = data.plague + '/10';
+    }
+
+    function adjustHeroStat(stat, delta) {
+      const data = heroData[activeHeroId];
+      if (!data) return;
+      if (stat === 'hp') {
+        data.hp = Math.max(0, Math.min(10, data.hp + delta));
+        document.getElementById('hero-hp-display').innerText = data.hp + '/10';
+      } else if (stat === 'focus') {
+        data.focus = Math.max(0, Math.min(3, data.focus + delta));
+        document.getElementById('hero-focus-display').innerText = data.focus + '/3';
+      } else if (stat === 'plague') {
+        data.plague = Math.max(0, Math.min(10, data.plague + delta));
+        document.getElementById('hero-plague-display').innerText = data.plague + '/10';
+      }
+    }
+
+    // Modal de Ficha
+    function openSheetModal() {
+      document.getElementById('sheet-modal').classList.add('open');
+    }
+    function closeSheetModal(e) {
+      if (e) e.stopPropagation();
+      document.getElementById('sheet-modal').classList.remove('open');
+    }
+
+    // Rolagens de Dados
+    function rollDice(sides, bonus = 0) {
+      const roll = Math.floor(Math.random() * sides) + 1;
+      const total = roll + bonus;
+      showToast('ROLAGEM D' + sides, 'Resultado: ' + total + (bonus ? ' (' + roll + ' + ' + bonus + ')' : '') + (roll === 20 ? ' — CRÍTICO!' : ''));
+    }
+
+    function rollSkillTest(skillName, mod) {
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const total = roll + mod;
+      showToast('TESTE DE ' + skillName.toUpperCase(), 'Total: ' + total + ' (d20: ' + roll + ' + ' + mod + ')');
+    }
+
+    function showToast(title, body) {
+      const toast = document.getElementById('dice-toast');
+      document.getElementById('toast-title').innerText = title;
+      document.getElementById('toast-body').innerText = body;
+      toast.style.display = 'flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3500);
+    }
+
+    // Mapa Popup Toggle
+    function toggleMapPopup() {
+      const p = document.getElementById('map-popup');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Oficina 3x3
+    function toggleCraftSlot(slot, icon) {
+      slot.innerText = slot.innerText ? '' : icon;
+    }
+    function clearCraftGrid() {
+      document.querySelectorAll('#craft-grid .bench-slot').forEach(s => s.innerText = '');
+    }
+    function forgeRecipe() {
+      showToast('FORJA CONCLUÍDA!', '✦ Relíquia forjada com sucesso e adicionada ao inventário!');
+    }
+
+    // Soundboard
+    function toggleSound(card) {
+      document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('playing'));
+      card.classList.add('playing');
+      showToast('SOUNDBOARD', 'Reproduzindo trilha atmosférica...');
+    }
+    function playOneShot(name) {
+      showToast('EFEITO SONORO', name);
+    }
+
+    // Turn Tracker
+    function advanceTurn() {
+      showToast('INICIATIVA', 'Turno avançado para o próximo combatente.');
+    }
+
+    function openGiveItemModal() {
+      showToast('CONCEDER ITEM', 'Item selecionado concedido ao jurado!');
+    }
+
+    // Atalhos globais de teclado
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if (e.key === 'q' || e.key === 'Q') prevMainTab();
+      if (e.key === 'e' || e.key === 'E') nextMainTab();
+      if (e.key === 'f' || e.key === 'F') openSheetModal();
+      if (e.key === 'd' || e.key === 'D') rollDice(20);
+      if (e.key === 'Escape') closeSheetModal();
+      if (e.key >= '1' && e.key <= '8') {
+        const idx = parseInt(e.key) - 1;
+        if (mainTabs[idx]) switchMainTab(mainTabs[idx]);
+      }
+      if (e.key === 'm' || e.key === 'M') {
+        if (currentMainTab === 'campanha') {
+          const area = document.getElementById('subview-campanha-areamap');
+          const quest = document.getElementById('subview-campanha-questselect');
+          if (area.style.display === 'grid') {
+            area.style.display = 'none';
+            quest.style.display = 'grid';
+          } else {
+            area.style.display = 'grid';
+            quest.style.display = 'none';
+          }
+        }
+      }
+    });
+
+    // Iniciar na primeira aba
+    renderSubnav();
+  </script>
+</body>
+</html>
+`;
+
+// Salva em showcase-mestre.html na raiz e na pasta public
+fs.writeFileSync(path.join(__dirname, '..', 'showcase-mestre.html'), htmlContent, 'utf8');
+fs.writeFileSync(path.join(__dirname, '..', 'public', 'showcase-mestre.html'), htmlContent, 'utf8');
+console.log('Showcase HTML gerado com sucesso em showcase-mestre.html e public/showcase-mestre.html');

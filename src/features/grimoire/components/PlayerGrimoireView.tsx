@@ -24,6 +24,7 @@ import type { Spell, SpellCheckStatus } from '../types';
 import { SpellCard, FONTE_CORES } from './SpellCard';
 import { SpellInspectModal } from './SpellInspectModal';
 import { SpellCastModal } from './SpellCastModal';
+import '../../../styles/features/PlayerGrimoire.css';
 
 export const PlayerGrimoireView: React.FC = () => {
   const sessionHeroId = useSessionStore((s) => s.heroId);
@@ -329,48 +330,44 @@ export const PlayerGrimoireView: React.FC = () => {
   }
 
   return (
-    <main className="w-full max-w-5xl mx-auto px-4 py-6 flex flex-col gap-6">
+    <div className="grimoire-container">
       {/* 1. Header & Vitals Banner */}
-      <section className="p-5 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        <div>
-          <span className="text-[10px] font-cinzel uppercase text-[var(--gold-dim)] tracking-widest">
+      <div className="grimoire-vitals-banner">
+        <div className="grimoire-hero-info">
+          <span className="grimoire-kicker">
             Compêndio Místico de Aldrenor
           </span>
-          <h1 className="font-cinzel font-bold text-2xl text-[var(--text-1)] mt-0.5">
+          <h1 className="grimoire-hero-title">
             Grimório de {hero.name}
           </h1>
-          <p className="text-xs text-[var(--text-3)] font-cinzel mt-1">
-            {hero.title || 'Jurado'} • Nível {heroLevel} • Caminho: <strong className="text-[var(--text-2)]">{hero.caminho || 'Geral'}</strong> • Vontade: <strong className="text-[var(--gold)]">+{heroVontade}</strong>
+          <p className="grimoire-hero-meta">
+            {hero.title || 'Jurado'} • Nível {heroLevel} • Caminho: <strong>{hero.caminho || 'Geral'}</strong> • Vontade: <strong style={{ color: '#c9a961' }}>+{heroVontade}</strong>
           </p>
         </div>
 
         {/* Vitals: Focus & Inspiration */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="grimoire-vitals-group">
           {/* Foco Card */}
-          <div className="px-3.5 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] flex flex-col">
-            <span className="text-[9px] uppercase font-cinzel text-sky-400 font-bold tracking-wider">
+          <div className="grimoire-vital-card">
+            <span className="grimoire-vital-label" style={{ color: '#38bdf8' }}>
               Foco Arcano
             </span>
-            <div className="font-mono text-base font-bold text-sky-300 flex items-baseline gap-1 mt-0.5">
+            <div className="grimoire-vital-value-focus">
               <span>{focusAtual}</span>
-              <span className="text-xs text-sky-600 font-normal">/ {focusMax}</span>
+              <span className="grimoire-vital-denom"> / {focusMax}</span>
             </div>
           </div>
 
           {/* Inspiração Seals */}
-          <div className="px-3.5 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] flex flex-col">
-            <span className="text-[9px] uppercase font-cinzel text-[var(--gold)] font-bold tracking-wider">
+          <div className="grimoire-vital-card">
+            <span className="grimoire-vital-label" style={{ color: '#c9a961' }}>
               Inspiração ({inspiracaoAtual}/{inspiracaoMax})
             </span>
-            <div className="flex items-center gap-1.5 mt-1.5">
+            <div className="grimoire-inspiration-seals">
               {Array.from({ length: Math.max(3, inspiracaoMax) }).map((_, i) => (
                 <div
                   key={i}
-                  className={`w-3 h-3 rounded-full border transition-all ${
-                    i < inspiracaoAtual
-                      ? 'bg-[var(--gold)] border-[var(--gold-bright)] shadow-[0_0_6px_rgba(201,169,97,0.6)]'
-                      : 'bg-black/60 border-zinc-700'
-                  }`}
+                  className={`grimoire-seal-orb ${i < inspiracaoAtual ? 'filled' : ''}`}
                   title={i < inspiracaoAtual ? 'Inspiração Disponível' : 'Lacre Vazio'}
                 />
               ))}
@@ -378,16 +375,16 @@ export const PlayerGrimoireView: React.FC = () => {
           </div>
 
           {/* Afinidades Pills */}
-          <div className="px-3.5 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] flex flex-col">
-            <span className="text-[9px] uppercase font-cinzel text-[var(--text-3)] font-bold tracking-wider">
+          <div className="grimoire-vital-card grimoire-affinities-card">
+            <span className="grimoire-vital-label">
               Afinidades
             </span>
-            <div className="flex items-center gap-1.5 mt-1">
+            <div className="grimoire-affinities-pills">
               {heroFontesAfinidade.size > 0 ? (
                 Array.from(heroFontesAfinidade).map((f) => (
                   <span
                     key={f}
-                    className="px-2 py-0.5 rounded text-[10px] font-cinzel border"
+                    className="grimoire-affinity-pill"
                     style={{
                       borderColor: FONTE_CORES[f] || 'rgba(201,169,97,0.4)',
                       color: FONTE_CORES[f] || '#c9a961',
@@ -397,27 +394,23 @@ export const PlayerGrimoireView: React.FC = () => {
                   </span>
                 ))
               ) : (
-                <span className="text-[10px] text-[var(--text-3)] font-cinzel">Padrão</span>
+                <span style={{ fontSize: '0.68rem', color: '#9a917f' }}>Padrão</span>
               )}
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* 2. Sub-Tabs */}
-      <nav className="flex items-center gap-2 border-b border-[var(--border)] pb-2">
+      <div className="grimoire-tabs-bar">
         <button
           type="button"
           onClick={() => setSubTab('minhas')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-cinzel text-xs font-semibold transition-colors cursor-pointer ${
-            subTab === 'minhas'
-              ? 'bg-[var(--gold)] text-black shadow-sm'
-              : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--card)]'
-          }`}
+          className={`grimoire-tab-btn ${subTab === 'minhas' ? 'active' : ''}`}
         >
           <BookOpen size={14} />
           <span>Minhas Magias</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 text-[var(--gold)] border border-black/20">
+          <span className="grimoire-badge-count">
             {todasMagiasAprendidas.length}
           </span>
         </button>
@@ -425,122 +418,134 @@ export const PlayerGrimoireView: React.FC = () => {
         <button
           type="button"
           onClick={() => setSubTab('aprender')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-cinzel text-xs font-semibold transition-colors cursor-pointer ${
-            subTab === 'aprender'
-              ? 'bg-[var(--gold)] text-black shadow-sm'
-              : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--card)]'
-          }`}
+          className={`grimoire-tab-btn ${subTab === 'aprender' ? 'active' : ''}`}
         >
           <Sparkles size={14} />
           <span>Aprender Novas Magias</span>
           {magiasEmEstudo.length > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-950 text-amber-300 border border-amber-800">
+            <span className="grimoire-badge-studying">
               {magiasEmEstudo.length} em estudo
             </span>
           )}
         </button>
-      </nav>
+      </div>
 
       {/* 3. SUB-TAB: MINHAS MAGIAS */}
       {subTab === 'minhas' && (
-        <div className="flex flex-col gap-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Em Estudo Section */}
           {magiasEmEstudo.length > 0 && (
-            <section className="p-4 rounded-xl bg-amber-950/10 border border-amber-800/30 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-amber-400 font-cinzel font-semibold text-xs">
-                  <Clock size={15} />
-                  <span>Estudos Místicos em Andamento ({magiasEmEstudo.length})</span>
+            <div className="grimoire-studying-panel">
+              <div className="grimoire-studying-header">
+                <div className="grimoire-studying-title-group">
+                  <Clock size={15} style={{ color: '#c9a961' }} />
+                  <span className="grimoire-studying-title">
+                    Estudos Místicos em Andamento ({magiasEmEstudo.length})
+                  </span>
                 </div>
-                <span className="text-[11px] text-[var(--text-3)] font-cinzel">
+                <span className="grimoire-studying-hint">
                   Invista Inspiração para dominar a fórmula
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grimoire-studying-grid">
                 {magiasEmEstudo.map((mag) => {
                   const marcas = mag.hm?.marcas || 0;
                   const custo = mag.custo_inspiracao || 1;
                   return (
-                    <div
-                      key={mag.id}
-                      className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)] flex items-center justify-between gap-3"
-                    >
-                      <div>
+                    <div key={mag.id} className="grimoire-studying-card">
+                      <div className="grimoire-studying-card-header">
                         <h4
                           onClick={() => setInspectMagia(mag)}
-                          className="font-cinzel font-semibold text-xs text-[var(--text-1)] hover:text-[var(--gold)] cursor-pointer"
+                          className="grimoire-studying-name"
                         >
                           {mag.nome}
                         </h4>
-                        <span className="text-[10px] text-[var(--text-3)] font-cinzel">
-                          {mag.fonte} • {mag.escola} • Círc {mag.circulo}
+                        <span style={{ fontSize: '0.7rem', color: '#9a917f' }}>
+                          Círc {mag.circulo}
                         </span>
-                        <div className="flex items-center gap-1.5 mt-1.5">
+                      </div>
+                      <span style={{ fontSize: '0.72rem', color: '#9a917f' }}>
+                        {mag.fonte} • {mag.escola}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.35rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           {Array.from({ length: custo }).map((_, i) => (
                             <div
                               key={i}
-                              className={`w-2.5 h-2.5 rounded-full ${
-                                i < marcas ? 'bg-[var(--gold)]' : 'bg-black/60 border border-zinc-700'
-                              }`}
+                              style={{
+                                width: 9,
+                                height: 9,
+                                borderRadius: '50%',
+                                backgroundColor: i < marcas ? '#c9a961' : 'transparent',
+                                border: '1.5px solid rgba(201, 169, 97, 0.4)',
+                                boxShadow: i < marcas ? '0 0 6px rgba(201, 169, 97, 0.6)' : 'none',
+                              }}
                             />
                           ))}
-                          <span className="text-[10px] text-[var(--text-3)] font-mono ml-1">
+                          <span style={{ fontSize: '0.7rem', color: '#9a917f', fontFamily: 'var(--font-mono, monospace)', marginLeft: 4 }}>
                             {marcas}/{custo}
                           </span>
                         </div>
-                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleInvestir(mag)}
-                        disabled={inspiracaoAtual <= 0}
-                        className="px-2.5 py-1.5 rounded bg-[var(--card)] hover:bg-[var(--gold)] hover:text-black border border-[var(--gold-dim)] text-[var(--gold)] text-xs font-cinzel transition-colors disabled:opacity-40 cursor-pointer flex items-center gap-1"
-                      >
-                        <Sparkles size={11} />
-                        <span>Investir 1 Insp</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInvestir(mag)}
+                          disabled={inspiracaoAtual <= 0}
+                          className="grimoire-card-action-btn primary"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                            height: '26px',
+                            padding: '0 0.55rem',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            cursor: inspiracaoAtual > 0 ? 'pointer' : 'not-allowed',
+                            opacity: inspiracaoAtual > 0 ? 1 : 0.4,
+                          }}
+                        >
+                          <Sparkles size={11} />
+                          <span>Investir 1 Insp</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-            </section>
+            </div>
           )}
 
           {/* Filter Bar */}
-          <section className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
-            <div className="relative flex-1">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]" />
+          <div className="grimoire-filter-card">
+            <div className="grimoire-search-wrap">
+              <Search size={14} className="grimoire-search-icon" />
               <input
                 type="text"
                 placeholder="Buscar magias aprendidas por nome, escola ou efeito..."
                 value={searchMinhas}
                 onChange={(e) => setSearchMinhas(e.target.value)}
-                className="w-full pl-9 pr-8 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-hidden focus:border-[var(--gold-dim)]"
+                className="grimoire-search-input"
               />
               {searchMinhas && (
                 <button
                   type="button"
                   onClick={() => setSearchMinhas('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-3)] hover:text-[var(--text-1)]"
+                  className="grimoire-search-clear"
                 >
-                  <X size={13} />
+                  <X size={12} />
                 </button>
               )}
             </div>
 
             {/* Circle Pills */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+            <div className="grimoire-chips-row">
               {['todos', '0', '1', '2', '3', '4'].map((circ) => (
                 <button
                   key={circ}
                   type="button"
                   onClick={() => setFiltroCirculoMinhas(circ)}
-                  className={`px-2.5 py-1 rounded text-xs font-cinzel font-semibold transition-colors shrink-0 cursor-pointer ${
-                    filtroCirculoMinhas === circ
-                      ? 'bg-[var(--gold)] text-black'
-                      : 'bg-[var(--card)] text-[var(--text-3)] hover:text-[var(--text-1)] border border-[var(--border)]'
-                  }`}
+                  className={`grimoire-chip ${filtroCirculoMinhas === circ ? 'active' : ''}`}
                 >
                   {circ === 'todos' ? 'Todos' : circ === '0' ? 'Truques' : `Círc ${circ}`}
                 </button>
@@ -551,7 +556,7 @@ export const PlayerGrimoireView: React.FC = () => {
             <select
               value={filtroFonteMinhas}
               onChange={(e) => setFiltroFonteMinhas(e.target.value)}
-              className="px-2.5 py-1 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--text-2)] outline-hidden font-cinzel"
+              className="grimoire-filter-select"
             >
               <option value="todas">Todas as Fontes</option>
               <option value="Fogo">Fogo</option>
@@ -562,7 +567,7 @@ export const PlayerGrimoireView: React.FC = () => {
               <option value="Peste">Peste</option>
               <option value="Arcana">Arcana</option>
             </select>
-          </section>
+          </div>
 
           {/* Grouped by Circle */}
           {[0, 1, 2, 3, 4].map((circulo) => {
@@ -570,17 +575,17 @@ export const PlayerGrimoireView: React.FC = () => {
             if (magiasDoCirculo.length === 0) return null;
 
             return (
-              <section key={circulo} className="flex flex-col gap-3">
-                <div className="flex items-center justify-between border-b border-[var(--border)] pb-1.5">
-                  <h3 className="font-cinzel font-bold text-sm text-[var(--gold)] tracking-wide">
+              <div key={circulo} className="grimoire-circle-group">
+                <div className="grimoire-circle-header">
+                  <h3 className="grimoire-circle-title">
                     {circulo === 0 ? 'Círculo 0 • Truques Inatos' : `Círculo ${circulo}`}
                   </h3>
-                  <span className="text-[11px] text-[var(--text-3)] font-cinzel">
+                  <span className="grimoire-circle-count">
                     {magiasDoCirculo.length} {magiasDoCirculo.length === 1 ? 'fórmula' : 'fórmulas'}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grimoire-spells-grid">
                   {magiasDoCirculo.map((mag) => (
                     <SpellCard
                       key={mag.id}
@@ -591,7 +596,7 @@ export const PlayerGrimoireView: React.FC = () => {
                     />
                   ))}
                 </div>
-              </section>
+              </div>
             );
           })}
 
@@ -605,26 +610,26 @@ export const PlayerGrimoireView: React.FC = () => {
 
       {/* 4. SUB-TAB: APRENDER NOVAS MAGIAS */}
       {subTab === 'aprender' && (
-        <div className="flex flex-col gap-5">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Filters */}
-          <section className="flex flex-col gap-3 p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <div className="relative flex-1">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]" />
+          <div className="grimoire-filter-card">
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div className="grimoire-search-wrap" style={{ flex: 1, minWidth: 200 }}>
+                <Search size={14} className="grimoire-search-icon" />
                 <input
                   type="text"
                   placeholder="Pesquisar catálogo arcano..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-8 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-hidden focus:border-[var(--gold-dim)]"
+                  className="grimoire-search-input"
                 />
                 {searchTerm && (
                   <button
                     type="button"
                     onClick={() => setSearchTerm('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-3)] hover:text-[var(--text-1)]"
+                    className="grimoire-search-clear"
                   >
-                    <X size={13} />
+                    <X size={12} />
                   </button>
                 )}
               </div>
@@ -633,7 +638,7 @@ export const PlayerGrimoireView: React.FC = () => {
               <select
                 value={filtroCirculo}
                 onChange={(e) => setFiltroCirculo(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--text-2)] outline-hidden font-cinzel"
+                className="grimoire-filter-select"
               >
                 <option value="todos">Todos os Círculos</option>
                 <option value="1">Círculo 1</option>
@@ -646,7 +651,7 @@ export const PlayerGrimoireView: React.FC = () => {
               <select
                 value={filtroFonte}
                 onChange={(e) => setFiltroFonte(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--text-2)] outline-hidden font-cinzel"
+                className="grimoire-filter-select"
               >
                 <option value="todas">Todas as Fontes</option>
                 <option value="Fogo">Fogo</option>
@@ -662,7 +667,7 @@ export const PlayerGrimoireView: React.FC = () => {
               <select
                 value={filtroEscola}
                 onChange={(e) => setFiltroEscola(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--text-2)] outline-hidden font-cinzel"
+                className="grimoire-filter-select"
               >
                 <option value="todas">Todas as Escolas</option>
                 {escolasUnicas.map((esc) => (
@@ -672,16 +677,12 @@ export const PlayerGrimoireView: React.FC = () => {
             </div>
 
             {/* Row 2: Toggles */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-[var(--border)]/60">
-              <div className="flex items-center gap-2">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '0.4rem', borderTop: '1px solid rgba(201, 169, 97, 0.12)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   onClick={() => setSoPodeAprender((prev) => !prev)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-cinzel transition-colors cursor-pointer ${
-                    soPodeAprender
-                      ? 'bg-[var(--gold)] text-black font-semibold'
-                      : 'bg-[var(--card)] text-[var(--text-3)] border border-[var(--border)]'
-                  }`}
+                  className={`grimoire-chip ${soPodeAprender ? 'active' : ''}`}
                 >
                   <Check size={11} />
                   <span>Apenas Disponíveis para Estudo</span>
@@ -690,25 +691,21 @@ export const PlayerGrimoireView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setApenasEmEstudo((prev) => !prev)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-cinzel transition-colors cursor-pointer ${
-                    apenasEmEstudo
-                      ? 'bg-[var(--gold)] text-black font-semibold'
-                      : 'bg-[var(--card)] text-[var(--text-3)] border border-[var(--border)]'
-                  }`}
+                  className={`grimoire-chip ${apenasEmEstudo ? 'active' : ''}`}
                 >
                   <Clock size={11} />
                   <span>Apenas em Estudo</span>
                 </button>
               </div>
 
-              <span className="text-[11px] text-[var(--text-3)] font-cinzel">
+              <span style={{ fontSize: '0.72rem', color: '#9a917f' }}>
                 Exibindo {Math.min(displayCount, magiasParaAprender.length)} de {magiasParaAprender.length} fórmulas
               </span>
             </div>
-          </section>
+          </div>
 
           {/* Grid of Spells */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grimoire-spells-grid">
             {magiasParaAprender.slice(0, displayCount).map(({ magia, avaliacao }) => (
               <SpellCard
                 key={magia.id}
@@ -724,11 +721,11 @@ export const PlayerGrimoireView: React.FC = () => {
 
           {/* Show more button */}
           {magiasParaAprender.length > displayCount && (
-            <div className="text-center py-2">
+            <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
               <button
                 type="button"
                 onClick={() => setDisplayCount((prev) => prev + 40)}
-                className="px-5 py-2 rounded-lg bg-[var(--surface)] border border-[var(--gold-dim)] text-[var(--gold)] font-cinzel text-xs font-semibold hover:border-[var(--gold)] transition-colors cursor-pointer"
+                className="grimoire-load-more-btn"
               >
                 Mostrar Mais Fórmulas ({magiasParaAprender.length - displayCount} restantes)
               </button>
@@ -777,6 +774,6 @@ export const PlayerGrimoireView: React.FC = () => {
           updateHeroAsync={updateHeroAsync}
         />
       )}
-    </main>
+    </div>
   );
 };

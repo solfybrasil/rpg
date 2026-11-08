@@ -70,10 +70,11 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
     >
       <StonePanel
         variant="elevated"
-        className="w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border-[#735429]/60 shadow-[0_16px_48px_rgba(0,0,0,0.95)]"
+        className="w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border-[rgba(201,169,97,0.28)] shadow-[0_16px_48px_rgba(0,0,0,0.95)] bg-[#14120e]"
       >
         {/* Header da Cidade */}
-        <div className="relative border-b border-[#735429]/40 bg-gradient-to-b from-[#1c1813] to-[#14110e] px-5 py-4 flex items-start justify-between">
+        <div className="relative border-b border-[rgba(201,169,97,0.22)] bg-gradient-to-b from-[#1a1712] to-[#14120e] px-5 py-4 flex items-start justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[rgba(201,169,97,0.6)] to-transparent pointer-events-none" />
           <div className="flex items-center gap-3">
             <div className="relative shrink-0">
               <WaxSeal letter={city.name.charAt(0)} size="sm" />
@@ -82,14 +83,14 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
               <div className="flex items-center gap-2 flex-wrap">
                 <h2
                   id="city-title"
-                  className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-[#ecd395] uppercase font-cinzel"
+                  className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-[#f5ede0] uppercase font-cinzel"
                 >
                   {city.name}
                 </h2>
-                <span className="text-[11px] font-cinzel tracking-wider px-2 py-0.5 rounded border border-[#c9a45c]/40 bg-[#c9a45c]/10 text-[#c9a45c]">
+                <span className="text-[11px] font-cinzel tracking-wider px-2 py-0.5 rounded border border-[rgba(201,169,97,0.3)] bg-[rgba(201,169,97,0.1)] text-[#c9a961]">
                   {city.typeLabel}
                 </span>
-                <span className="text-[11px] font-serif text-[#a89070]">
+                <span className="text-[11px] font-serif text-[#9a917f]">
                   • {city.regionName}
                 </span>
               </div>
@@ -102,7 +103,7 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded text-[#a89070] hover:text-[#ecd395] hover:bg-[#2b2216] transition-colors"
+            className="p-1.5 rounded text-[#9a917f] hover:text-[#f5ede0] hover:bg-[#1a1712] transition-colors"
             title="Fechar mapa urbano"
             aria-label="Fechar mapa urbano"
           >
@@ -111,22 +112,22 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
         </div>
 
         {/* Corpo com Grid de Distritos e Pontos de Interesse */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-[#0f0e0c]/90">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-[#0a0907]">
           {/* Descrição & Defesas */}
-          <div className="rounded-lg border border-[#4a3a24]/50 bg-[#161310]/80 p-3.5 flex flex-col sm:flex-row gap-3 items-start justify-between">
-            <p className="text-xs sm:text-sm font-serif text-[#ecd395]/90 leading-relaxed flex-1">
+          <div className="rounded-lg border border-[rgba(201,169,97,0.2)] bg-[#14120e] p-3.5 flex flex-col sm:flex-row gap-3 items-start justify-between">
+            <p className="text-xs sm:text-sm font-serif text-[#f5ede0]/90 leading-relaxed flex-1">
               {city.description}
             </p>
-            <div className="text-[11px] font-serif text-[#a89070] bg-[#1a140d] px-3 py-1.5 rounded border border-[#5a462b]/40 shrink-0">
-              <span className="text-[#c9a45c] font-cinzel">Defesa: </span>
+            <div className="text-[11px] font-serif text-[#9a917f] bg-[#0d0c0a] px-3 py-1.5 rounded border border-[rgba(201,169,97,0.2)] shrink-0">
+              <span className="text-[#c9a961] font-cinzel">Defesa: </span>
               {city.defense}
             </div>
           </div>
 
           {/* Abas dos Distritos / Bairros */}
           <div>
-            <div className="text-[11px] font-cinzel tracking-wider text-[#a89070] uppercase mb-2 flex items-center gap-1.5">
-              <MapPin size={13} className="text-[#c9a45c]" />
+            <div className="text-[11px] font-cinzel tracking-wider text-[#9a917f] uppercase mb-2 flex items-center gap-1.5">
+              <MapPin size={13} className="text-[#c9a961]" />
               <span>Distritos e Bairros de {city.name}</span>
             </div>
 
@@ -140,8 +141,8 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
                     onClick={() => setSelectedDistrictId(dist.id)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md font-serif text-xs whitespace-nowrap transition-all border ${
                       isActive
-                        ? 'border-[#c9a45c] bg-[#2b2014] text-[#ecd395] shadow-[0_2px_8px_rgba(201,164,92,0.2)]'
-                        : 'border-[#4a3a24]/60 bg-[#14120f] text-[#a89070] hover:border-[#735429] hover:text-[#ecd395]'
+                        ? 'border-[#c9a961] bg-[#1f1913] text-[#f5ede0] shadow-[0_2px_8px_rgba(201,169,97,0.2)]'
+                        : 'border-[rgba(201,169,97,0.2)] bg-[#0d0c0a] text-[#9a917f] hover:border-[rgba(201,169,97,0.4)] hover:text-[#f5ede0]'
                     }`}
                   >
                     {getDistrictIcon(dist.type)}
@@ -154,10 +155,10 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
 
           {/* Detalhes do Distrito Ativo */}
           {activeDistrict && (
-            <div className="rounded-lg border border-[#735429]/40 bg-[#181410] p-4 sm:p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#4a3a24]/40 pb-3">
+            <div className="rounded-lg border border-[rgba(201,169,97,0.22)] bg-[#14120e] p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[rgba(201,169,97,0.18)] pb-3">
                 <div>
-                  <h3 className="font-cinzel text-base sm:text-lg font-bold text-[#ecd395]">
+                  <h3 className="font-cinzel text-base sm:text-lg font-bold text-[#f5ede0]">
                     {activeDistrict.name}
                   </h3>
                   <p className="text-xs font-serif italic text-[#c2b29c]">
@@ -181,7 +182,7 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
 
               {/* Pontos de Interesse (POIs) */}
               <div>
-                <h4 className="text-[11px] font-cinzel tracking-wider text-[#c9a45c] uppercase mb-2.5 flex items-center gap-1.5">
+                <h4 className="text-[11px] font-cinzel tracking-wider text-[#c9a961] uppercase mb-2.5 flex items-center gap-1.5">
                   <Sparkles size={13} />
                   <span>Locais & Estabelecimentos de Interesse</span>
                 </h4>
@@ -190,14 +191,14 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
                   {activeDistrict.pointsOfInterest.map((poi, idx) => (
                     <div
                       key={idx}
-                      className="rounded border border-[#4a3a24]/60 bg-[#12100d] p-3 hover:border-[#c9a45c]/50 transition-colors flex flex-col justify-between gap-2"
+                      className="rounded border border-[rgba(201,169,97,0.18)] bg-[#0d0c0a] p-3 hover:border-[rgba(201,169,97,0.4)] transition-colors flex flex-col justify-between gap-2"
                     >
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="font-serif font-bold text-sm text-[#ecd395]">
+                          <span className="font-serif font-bold text-sm text-[#f5ede0]">
                             {poi.name}
                           </span>
-                          <span className="text-[10px] font-cinzel tracking-wider px-1.5 py-0.5 rounded border border-[#5a462b]/50 bg-[#1c1813] text-[#a89070]">
+                          <span className="text-[10px] font-cinzel tracking-wider px-1.5 py-0.5 rounded border border-[rgba(201,169,97,0.2)] bg-[#14120e] text-[#9a917f]">
                             {poi.kind}
                           </span>
                         </div>
@@ -205,18 +206,18 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
                           {poi.description}
                         </p>
                         {poi.npc && (
-                          <div className="mt-2 text-[11px] font-serif text-[#c9a45c] flex items-center gap-1">
-                            <Users size={12} className="text-[#a89070]" />
+                          <div className="mt-2 text-[11px] font-serif text-[#c9a961] flex items-center gap-1">
+                            <Users size={12} className="text-[#9a917f]" />
                             <span>Figura chave: <strong>{poi.npc}</strong></span>
                           </div>
                         )}
                       </div>
 
-                      <div className="pt-2 border-t border-[#3a2e1d]/40 flex justify-end">
+                      <div className="pt-2 border-t border-[rgba(201,169,97,0.14)] flex justify-end">
                         <button
                           type="button"
                           onClick={() => onEnterEstablishment?.(poi.name, poi.kind)}
-                          className="px-2.5 py-1 text-[11px] font-cinzel tracking-wider rounded border border-[#c9a45c]/50 bg-[#2b2014] text-[#ecd395] hover:bg-[#3d2c1b] transition-colors"
+                          className="px-2.5 py-1 text-[11px] font-cinzel tracking-wider rounded border border-[rgba(201,169,97,0.3)] bg-[#1c1812] text-[#f5ede0] hover:border-[#c9a961] hover:bg-[#252018] transition-colors"
                         >
                           Visitar Local
                         </button>
@@ -229,14 +230,14 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
           )}
 
           {/* Boato / Segredo da Cidade */}
-          <div className="rounded-lg border border-[#8b4526]/50 bg-[#1c120e]/60 p-3.5 flex items-start gap-3">
-            <Scroll size={18} className="text-[#c9a45c] shrink-0 mt-0.5" />
+          <div className="rounded-lg border border-[rgba(201,169,97,0.25)] bg-[#14120e] p-3.5 flex items-start gap-3">
+            <Scroll size={18} className="text-[#c9a961] shrink-0 mt-0.5" />
             <div>
               <div className="text-[11px] font-cinzel font-bold text-[#fca5a5] tracking-wider uppercase mb-0.5 flex items-center gap-1.5">
                 <AlertTriangle size={12} className="text-[#ef4444]" />
                 <span>Boato sussurrado pelas vielas:</span>
               </div>
-              <p className="text-xs font-serif italic text-[#ecd395]/90 leading-relaxed">
+              <p className="text-xs font-serif italic text-[#f5ede0]/90 leading-relaxed">
                 "{city.localRumor}"
               </p>
             </div>
@@ -244,14 +245,14 @@ export function CityMapModal({ city, onClose, onEnterEstablishment }: CityMapMod
         </div>
 
         {/* Rodapé com botão de fechar */}
-        <div className="border-t border-[#735429]/40 bg-[#14110e] px-5 py-3 flex items-center justify-between">
+        <div className="border-t border-[rgba(201,169,97,0.22)] bg-[#14120e] px-5 py-3 flex items-center justify-between">
           <span className="text-xs font-serif italic text-[#8c7b68]">
             Mapa Urbano de Aldrenor • Módulo Cartográfico
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded font-cinzel text-xs tracking-wider uppercase border border-[#735429] bg-[#241a10] text-[#ecd395] hover:border-[#c9a45c] hover:bg-[#332415] transition-colors"
+            className="px-4 py-1.5 rounded font-cinzel text-xs tracking-wider uppercase border border-[rgba(201,169,97,0.28)] bg-[#1c1812] text-[#f5ede0] hover:border-[#c9a961] hover:bg-[#252018] transition-colors"
           >
             Voltar ao Mapa Geral
           </button>

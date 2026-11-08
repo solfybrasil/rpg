@@ -48,13 +48,11 @@ export const Switch: React.FC<SwitchProps> = ({
     lg: checked ? 'translate-x-8' : 'translate-x-0',
   }[size];
 
-  // Active track styling (Pedra e Pergaminho tokens)
+  // Active track styling
   const activeColor = {
-    gold: 'bg-[var(--gold-lo)] border border-[var(--gold)] shadow-[0_0_10px_rgba(201,164,92,0.3)]',
-    emerald:
-      'bg-[var(--moss)]/40 border border-[var(--moss)] shadow-[0_0_10px_rgba(127,163,107,0.3)]',
-    crimson:
-      'bg-[var(--blood)]/50 border border-[var(--blood)] shadow-[0_0_10px_rgba(163,41,31,0.35)]',
+    gold: 'bg-[#f5b65b] shadow-[0_0_15px_rgba(245,182,91,0.35)]',
+    emerald: 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.35)]',
+    crimson: 'bg-[#ff453a] shadow-[0_0_15px_rgba(255,69,58,0.35)]',
   }[variant];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -75,14 +73,14 @@ export const Switch: React.FC<SwitchProps> = ({
       disabled={disabled}
       onClick={() => onCheckedChange(!checked)}
       onKeyDown={handleKeyDown}
-      className={`relative inline-flex shrink-0 cursor-pointer rounded-none transition-colors duration-200 ease-in-out focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 ${trackSize} ${
-        checked ? activeColor : 'recess border border-[var(--iron)]'
+      className={`relative inline-flex shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#f5b65b]/50 disabled:cursor-not-allowed disabled:opacity-40 ${trackSize} ${
+        checked ? activeColor : 'bg-neutral-800 border border-white/10'
       } ${className}`}
     >
       <span
-        className={`pointer-events-none inline-flex items-center justify-center rounded-none bg-[var(--gold-hi)] border border-[#1a1208] shadow-md transform ring-0 transition duration-200 ease-in-out ${thumbSize} ${thumbTranslate}`}
+        className={`pointer-events-none inline-flex items-center justify-center rounded-full bg-white shadow-md transform ring-0 transition duration-200 ease-in-out ${thumbSize} ${thumbTranslate}`}
       >
-        {icon && <span className="text-[10px] text-[#1a1208] select-none">{icon}</span>}
+        {icon && <span className="text-[10px] text-black select-none">{icon}</span>}
       </span>
     </button>
   );
@@ -97,15 +95,13 @@ export const Switch: React.FC<SwitchProps> = ({
         {label && (
           <label
             htmlFor={switchId}
-            className="text-xs font-['Cinzel',serif] font-semibold uppercase tracking-wider text-[var(--text)] cursor-pointer"
+            className="text-xs font-semibold uppercase tracking-wider text-[#ebe6d6] cursor-pointer"
           >
             {label}
           </label>
         )}
         {description && (
-          <span className="text-xs text-[var(--muted)] font-['EB_Garamond',serif] leading-tight">
-            {description}
-          </span>
+          <span className="text-[11px] text-white/50 font-serif leading-tight">{description}</span>
         )}
       </div>
       {switchButton}
