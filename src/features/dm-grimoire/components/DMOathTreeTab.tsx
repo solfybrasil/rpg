@@ -48,24 +48,20 @@ const DEFAULT_HEROES = [
 interface DMOathTreeTabProps {
   selectedHeroId: string;
   onSelectHeroId: (id: string) => void;
+  /** O hub já mostra o seletor de herói no topo. */
+  hideHeroSelector?: boolean;
 }
 
 export const DMOathTreeTab: React.FC<DMOathTreeTabProps> = ({
   selectedHeroId,
   onSelectHeroId,
+  hideHeroSelector = false,
 }) => {
   const { heroes: remoteHeroes = [] } = useHeroes();
 
   // Combine heroes list
   const heroesList = useMemo(() => {
-    if (remoteHeroes.length > 0) {
-      const canon = remoteHeroes.filter((h) =>
-        ['kaelis_moonfire', 'tor_bjorn', 'malenia'].includes(h.id),
-      );
-      if (canon.length > 0) return canon;
-      return remoteHeroes;
-    }
-    return DEFAULT_HEROES as any[];
+    return remoteHeroes.length > 0 ? remoteHeroes : (DEFAULT_HEROES as any[]);
   }, [remoteHeroes]);
 
   const activeHero = useMemo(() => {
@@ -234,7 +230,7 @@ export const DMOathTreeTab: React.FC<DMOathTreeTabProps> = ({
       {/* Top Controls Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
         {/* Hero Selector */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+        <div className={`${hideHeroSelector ? 'hidden' : 'flex'} items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none`}>
           {heroesList.map((hero) => {
             const isSelected = hero.id === selectedHeroId;
             return (

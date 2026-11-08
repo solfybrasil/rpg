@@ -1,499 +1,250 @@
-import React, { memo, useMemo, useState, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import {
-  Search,
-  Filter,
-  Sparkles,
-  Award,
-  Edit3,
-  Eye,
-  CheckCircle2,
-  AlertTriangle,
-  Flame,
-  Globe,
-  LayoutGrid,
-  List,
-} from 'lucide-react';
+import { Search, SearchX, Sparkles, Unlock, X } from 'lucide-react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { GrimorioSpell } from '../../grimoire/api';
-import {
-  useAllHeroSpells,
-  useAllSpellsCatalog,
-  useEnsinarMagiaMutation,
-  useLiberarMagiaMutation,
-} from '../api/useDMGrimoire';
-import { Button } from '../../../shared/ui';
-import { SpellInspectModal } from '../../grimoire/components/SpellInspectModal';
-import { DMSpellEditorSheet } from './DMSpellEditorSheet';
+import type { HeroSpellRow } from '../api/useDMGrimoire';
+import type { HeroSpellActions } from './DMGrimoireHubView';
+import { ActionButton, EmptyState, SpellRow, spellStatus } from './spellUi';
 
-const FONTE_CORES: Record<string, string> = {
-  Peste: '#5a4670',
-  Fogo: '#c85a2b',
-  Som: '#4a6f94',
-  Sangue: '#8f2934',
-  Sombra: '#3a3b45',
-  Luz: '#b58e33',
-  Arcana: '#357d73',
-};
+export type CatalogStatusFilter = 'todas' | 'nenhum' | 'estudo' | 'conhece';
 
-interface DMSpellsCatalogTabProps {
-  selectedHeroId: string;
+interface Props {
+  heroName: string | null;
+  catalog: GrimorioSpell[];
+  rows: Map<number, HeroSpellRow>;
+  loading: boolean;
+  actions: HeroSpellActions;
+  initialStatus?: CatalogStatusFilter;
 }
 
-export const DMSpellsCatalogTab: React.FC<DMSpellsCatalogTabProps> = memo(({
-  selectedHeroId,
-}) => {
-  const { data: catalog = [], isLoading: isLoadingCatalog } = useAllSpellsCatalog();
-  const { data: allHeroSpells = [] } = useAllHeroSpells();
+const ROW_H = 64;
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCircle, setFilterCircle] = useState('todos');
-  const [filterFonte, setFilterFonte] = useState('todas');
-  const [filterRaridade, setFilterRaridade] = useState('todas');
-  const [filterStatus, setFilterStatus] = useState('todas');
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+function normalize(t: string) {
+  return t
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+}
 
-  const [inspectMagia, setInspectMagia] = useState<GrimorioSpell | null>(null);
-  const [editingMagia, setEditingMagia] = useState<GrimorioSpell | null>(null);
+const chip = (on: boolean) =>
+  `h-8 px-3 shrink-0 border text-xs cursor-pointer transition-colors duration-[var(--t-fast)] ${
+    on
+      ? 'border-[var(--gold)] bg-[var(--gold)]/15 text-[var(--gold-hi)]'
+      : 'border-[var(--iron)] bg-[var(--stone)] text-[var(--muted)] hover:text-[var(--text)]'
+  }`;
 
-  const ensinarMutation = useEnsinarMagiaMutation();
-  const liberarMutation = useLiberarMagiaMutation();
+/** Catálogo completo com busca, filtros e ações rápidas para o herói selecionado. */
+export function DMSpellsCatalogTab({ heroName, catalog, rows, loading, actions, initialStatus = 'todas' }: Props) {
+  const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
+  const [circle, setCircle] = useState<number | 'todos'>('todos');
+  const [fonte, setFonte] = useState('todas');
+  const [status, setStatus] = useState<CatalogStatusFilter>(initialStatus);
+  useEffect(() => setStatus(initialStatus), [initialStatus]);
 
-  // Map of hero's spells
-  const heroProgressionMap = useMemo(() => {
-    const map = new Map<number | string, any>();
-    allHeroSpells
-      .filter((hm) => hm.character_id === selectedHeroId)
-      .forEach((hm) => {
-        map.set(Number(hm.magia_id), hm);
-      });
-    return map;
-  }, [allHeroSpells, selectedHeroId]);
+  // Opções vindas dos dados reais (antes eram fixas e não batiam com o catálogo)
+  const { circles, fontes } = useMemo(() => {
+    const c = new Set<number>();
+    const f = new Map<string, number>();
+    for (const s of catalog) {
+      c.add(s.circulo);
+      if (s.fonte) f.set(s.fonte, (f.get(s.fonte) ?? 0) + 1);
+    }
+    return {
+      circles: [...c].sort((a, b) => a - b),
+      fontes: [...f.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+    };
+  }, [catalog]);
 
-  // Filtered spells
-  const filteredSpells = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
+  // Índice de busca (sem acento, em minúsculas) calculado uma vez
+  const index = useMemo(
+    () => catalog.map((s) => normalize(`${s.nome} ${s.escola ?? ''} ${s.fonte ?? ''} ${s.resumo ?? ''}`)),
+    [catalog],
+  );
 
-    return catalog.filter((spell) => {
-      if (filterCircle !== 'todos' && String(spell.circulo) !== filterCircle) return false;
-      if (filterFonte !== 'todas' && spell.fonte !== filterFonte) return false;
-      if (filterRaridade !== 'todas' && (spell.raridade || 'Comum') !== filterRaridade) return false;
-
-      const hm = heroProgressionMap.get(Number(spell.id));
-      if (filterStatus === 'aprendidas' && !hm?.aprendida) return false;
-      if (filterStatus === 'liberadas' && !hm?.liberada_pelo_mestre) return false;
-      if (filterStatus === 'nao_aprendidas' && hm?.aprendida) return false;
-
-      if (q) {
-        const matchNome = spell.nome?.toLowerCase().includes(q);
-        const matchResumo = spell.resumo?.toLowerCase().includes(q);
-        const matchEscola = spell.escola?.toLowerCase().includes(q);
-        const matchDesc = spell.descricao?.toLowerCase().includes(q);
-        if (!matchNome && !matchResumo && !matchEscola && !matchDesc) return false;
-      }
-
-      return true;
+  const filtered = useMemo(() => {
+    const q = normalize(deferredQuery.trim());
+    const terms = q ? q.split(/\s+/) : [];
+    const out: GrimorioSpell[] = [];
+    catalog.forEach((s, i) => {
+      if (circle !== 'todos' && s.circulo !== circle) return;
+      if (fonte !== 'todas' && s.fonte !== fonte) return;
+      if (status !== 'todas' && spellStatus(rows.get(Number(s.id))) !== status) return;
+      if (terms.length && !terms.every((t) => index[i].includes(t))) return;
+      out.push(s);
     });
-  }, [catalog, searchTerm, filterCircle, filterFonte, filterRaridade, filterStatus, heroProgressionMap]);
+    return out;
+  }, [catalog, index, deferredQuery, circle, fonte, status, rows]);
 
-  // Virtualizer for smooth 60fps rendering of ~1.000 items
   const parentRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: filteredSpells.length,
+  const virtualizer = useVirtualizer({
+    count: filtered.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 84,
-    overscan: 10,
+    estimateSize: () => ROW_H,
+    overscan: 8,
   });
+  // Volta ao topo quando o filtro muda
+  useEffect(() => {
+    parentRef.current?.scrollTo({ top: 0 });
+  }, [deferredQuery, circle, fonte, status]);
+
+  const hasFilters = query || circle !== 'todos' || fonte !== 'todas' || status !== 'todas';
+  const clear = () => {
+    setQuery('');
+    setCircle('todos');
+    setFonte('todas');
+    setStatus('todas');
+  };
+
+  const statusTabs: Array<{ id: CatalogStatusFilter; label: string }> = [
+    { id: 'todas', label: 'Todas' },
+    { id: 'nenhum', label: 'Não conhece' },
+    { id: 'estudo', label: 'Em estudo' },
+    { id: 'conhece', label: 'Conhece' },
+  ];
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
-      {/* Search and Filters Bar */}
-      <div className="flex flex-col gap-3 p-4 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative flex-1">
-            <Search
-              size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"
-            />
+    <div className="flex flex-col gap-3">
+      {/* Filtros */}
+      <div className="flex flex-col gap-2 p-3 border border-[var(--iron)] bg-[var(--stone)]">
+        <div className="flex flex-col md:flex-row gap-2">
+          <label className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-[var(--muted)] pointer-events-none" />
             <input
-              type="text"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar por nome, escola, fonte ou efeito…"
               data-testid="dm-spell-search-input"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar entre ~1.000 magias por nome, escola ou efeito..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-black/40 border border-white/10 text-xs text-[#f5f0e1] placeholder-white/40 focus:border-[var(--gold)] focus:outline-none transition-colors"
+              className="w-full h-9 pl-8 pr-2 text-sm rounded-none"
             />
-          </div>
-
-          <div className="flex items-center gap-2 self-center">
-            {/* View Mode Toggle */}
-            <div className="flex items-center rounded-lg border border-white/10 bg-black/40 p-0.5">
-              <button
-                type="button"
-                onClick={() => setViewMode('grid')}
-                title="Exibição em Grade"
-                className={`p-1.5 rounded transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-[var(--gold)] text-black'
-                    : 'text-white/50 hover:text-white'
-                }`}
-              >
-                <LayoutGrid size={15} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('table')}
-                title="Exibição em Tabela"
-                className={`p-1.5 rounded transition-colors ${
-                  viewMode === 'table'
-                    ? 'bg-[var(--gold)] text-black'
-                    : 'text-white/50 hover:text-white'
-                }`}
-              >
-                <List size={15} />
-              </button>
-            </div>
-
-            <span className="text-xs text-white/50 font-serif whitespace-nowrap">
-              {filteredSpells.length} de {catalog.length} magias
-            </span>
-          </div>
+          </label>
+          <select
+            value={fonte}
+            onChange={(e) => setFonte(e.target.value)}
+            data-testid="dm-spell-school-select"
+            className="h-9 md:w-48 text-sm rounded-none"
+            aria-label="Fonte"
+          >
+            <option value="todas">Todas as fontes</option>
+            {fontes.map(([f, n]) => (
+              <option key={f} value={f}>
+                {f} ({n})
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Dropdown Filters */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-white/10">
-          {/* Círculo */}
-          <div className="space-y-1">
-            <span className="text-[10px] uppercase font-serif text-white/40">Círculo</span>
-            <select
-              data-testid="dm-spell-circle-select"
-              value={filterCircle}
-              onChange={(e) => setFilterCircle(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white/90 focus:border-[var(--gold)] focus:outline-none"
-            >
-              <option value="todos">Todos os Círculos</option>
-              <option value="0">Círculo 0 (Truque)</option>
-              <option value="1">Círculo 1</option>
-              <option value="2">Círculo 2</option>
-              <option value="3">Círculo 3</option>
-              <option value="4">Círculo 4</option>
-              <option value="5">Círculo 5</option>
-            </select>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex gap-1 overflow-x-auto [scrollbar-width:none]" role="group" aria-label="Círculo">
+            <button type="button" className={chip(circle === 'todos')} onClick={() => setCircle('todos')}>
+              Todos
+            </button>
+            {circles.map((c) => (
+              <button key={c} type="button" className={chip(circle === c)} onClick={() => setCircle(c)}>
+                {c === 0 ? 'Truques' : `${c}º`}
+              </button>
+            ))}
           </div>
-
-          {/* Fonte / Tradição */}
-          <div className="space-y-1">
-            <span className="text-[10px] uppercase font-serif text-white/40">Fonte</span>
-            <select
-              data-testid="dm-spell-school-select"
-              value={filterFonte}
-              onChange={(e) => setFilterFonte(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white/90 focus:border-[var(--gold)] focus:outline-none"
-            >
-              <option value="todas">Todas as Fontes</option>
-              <option value="Arcana">Arcana</option>
-              <option value="Fogo">Fogo</option>
-              <option value="Som">Som</option>
-              <option value="Peste">Peste</option>
-              <option value="Sangue">Sangue</option>
-              <option value="Sombra">Sombra</option>
-              <option value="Luz">Luz</option>
-            </select>
-          </div>
-
-          {/* Raridade */}
-          <div className="space-y-1">
-            <span className="text-[10px] uppercase font-serif text-white/40">Raridade</span>
-            <select
-              value={filterRaridade}
-              onChange={(e) => setFilterRaridade(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white/90 focus:border-[var(--gold)] focus:outline-none"
-            >
-              <option value="todas">Todas as Raridades</option>
-              <option value="Comum">Comum</option>
-              <option value="Incomum">Incomum</option>
-              <option value="Raro">Raro</option>
-              <option value="Lendário">Lendário</option>
-            </select>
-          </div>
-
-          {/* Status para Herói */}
-          <div className="space-y-1">
-            <span className="text-[10px] uppercase font-serif text-white/40">Status do Herói</span>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white/90 focus:border-[var(--gold)] focus:outline-none"
-            >
-              <option value="todas">Qualquer Status</option>
-              <option value="nao_aprendidas">Não Aprendidas</option>
-              <option value="liberadas">Liberadas no Mundo</option>
-              <option value="aprendidas">Já Conhecidas</option>
-            </select>
+          <span className="hidden md:block w-px h-6 bg-[var(--iron)] mx-1" />
+          <div className="flex gap-1 overflow-x-auto [scrollbar-width:none]" role="group" aria-label="Situação do herói">
+            {statusTabs.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={chip(status === t.id)}
+                onClick={() => setStatus(t.id)}
+                disabled={!heroName && t.id !== 'todas'}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Virtualized Spells Table/List or Grid */}
-      {filteredSpells.length === 0 ? (
-        <div className="p-12 text-center rounded-xl border border-dashed border-white/10 text-white/40 text-xs bg-[var(--surface)]">
-          Nenhuma magia encontrada com os filtros selecionados.
-        </div>
-      ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-          {filteredSpells.slice(0, 120).map((spell) => {
-            const hm = heroProgressionMap.get(Number(spell.id));
-            const corEscola = spell.cor || FONTE_CORES[spell.fonte || 'Arcana'] || '#8a6414';
-            const isLearned = Boolean(hm?.aprendida);
-            const isLiberada = Boolean(hm?.liberada_pelo_mestre);
+      <div className="flex items-center justify-between gap-2 text-xs text-[var(--muted)]">
+        <span>
+          <span className="tabular-nums text-[var(--text)]">{filtered.length}</span> de {catalog.length} magias
+          {heroName && (
+            <>
+              {' '}
+              · ações para <span className="text-[var(--gold-hi)]">{heroName}</span>
+            </>
+          )}
+        </span>
+        {hasFilters && (
+          <button type="button" onClick={clear} className="flex items-center gap-1 hover:text-[var(--text)] cursor-pointer">
+            <X className="w-3.5 h-3.5" /> Limpar filtros
+          </button>
+        )}
+      </div>
 
-            return (
-              <div
-                key={spell.id}
-                data-testid={`dm-spell-card-${spell.id}`}
-                className="group flex flex-col justify-between rounded-xl border border-white/10 bg-[#161412] p-3 transition-all hover:-translate-y-0.5 hover:border-[var(--gold)]/60 hover:shadow-xl"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div
-                      className="w-8 h-8 rounded-lg flex flex-col items-center justify-center shrink-0 border text-white shadow-inner"
-                      style={{
-                        backgroundColor: `${corEscola}33`,
-                        borderColor: corEscola,
-                      }}
-                    >
-                      <span className="text-[9px] font-mono leading-none">C</span>
-                      <span className="text-xs font-bold leading-none">{spell.circulo}</span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1 justify-end">
-                      {spell.revisar_mestre && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
-                          Arbitragem
-                        </span>
-                      )}
-                      {isLearned && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono flex items-center gap-1">
-                          <CheckCircle2 size={10} /> Conhece
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <h4
-                    onClick={() => setInspectMagia(spell)}
-                    className="font-serif font-bold text-sm text-[#ffd700] hover:underline cursor-pointer line-clamp-1"
-                    title={spell.nome}
-                  >
-                    {spell.nome}
-                  </h4>
-
-                  <div className="text-[11px] text-white/50 mt-0.5">
-                    {spell.escola || spell.fonte} · {spell.alcance || 'Toque'}
-                  </div>
-
-                  {spell.resumo && (
-                    <p className="mt-2 text-xs font-serif text-white/60 line-clamp-2 leading-relaxed">
-                      {spell.resumo}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between gap-1">
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setInspectMagia(spell)}
-                      title="Ver detalhes da magia"
-                      className="p-1.5 rounded-lg text-white/50 hover:text-[var(--gold)] hover:bg-white/5 transition-colors"
-                    >
-                      <Eye size={15} />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setEditingMagia(spell)}
-                      title="Editar fórmula mágica"
-                      className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
-                    >
-                      <Edit3 size={15} />
-                    </button>
-                  </div>
-
-                  {!isLearned && (
-                    <div className="flex items-center gap-1">
-                      {!isLiberada && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          data-testid={`dm-liberate-btn-${spell.id}`}
-                          onClick={() => liberarMutation.mutate({ characterId: selectedHeroId, magiaId: spell.id, magiaNome: spell.nome })}
-                          className="text-[10px] py-1 px-2 h-auto text-amber-400 hover:bg-amber-950/40"
-                        >
-                          <Globe size={11} className="mr-1" />
-                          Liberar
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="primary"
-                        size="sm"
-                        data-testid={`dm-teach-btn-${spell.id}`}
-                        onClick={() => ensinarMutation.mutate({ characterId: selectedHeroId, magiaId: spell.id, magiaNome: spell.nome })}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] py-1 px-2 h-auto font-serif"
-                      >
-                        <Sparkles size={11} className="mr-1" />
-                        Conceder
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      {loading ? (
+        <p className="py-10 text-center text-sm text-[var(--muted)]">Carregando o catálogo…</p>
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={SearchX} title="Nenhuma magia encontrada">
+          Ajuste a busca ou{' '}
+          <button type="button" onClick={clear} className="text-[var(--gold-hi)] underline cursor-pointer">
+            limpe os filtros
+          </button>
+          .
+        </EmptyState>
       ) : (
         <div
           ref={parentRef}
           data-testid="dm-spells-virtual-container"
-          className="overflow-y-auto max-h-[620px] rounded-xl border border-[var(--border)] bg-black/30 pr-1 divide-y divide-white/5"
+          className="overflow-y-auto h-[min(640px,calc(100vh-340px))] min-h-[320px] border border-[var(--iron)] border-b-0"
         >
-          <div
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const spell = filteredSpells[virtualRow.index];
-              const hm = heroProgressionMap.get(Number(spell.id));
-              const corEscola = spell.cor || FONTE_CORES[spell.fonte || 'Arcana'] || '#8a6414';
-              const isLearned = Boolean(hm?.aprendida);
-              const isLiberada = Boolean(hm?.liberada_pelo_mestre);
-
+          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+            {virtualizer.getVirtualItems().map((v) => {
+              const spell = filtered[v.index];
+              const row = rows.get(Number(spell.id));
+              const st = spellStatus(row);
               return (
                 <div
-                  key={spell.id}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                  className="p-3 flex items-center justify-between gap-3 bg-[var(--surface)] hover:bg-white/[0.04] transition-colors box-border"
+                  key={String(spell.id)}
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_H, transform: `translateY(${v.start}px)` }}
                 >
-                  {/* Left: Circle Badge & Name/Details */}
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div
-                      className="w-9 h-9 rounded-lg flex flex-col items-center justify-center shrink-0 border shadow-inner text-white"
-                      style={{
-                        backgroundColor: `${corEscola}33`,
-                        borderColor: corEscola,
-                      }}
-                    >
-                      <span className="text-[10px] font-mono leading-none">C</span>
-                      <span className="text-xs font-bold leading-none">{spell.circulo}</span>
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-serif font-bold text-xs text-[#ffd700] truncate">
-                          {spell.nome}
-                        </span>
-                        {spell.revisar_mestre && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono shrink-0">
-                            Arbitragem
-                          </span>
-                        )}
-                        {isLearned && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono shrink-0 flex items-center gap-1">
-                            <CheckCircle2 size={10} /> Conhece
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="text-[10px] text-white/50 truncate mt-0.5">
-                        {spell.escola || spell.fonte} · Foco: {spell.custo_foco ?? 0} · Alcance: {spell.alcance || 'Toque'}
-                        {spell.resumo && ` — ${spell.resumo}`}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: Quick DM Actions */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setInspectMagia(spell)}
-                      title="Ver detalhes da magia"
-                      className="p-1.5 rounded-lg text-white/50 hover:text-[var(--gold)] hover:bg-white/5 transition-colors"
-                    >
-                      <Eye size={15} />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setEditingMagia(spell)}
-                      title="Editar fórmula mágica"
-                      className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
-                    >
-                      <Edit3 size={15} />
-                    </button>
-
-                    {!isLearned && (
-                      <>
-                        {!isLiberada && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            data-testid={`dm-liberate-btn-${spell.id}`}
-                            onClick={() => liberarMutation.mutate({ characterId: selectedHeroId, magiaId: spell.id, magiaNome: spell.nome })}
-                            className="text-[10px] py-1 px-2 h-auto text-amber-400 hover:bg-amber-950/40"
+                  <SpellRow
+                    spell={spell}
+                    status={st}
+                    row={row}
+                    onOpen={() => actions.open(spell)}
+                    testId={`dm-spell-card-${spell.id}`}
+                    actions={
+                      heroName && st !== 'conhece' ? (
+                        <>
+                          {st === 'nenhum' && (
+                            <ActionButton
+                              variant="moss"
+                              icon={Unlock}
+                              title="Liberar para estudo"
+                              onClick={() => actions.release(spell)}
+                              testId={`dm-liberate-btn-${spell.id}`}
+                            >
+                              <span className="hidden lg:inline">Liberar</span>
+                            </ActionButton>
+                          )}
+                          <ActionButton
+                            variant="goldLine"
+                            icon={Sparkles}
+                            title="Ensinar agora"
+                            onClick={() => actions.teach(spell)}
+                            testId={`dm-teach-btn-${spell.id}`}
                           >
-                            <Globe size={11} className="mr-1" />
-                            Liberar
-                          </Button>
-                        )}
-                        <Button
-                          type="button"
-                          variant="primary"
-                          size="sm"
-                          data-testid={`dm-teach-btn-${spell.id}`}
-                          onClick={() => ensinarMutation.mutate({ characterId: selectedHeroId, magiaId: spell.id, magiaNome: spell.nome })}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] py-1 px-2.5 h-auto font-serif"
-                        >
-                          <Sparkles size={11} className="mr-1" />
-                          Conceder
-                        </Button>
-                      </>
-                    )}
-                  </div>
+                            <span className="hidden sm:inline">Ensinar</span>
+                          </ActionButton>
+                        </>
+                      ) : null
+                    }
+                  />
                 </div>
               );
             })}
           </div>
         </div>
       )}
-
-      {/* Inspect Modal */}
-      {inspectMagia && (
-        <SpellInspectModal
-          spell={inspectMagia}
-          onClose={() => setInspectMagia(null)}
-        />
-      )}
-
-      {/* Edit Sheet */}
-      {editingMagia && (
-        <DMSpellEditorSheet
-          magia={editingMagia}
-          open={Boolean(editingMagia)}
-          onOpenChange={(open) => !open && setEditingMagia(null)}
-        />
-      )}
     </div>
   );
-});
+}

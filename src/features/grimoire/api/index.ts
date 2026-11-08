@@ -127,9 +127,39 @@ export async function getGrimorioMotor(): Promise<GrimorioMotorData> {
   return grimorioPromise;
 }
 
+/** Colunas da tabela `magias` (o que pode ser gravado). */
+const MAGIA_COLUMNS = [
+  'id', 'nome', 'origem', 'fonte', 'escola', 'circulo', 'nivel_minimo', 'raridade',
+  'custo_inspiracao', 'uso', 'em_combate', 'alcance', 'alvo', 'resolucao', 'duracao',
+  'concentracao', 'custo', 'ampliar', 'efeitos', 'categoria_ui', 'cor', 'risco',
+  'requisito', 'resumo', 'texto_regra', 'descricao', 'revisar_mestre',
+] as const;
+
+/**
+ * Catálogo = arquivo base (/data/grimorio_motor.json) + edições do Mestre
+ * gravadas na tabela `magias` (a tabela vence quando existe a linha).
+ * Antes só o arquivo era lido, então nenhuma edição aparecia.
+ */
 export async function fetchMagiasCatalogo(): Promise<GrimorioSpell[]> {
   const grimorio = await getGrimorioMotor();
-  return (grimorio.magias || []).map(normalizeSpell);
+  const base = new Map<number, Record<string, any>>();
+  for (const m of grimorio.magias || []) base.set(Number(m.id), m as Record<string, any>);
+
+  try {
+    const { data, error } = await supabase.from('magias').select('*');
+    if (!error && data) {
+      for (const row of data) {
+        const id = Number(row.id);
+        base.set(id, { ...(base.get(id) ?? {}), ...row });
+      }
+    }
+  } catch (err) {
+    console.warn('[Grimorio] Sem edições do banco; usando só o arquivo base.', err);
+  }
+
+  return [...base.values()]
+    .sort((a, b) => Number(a.id) - Number(b.id))
+    .map((raw) => ({ ...normalizeSpell(raw), __raw: raw }));
 }
 
 export async function fetchMagiasAfinidade() {
@@ -147,21 +177,36 @@ export async function fetchMagiasAfinidade() {
   return [];
 }
 
+/**
+ * Grava a edição de uma magia. Usa upsert com o registro completo, para funcionar
+ * mesmo quando a magia ainda só existe no arquivo base.
+ */
 export async function salvarMagiaEditada(
   magiaId: number | string,
   dadosAtualizados: TablesUpdate<'magias'>,
+  base?: Record<string, unknown>,
 ) {
+  let original = base;
+  if (!original) {
+    const grimorio = await getGrimorioMotor();
+    original = (grimorio.magias || []).find((m) => Number(m.id) === Number(magiaId)) as
+      | Record<string, unknown>
+      | undefined;
+  }
+  const merged: Record<string, unknown> = { ...(original ?? {}), ...dadosAtualizados, id: Number(magiaId) };
+  const row: Record<string, unknown> = {};
+  for (const col of MAGIA_COLUMNS) if (merged[col] !== undefined) row[col] = merged[col];
+
   const { data, error } = await supabase
     .from('magias')
-    .update(dadosAtualizados)
-    .eq('id', Number(magiaId))
+    .upsert(row as never, { onConflict: 'id' })
     .select();
 
   if (error) {
     toast.error(`Erro ao salvar magia: ${error.message}`, {
       action: {
         label: 'Tentar de novo',
-        onClick: () => void salvarMagiaEditada(magiaId, dadosAtualizados),
+        onClick: () => void salvarMagiaEditada(magiaId, dadosAtualizados, base),
       },
     });
     throw error;

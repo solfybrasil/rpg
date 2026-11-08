@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertTriangle, Code, Sliders, Sparkles } from 'lucide-react';
+import { Save, AlertTriangle, Code, Sliders } from 'lucide-react';
 import { toast } from 'sonner';
 import type { GrimorioSpell } from '../../grimoire/api';
 import { useSalvarMagiaMutation } from '../api/useDMGrimoire';
 import { Button, Modal } from '../../../shared/ui';
+
+/** Fontes de magia usadas no catálogo. */
+const FONTES = ['Arcano', 'Alquimia', 'Canção', 'Fera', 'Peste', 'Runa', 'Voto'];
 
 interface DMSpellEditorSheetProps {
   magia: GrimorioSpell | null;
@@ -20,7 +23,7 @@ export const DMSpellEditorSheet: React.FC<DMSpellEditorSheetProps> = ({
     nome: '',
     circulo: 0,
     escola: 'Geral',
-    fonte: 'Arcana',
+    fonte: 'Arcano',
     custo_foco: 0,
     custo_inspiracao: 1,
     resumo: '',
@@ -41,7 +44,7 @@ export const DMSpellEditorSheet: React.FC<DMSpellEditorSheetProps> = ({
         nome: magia.nome || '',
         circulo: Number(magia.circulo ?? 0),
         escola: magia.escola || 'Geral',
-        fonte: magia.fonte || 'Arcana',
+        fonte: magia.fonte || 'Arcano',
         custo_foco: Number(magia.custo_foco ?? 0),
         custo_inspiracao: Number(magia.custo_inspiracao ?? 1),
         resumo: magia.resumo || '',
@@ -79,8 +82,10 @@ export const DMSpellEditorSheet: React.FC<DMSpellEditorSheetProps> = ({
     }
 
     try {
+      const custoAtual =
+        magia.custo && typeof magia.custo === 'object' ? (magia.custo as Record<string, unknown>) : {};
       await saveMutation.mutateAsync({
-        magiaId: magia.id,
+        magia,
         updates: {
           nome: formData.nome.trim(),
           circulo: Number(formData.circulo),
@@ -90,6 +95,8 @@ export const DMSpellEditorSheet: React.FC<DMSpellEditorSheetProps> = ({
           descricao: formData.descricao.trim(),
           revisar_mestre: formData.revisar_mestre,
           em_combate: formData.em_combate,
+          custo: { ...custoAtual, foco: Number(formData.custo_foco) },
+          custo_inspiracao: Number(formData.custo_inspiracao),
           efeitos: parsedEfeitos,
         },
       });
@@ -146,13 +153,11 @@ export const DMSpellEditorSheet: React.FC<DMSpellEditorSheetProps> = ({
               onChange={(e) => setFormData({ ...formData, fonte: e.target.value })}
               className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-sm text-[#f5f0e1] focus:border-[var(--gold)] focus:outline-none"
             >
-              <option value="Arcana">Arcana</option>
-              <option value="Fogo">Fogo</option>
-              <option value="Som">Som</option>
-              <option value="Peste">Peste</option>
-              <option value="Sangue">Sangue</option>
-              <option value="Sombra">Sombra</option>
-              <option value="Luz">Luz</option>
+              {[...new Set([...FONTES, formData.fonte].filter(Boolean))].map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
             </select>
           </div>
 

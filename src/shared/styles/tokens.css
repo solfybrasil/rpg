@@ -671,7 +671,30 @@ button:active,
   }
 }
 
+/* Gaveta lateral (detalhes) e véu escuro */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  [class*="animate-[slideInRight"],
+  [class*="animate-[fadeIn"],
   [class*="animate-[banner"] {
     animation-duration: 120ms !important;
   }
