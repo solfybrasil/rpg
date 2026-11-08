@@ -441,6 +441,11 @@
   padding: 0 0.65rem;
 }
 
+/* Dentro do cartão (coluna) a busca não deve crescer na vertical. */
+.grimoire-filter-card .grimoire-search-wrap {
+  flex: 0 0 auto;
+}
+
 .grimoire-filter-card {
   background: #14120e;
   border: 1px solid rgba(201, 169, 97, 0.2);

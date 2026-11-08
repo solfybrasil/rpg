@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { DMSistemaView } from '../../features/dm-dashboard/components/DMSistemaView';
+import { DMSystemHubView } from '../../features/system/components/DMSystemHubView';
 
 export const Route = createFileRoute('/mestre/sistema')({
-  component: DMSistemaView,
+  component: DMSystemHubView,
 });

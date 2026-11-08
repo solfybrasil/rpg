@@ -11,6 +11,8 @@ export default defineConfig({
       routesDirectory: './src/routes',
       generatedRouteTree: './src/routeTree.gen.ts',
       routeFileIgnorePrefix: '-',
+      // Cada rota vira um chunk próprio: o navegador só baixa a tela que está aberta.
+      autoCodeSplitting: true,
     }),
     tailwindcss(),
     react(),
@@ -66,7 +68,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
+          'vendor-react': ['react', 'react-dom', 'react-dom/client'],
+          'vendor-motion': ['motion', 'motion/react'],
+          'vendor-three': ['three'],
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
           'vendor-tanstack': ['@tanstack/react-router', '@tanstack/react-query'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-radix': [
@@ -84,5 +89,10 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts'],
+    // Valores falsos só para os testes: o cliente Supabase exige as variáveis ao ser importado.
+    env: {
+      VITE_SUPABASE_URL: 'http://localhost:54321',
+      VITE_SUPABASE_ANON_KEY: 'test-anon-key',
+    },
   },
 });

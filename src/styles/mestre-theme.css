@@ -14,7 +14,7 @@
 
 /* ── 1. Tokens do app → paleta do fonte ── */
 .mestre-root {
-  /* tokens do app (tokens.css / index.css) */
+  /* tokens do app (tokens.css) */
   --stone: #100e0c;
   --bg-app: #100e0c;
   --bg-deep: #100e0c;

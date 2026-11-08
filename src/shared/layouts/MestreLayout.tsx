@@ -17,27 +17,41 @@ const DM_SECTIONS = [
   { label: '⚒ Itens', path: '/mestre/itens', key: '4' },
   { label: '⚒ Oficina', path: '/mestre/oficina', key: '5' },
   { label: '▤ Grimórios', path: '/mestre/grimorio', key: '6' },
-  { label: '▧ Crônicas', path: '/mestre/campanha', key: '7' },
-  { label: '⚙ Sistema', path: '/mestre/sistema', key: '8' },
+  { label: '⚙ Sistema', path: '/mestre/sistema', key: '7' },
 ] as const;
 
+function isActive(currentPath: string, itemPath: string) {
+  // "/mestre" (índice) mostra o painel de jurados.
+  if (itemPath === '/mestre/jogadores' && (currentPath === '/mestre' || currentPath === '/mestre/'))
+    return true;
+  return currentPath.startsWith(itemPath);
+}
+
 export const MestreLayout: React.FC = () => {
-  const routerState = useRouterState();
-  const currentPath = routerState.location.pathname;
+  // Só re-renderiza quando o caminho muda (não a cada evento do roteador).
+  const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
 
   const currentIndex = useMemo(
-    () => DM_SECTIONS.findIndex((s) => currentPath.startsWith(s.path)),
+    () => DM_SECTIONS.findIndex((s) => isActive(currentPath, s.path)),
     [currentPath],
   );
 
   const currentIndexRef = useRef(currentIndex);
   currentIndexRef.current = currentIndex;
 
-  // Navegação por teclado Q / E e 1-8
+  // Navegação por teclado: Q / E (anterior/próxima) e 1-7
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
+      )
+        return;
+      // Com um modal aberto, as teclas pertencem ao modal.
+      if (document.querySelector('[role="dialog"]')) return;
       const idx = currentIndexRef.current;
       if (e.key === 'q' || e.key === 'Q') {
         const prevIdx = idx <= 0 ? DM_SECTIONS.length - 1 : idx - 1;
@@ -45,8 +59,8 @@ export const MestreLayout: React.FC = () => {
       } else if (e.key === 'e' || e.key === 'E') {
         const nextIdx = idx >= DM_SECTIONS.length - 1 ? 0 : idx + 1;
         navigate({ to: DM_SECTIONS[nextIdx].path });
-      } else if (e.key >= '1' && e.key <= '8') {
-        const kIdx = parseInt(e.key) - 1;
+      } else if (e.key >= '1' && e.key <= String(DM_SECTIONS.length)) {
+        const kIdx = Number.parseInt(e.key) - 1;
         if (DM_SECTIONS[kIdx]) navigate({ to: DM_SECTIONS[kIdx].path });
       }
     };
@@ -74,12 +88,13 @@ export const MestreLayout: React.FC = () => {
         {/* .nav com Links React Router */}
         <nav className="nav" aria-label="Navegação principal">
           {DM_SECTIONS.map((s) => {
-            const isActive = currentPath.startsWith(s.path);
+            const active = isActive(currentPath, s.path);
             return (
               <Link
                 key={s.path}
                 to={s.path}
-                className={isActive ? 'active' : ''}
+                title={`${s.label.slice(2)} (${s.key})`}
+                className={active ? 'active' : ''}
                 style={{ textDecoration: 'none' }}
               >
                 {s.label}
@@ -87,16 +102,6 @@ export const MestreLayout: React.FC = () => {
             );
           })}
         </nav>
-
-        {/* .top-actions */}
-        <div className="top-actions">
-          <button className="icon-btn" type="button" aria-label="Configurações" title="Sistema">
-            ⚙
-          </button>
-          <button className="icon-btn" type="button" aria-label="Atalhos de teclado" title="Q/E para navegar">
-            ⌨
-          </button>
-        </div>
       </header>
 
       {/* Conteúdo de cada rota do mestre: estica até o rodapé e rola por dentro */}

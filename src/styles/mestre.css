@@ -9,6 +9,9 @@
 @import "@fontsource/crimson-pro/400-italic.css";
 @import "@fontsource/cinzel/400.css";
 
+/* Em camada: assim as utilidades do Tailwind dos componentes (text-xs, p-2…) prevalecem. */
+@layer components {
+
 /* ── tokens exatos do HTML fonte (valores idênticos).
    Escopados em .mestre-root: no :root eles sobrescreviam --gold/--text/--bg
    da tela do jogador, que usa os mesmos nomes. ── */
@@ -957,4 +960,5 @@
     animation: none !important;
     transition: none !important;
   }
+}
 }

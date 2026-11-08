@@ -1,6 +1,8 @@
 @import "tailwindcss";
-@import "../shared/styles/tokens.css";
-@import "../shared/styles/base.css";
+/* Os estilos próprios ficam em camadas: assim as utilidades do Tailwind (p-4, gap-2, mx-auto…)
+   conseguem sobrescrevê-los. Sem camada, o reset de base.css anulava todo padding/margin. */
+@import "../shared/styles/base.css" layer(base);
+@import "../shared/styles/tokens.css" layer(components);
 
 /* Fontes Oficiais Locais (@fontsource) */
 @import "@fontsource/cinzel/500.css";
