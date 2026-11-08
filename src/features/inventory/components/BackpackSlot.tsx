@@ -15,6 +15,17 @@ export function renderItemFallbackIcon(item: InventoryItemRecord | null | undefi
   const cat = (item.category || item.type || '').toLowerCase();
   const name = (item.name || '').toLowerCase();
 
+  // Armadura antes de arma: "armadura" contém "arma".
+  if (
+    cat.includes('armadura') ||
+    cat.includes('escudo') ||
+    cat.includes('proteção') ||
+    cat.includes('protecao') ||
+    name.includes('escudo') ||
+    name.includes('armadura')
+  ) {
+    return <Shield size={18} style={{ color: '#88c075' }} />;
+  }
   if (
     cat.includes('arma') ||
     cat.includes('lâmina') ||
@@ -38,16 +49,6 @@ export function renderItemFallbackIcon(item: InventoryItemRecord | null | undefi
     name.includes('pocao')
   ) {
     return <Droplets size={18} style={{ color: '#5b7fa6' }} />;
-  }
-  if (
-    cat.includes('armadura') ||
-    cat.includes('escudo') ||
-    cat.includes('proteção') ||
-    cat.includes('protecao') ||
-    name.includes('escudo') ||
-    name.includes('armadura')
-  ) {
-    return <Shield size={18} style={{ color: '#88c075' }} />;
   }
   if (
     cat.includes('comida') ||

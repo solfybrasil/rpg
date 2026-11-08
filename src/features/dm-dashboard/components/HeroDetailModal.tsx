@@ -1,10 +1,9 @@
-import { Loader2 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { fromBronze, toBronze } from '../../../entities/item';
-import { supabase } from '../../../shared/supabase';
-import type { HeroDashboardItem, InventoryRow } from '../types';
+import type { HeroDashboardItem } from '../types';
+import { DMHeroInventory } from './DMHeroInventory';
 
 interface HeroDetailModalProps {
   hero: HeroDashboardItem | null;
@@ -40,14 +39,11 @@ const TABS: { key: TabKey; label: string; icon: string }[] = [
 export function HeroDetailModal({
   hero,
   onClose,
-  onRemoveItem,
   onApplyCondition,
   onRemoveCondition,
   onSaveHeroDetails,
 }: HeroDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('sheet');
-  const [items, setItems] = useState<InventoryRow[]>([]);
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // 1. Identidade
@@ -137,15 +133,6 @@ export function HeroDetailModal({
 
     setSkillRolls({});
 
-    setIsLoadingItems(true);
-    supabase
-      .from('inventory_items')
-      .select('*')
-      .eq('character_id', hero.id)
-      .then(({ data }) => {
-        setItems(data || []);
-        setIsLoadingItems(false);
-      });
   }, [hero]);
 
   if (!hero) return null;
@@ -167,11 +154,8 @@ export function HeroDetailModal({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const totalCoinsBronze = toBronze({
-        gold: editGold,
-        silver: editSilver,
-        bronze: editBronze,
-      });
+      // toBronze recebe (ouro, prata, bronze) — antes recebia um objeto e zerava as moedas.
+      const totalCoinsBronze = toBronze(editGold, editSilver, editBronze);
 
       await onSaveHeroDetails(hero.id, {
         name: editName.trim() || hero.name,
@@ -238,21 +222,18 @@ export function HeroDetailModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px',
+        padding: 'clamp(0px, 2.5vw, 20px)',
         background: 'rgba(8, 6, 4, 0.92)',
         backdropFilter: 'blur(10px)',
       }}
       onClick={onClose}
     >
       <div
-        className="panel"
+        // Celular: colunas empilhadas e o painel inteiro rola. PC: 2 colunas fixas.
+        className="panel grid grid-cols-1 md:grid-cols-[360px_1fr] overflow-y-auto md:overflow-hidden h-full md:h-[88vh]"
         style={{
           width: '100%',
           maxWidth: '1200px',
-          height: '88vh',
-          display: 'grid',
-          gridTemplateColumns: '360px 1fr',
-          overflow: 'hidden',
           borderRadius: 2,
         }}
         onClick={(e) => e.stopPropagation()}
@@ -403,7 +384,7 @@ export function HeroDetailModal({
         </div>
 
         {/* ── COLUNA DIREITA: ABAS DE EDIÇÃO & ROLAGENS ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="flex flex-col md:overflow-hidden min-w-0">
           {/* Barra de Sub-abas */}
           <div style={{
             display: 'flex',
@@ -413,7 +394,7 @@ export function HeroDetailModal({
             borderBottom: '1px solid var(--line)',
             background: '#15110d',
           }}>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 6 }} className="overflow-x-auto [scrollbar-width:none] min-w-0">
               {TABS.map((t) => (
                 <button
                   key={t.key}
@@ -432,6 +413,7 @@ export function HeroDetailModal({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
+                    flexShrink: 0,
                   }}
                 >
                   <span>{t.icon}</span>
@@ -450,7 +432,7 @@ export function HeroDetailModal({
           </div>
 
           {/* Conteúdo da Aba */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+          <div className="flex-1 md:overflow-y-auto p-4 md:p-6">
             {/* ── ABA 1: IDENTIDADE & ATRIBUTOS ── */}
             {activeTab === 'sheet' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -617,52 +599,7 @@ export function HeroDetailModal({
             )}
 
             {/* ── ABA 3: MOCHILA & CARGA ── */}
-            {activeTab === 'inventory' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div className="eyebrow">Mochila do Jurado ({items.length} itens guardados)</div>
-
-                {isLoadingItems ? (
-                  <div style={{ padding: 20, textAlign: 'center', color: 'var(--gold)' }}>
-                    <Loader2 size={18} className="animate-spin" />
-                  </div>
-                ) : items.length === 0 ? (
-                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted)', fontStyle: 'italic' }}>
-                    A mochila está vazia. Use a ação "Conceder Dádiva" para colocar armas ou relíquias aqui.
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="quick-action"
-                        style={{ justifyContent: 'space-between', padding: '10px 14px' }}
-                      >
-                        <div>
-                          <strong style={{ fontSize: 15, color: 'var(--text)' }}>
-                            {item.custom_name || item.item_name || 'Item Desconhecido'}
-                          </strong>
-                          <span style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic', display: 'block' }}>
-                            {item.category || 'Geral'} · Quantidade: {item.quantity || 1}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          className="btn secondary"
-                          style={{ color: '#ff453a', borderColor: '#5a2222' }}
-                          onClick={async () => {
-                            await onRemoveItem(item.id, hero.id);
-                            setItems((prev) => prev.filter((i) => i.id !== item.id));
-                            toast.success('Item removido.');
-                          }}
-                        >
-                          Remover
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {activeTab === 'inventory' && <DMHeroInventory heroId={hero.id} heroName={hero.name} />}
 
             {/* ── ABA 4: JURAMENTO & LORE ── */}
             {activeTab === 'oath' && (

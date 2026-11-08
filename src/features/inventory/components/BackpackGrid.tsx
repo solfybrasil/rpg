@@ -38,6 +38,7 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({
 
     if (categoryFilter === 'todos') return true;
     if (categoryFilter === 'armas') {
+      if (cat.includes('armadura')) return false; // "armadura" contém "arma"
       return (
         cat.includes('arma') ||
         cat.includes('lâmina') ||
