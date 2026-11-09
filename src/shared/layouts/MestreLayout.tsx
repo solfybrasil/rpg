@@ -7,6 +7,7 @@
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import type React from 'react';
 import { useEffect, useMemo, useRef } from 'react';
+import { DMClockButton } from '../../features/world-clock/components/DMTimePanel';
 import '../../styles/mestre.css';
 import '../../styles/mestre-theme.css';
 
@@ -102,6 +103,10 @@ export const MestreLayout: React.FC = () => {
             );
           })}
         </nav>
+        {/* Relógio do mundo: abre o painel de tempo, clima e fome */}
+        <div className="top-actions">
+          <DMClockButton />
+        </div>
       </header>
 
       {/* Conteúdo de cada rota do mestre: estica até o rodapé e rola por dentro */}

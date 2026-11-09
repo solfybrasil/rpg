@@ -13,6 +13,7 @@ import {
   parseConsumableEffects,
 } from '../../../entities/item';
 import { type CharacterRow, useHero, useHeroes, useInventory } from '../../../shared/hooks/baseHooks';
+import { aplicarRefeicao } from '../../../shared/lib/fome';
 import { queryKeys, supabase } from '../../../shared/supabase';
 import {
   deleteInventoryItemInDB,
@@ -298,9 +299,8 @@ export function useBackpack(heroId: string | null | undefined) {
 
       // Comida / Saciedade
       if (effects.isFood && effects.saciedade > 0) {
-        const curSac = Number(hero.saciedade || 0);
-        const nextSac = Math.min(10, curSac + effects.saciedade);
-        await updateHeroAsync({ saciedade: nextSac });
+        // Comer também zera a fome prolongada e devolve a Vida máx. perdida (regra em shared/lib/fome).
+        await updateHeroAsync(aplicarRefeicao(hero, effects.saciedade));
         toast.success(`+${effects.saciedade} de Saciedade!`);
       }
 

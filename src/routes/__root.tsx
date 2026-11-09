@@ -13,7 +13,7 @@ function RootComponent() {
         <Outlet />
         <Toaster
           theme="dark"
-          position="top-right"
+          position="top-center"
           richColors
           toastOptions={{
             className:

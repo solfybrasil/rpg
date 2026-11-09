@@ -1,6 +1,7 @@
 import { Coins } from 'lucide-react';
 import React from 'react';
 import { twMerge } from 'tailwind-merge';
+import { fromBronze } from '../../entities/item';
 
 export interface StatusBarProps extends React.HTMLAttributes<HTMLDivElement> {
   heroName: string;
@@ -21,8 +22,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   className,
   ...props
 }) => {
-  // Conversão de moedas (1 PO = 100 PP = 10000 PB, ou ouro resumido)
-  const goldApprox = Math.floor(coinsBronze / 100);
+  // Câmbio do jogo: 1 ouro = 50 prata = 2.500 bronze (ver entities/item fromBronze)
+  const { gold, silver, bronze } = fromBronze(coinsBronze);
+  const coinLabel =
+    gold > 0 ? `${gold}o ${silver}p` : silver > 0 ? `${silver}p ${bronze}b` : `${bronze}b`;
 
   return (
     <header className={twMerge('status h-[52px]', className)} {...props}>
@@ -56,7 +59,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         {rightAction}
         <div className="gold-count flex items-center gap-1.5 font-['Cinzel',serif] text-[14px] text-[var(--gold-hi)] tabular-nums">
           <Coins size={16} className="text-[var(--gold)]" />
-          <span>{goldApprox}</span>
+          <span title={`${gold} ouro, ${silver} prata, ${bronze} bronze`}>{coinLabel}</span>
         </div>
       </div>
     </header>

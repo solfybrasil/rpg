@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { type BattleTurn, useBattleSync, useHeroVitals } from '../api/battleSync.ts';
 import { useActiveBattleMap, useBattleTokens } from '../api/useBattle.ts';
 import { BattleEngine } from '../engine/BattleEngine.ts';
+import { useWorldClock } from '../../world-clock/api/clock';
+import { ClockDial, climaInfo, hhmm } from '../../world-clock/components/ClockDial';
 
 const tvBtn =
   'w-11 h-11 flex items-center justify-center border border-[var(--iron)] bg-[var(--stone)]/90 text-[var(--muted)] hover:text-[var(--text)] cursor-pointer';
@@ -133,11 +135,30 @@ export function TVBattleCanvas() {
         </button>
       </div>
 
+      <TVClock />
+
       {isLive && (
         <span className="absolute top-6 left-6 z-20 flex items-center gap-2 font-['Cinzel',serif] text-xs uppercase tracking-[0.2em] text-[#e0645a]">
           <span className="w-2.5 h-2.5 rounded-full bg-[#e0645a] animate-pulse" /> Ao vivo
         </span>
       )}
+    </div>
+  );
+}
+
+/** Relógio do mundo no canto do telão, legível de longe. */
+function TVClock() {
+  const { data } = useWorldClock();
+  const { icon: ClimaIcon } = climaInfo(data.clima);
+  return (
+    <div className="absolute bottom-6 left-6 z-20 flex items-center gap-3 px-3 py-2 border border-[var(--iron)] bg-[var(--stone)]/85 pointer-events-none">
+      <ClockDial data={data} size={72} />
+      <div className="leading-tight">
+        <p className="font-['Cinzel',serif] text-2xl tabular-nums text-[var(--gold-hi)]">{hhmm(data)}</p>
+        <p className="text-sm text-[var(--muted)] flex items-center gap-1.5">
+          {data.faseDia} · {data.dia} de {data.nomeMes} · <ClimaIcon className="w-4 h-4" /> {data.clima}
+        </p>
+      </div>
     </div>
   );
 }

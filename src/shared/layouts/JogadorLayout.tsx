@@ -2,6 +2,7 @@ import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-route
 import { AnimatePresence, m } from 'motion/react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useActiveBattleMap } from '../../features/battle-map/api/useBattle.ts';
+import { PlayerClockStrip } from '../../features/world-clock/components/PlayerClockStrip';
 import { useHero, useInventory } from '../hooks/baseHooks.ts';
 import { useSessionStore } from '../stores/session.ts';
 import { motionTokens, tabTransitionVariants } from '../styles/motion.ts';
@@ -114,6 +115,9 @@ export const JogadorLayout: React.FC = () => {
           level={hero?.level || 1}
           coinsBronze={hero?.coins_bronze || 0}
         />
+
+        {/* Relógio do mundo (toque para ver clima, fome e cansaço) */}
+        {!isMesaRoute && <PlayerClockStrip hero={hero ?? null} />}
 
         {/* Banner de Batalha Ao Vivo */}
         {isBattleLive && !isMesaRoute && (

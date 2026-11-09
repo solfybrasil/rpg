@@ -20,6 +20,7 @@ import { calcDefesa } from '../../../entities/hero';
 import { useHero, useHeroes, useInventory } from '../../../shared/hooks/baseHooks';
 import { useSessionStore } from '../../../shared/stores/session';
 import '../../../styles/features/PlayerSheet.css';
+import { estadoFome } from '../../../shared/lib/fome';
 import { LevelUpModal } from './LevelUpModal';
 
 // Resolução de retrato do herói (sempre garante uma imagem de alta qualidade de fantasia sombria)
@@ -69,12 +70,16 @@ function getProximoXp(nivel: number) {
   return tabela[nivel] || nivel * 25;
 }
 
-// Estados de Saciedade
+// Estados de Saciedade (regra única em shared/lib/fome)
+const FOME_VISUAL: Record<string, { cor: string; bg: string }> = {
+  saciado: { cor: '#7FA36B', bg: 'rgba(127, 163, 107, 0.15)' },
+  alimentado: { cor: '#C9A45C', bg: 'rgba(201, 164, 92, 0.15)' },
+  fome: { cor: '#E08A3C', bg: 'rgba(224, 138, 60, 0.15)' },
+  faminto: { cor: '#D2493C', bg: 'rgba(163, 41, 31, 0.2)' },
+};
 function getEstadoFome(s: number) {
-  if (s >= 8) return { nome: 'Nutrido', cor: '#4ade80', bg: 'rgba(74, 222, 128, 0.15)', efeito: 'Corpo são e vigor pleno' };
-  if (s >= 5) return { nome: 'Apetite', cor: '#fde047', bg: 'rgba(253, 224, 71, 0.15)', efeito: 'Sente o peso dos ermos' };
-  if (s >= 2) return { nome: 'Faminto', cor: '#fb923c', bg: 'rgba(251, 146, 60, 0.15)', efeito: 'Estômago vazio (-1 Vida Max)' };
-  return { nome: 'Esfomeado', cor: '#f87171', bg: 'rgba(248, 113, 113, 0.18)', efeito: 'Fraqueza extrema (-2 Vida Max)' };
+  const est = estadoFome(s);
+  return { nome: est.nome, efeito: est.efeito, ...FOME_VISUAL[est.chave] };
 }
 
 export const PlayerSheetView: React.FC = () => {
@@ -113,7 +118,8 @@ export const PlayerSheetView: React.FC = () => {
   const focoMax = hero?.max_focus ?? 3;
   const inspiracao = hero?.inspiration ?? 0;
   const peste = hero?.plague ?? 0;
-  const saciedade = hero?.satiety ?? 8;
+  // O campo do banco é `saciedade` (antes lia `satiety`, que não existe, e mostrava sempre 8).
+  const saciedade = Math.round(Number(hero?.saciedade ?? 8));
 
   const isFallen = vidaAtual <= 0;
   const isDanger = vidaAtual <= Math.ceil(vidaMax / 3);
