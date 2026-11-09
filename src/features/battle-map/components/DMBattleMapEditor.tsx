@@ -31,7 +31,13 @@ import { useBattleSync, useHeroVitals } from '../api/battleSync.ts';
 import { BATTLE_MAP_KEY, BATTLE_TOKENS_KEY, useBattleTokens } from '../api/useBattle.ts';
 import { BattleEngine } from '../engine/BattleEngine.ts';
 import type { BattleEditorTool, BattleMap, BattleToken } from '../engine/types.ts';
-import { processBattleMapBackground, uploadBattleMedia } from '../media/mediaProcessor.ts';
+import { type GridMode, centerG, defaultOrigin, toCellG } from '../engine/IsometricGrid.ts';
+import { readMapSettings, writeMapSettings } from '../engine/mapSettings.ts';
+import {
+  processBattleMapBackground,
+  processBattleMapVideoBackground,
+  uploadBattleMedia,
+} from '../media/mediaProcessor.ts';
 import { MediaBattleModal, type MediaBattleTarget } from './MediaBattleModal.tsx';
 import { PiecesPanel, TablePanel, TurnPanel } from './dm/BattlePanels.tsx';
 import { IconButton } from './dm/BattleUI.tsx';
@@ -99,6 +105,7 @@ export function DMBattleMapEditor() {
   const [panelOpen, setPanelOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 768);
   const [mediaTarget, setMediaTarget] = useState<MediaBattleTarget | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const selectedToken = useMemo(() => tokens.find((t) => t.id === selectedId) ?? null, [tokens, selectedId]);
 
   // ── Gravação (debounce por item) ──
@@ -308,23 +315,92 @@ export function DMBattleMapEditor() {
   const uploadBackground = useCallback(
     async (file: File) => {
       if (!map) return;
+      const grid = readMapSettings(map.background_url).grid;
+      const tile = map.tile_size ?? 86;
       setIsUploading(true);
       try {
-        const { fullBlob, width, height } = await processBattleMapBackground(file);
-        const url = await uploadBattleMedia(fullBlob, `mapas/${map.id}/bg_${Date.now()}.webp`, 'midias');
+        let url: string;
+        let width: number;
+        let height: number;
+        if (file.type.startsWith('video/')) {
+          setUploadStatus('Lendo o vídeo…');
+          const r = await processBattleMapVideoBackground(file, (_pct, step) => setUploadStatus(step));
+          setUploadStatus('Enviando…');
+          url = await uploadBattleMedia(r.blob, `mapas/${map.id}/bg_${Date.now()}.mp4`, 'midias');
+          ({ width, height } = r);
+          const mb = (n: number) => `${(n / 1048576).toFixed(1)} MB`;
+          toast.success(
+            r.original
+              ? `Vídeo de fundo aplicado (${mb(r.sizeAfter)}, já estava otimizado).`
+              : `Vídeo de fundo aplicado: ${mb(r.sizeBefore)} → ${mb(r.sizeAfter)}.`,
+          );
+        } else {
+          setUploadStatus('Otimizando a imagem…');
+          const r = await processBattleMapBackground(file);
+          setUploadStatus('Enviando…');
+          url = await uploadBattleMedia(r.fullBlob, `mapas/${map.id}/bg_${Date.now()}.webp`, 'midias');
+          ({ width, height } = r);
+          toast.success('Imagem de fundo aplicada.');
+        }
+        const origin = defaultOrigin(grid, width, height, tile);
         patchMap(
-          { background_url: url, img_w: width, img_h: height, origin_x: Math.round(width / 2), origin_y: Math.round(height / 2) },
+          {
+            background_url: writeMapSettings(url, { grid }),
+            img_w: width,
+            img_h: height,
+            origin_x: origin.x,
+            origin_y: origin.y,
+          },
           true,
         );
         engineRef.current?.zoomFit();
-        toast.success('Fundo aplicado.');
       } catch (err) {
         toast.error(`Falha no envio: ${err instanceof Error ? err.message : 'erro'}`);
       } finally {
         setIsUploading(false);
+        setUploadStatus(null);
       }
     },
     [map, patchMap],
+  );
+
+  /**
+   * Troca isométrica ↔ vista de cima. Peças e bloqueios vão para a célula da
+   * nova grade que fica no mesmo ponto da imagem (nada "pula" de lugar).
+   */
+  const changeGridMode = useCallback(
+    (mode: GridMode) => {
+      if (!map) return;
+      const old = readMapSettings(map.background_url);
+      if (old.grid === mode) return;
+      const imgW = map.img_w ?? 1376;
+      const imgH = map.img_h ?? 768;
+      const oldTw = map.tile_size ?? 86;
+      const tw = mode === 'square' ? Math.max(40, Math.round(oldTw * 0.75)) : Math.round(oldTw / 0.75);
+      const o = defaultOrigin(mode, imgW, imgH, tw);
+      const oldOx = map.origin_x ?? 690;
+      const oldOy = map.origin_y ?? 418;
+      const convert = (c: number, r: number) => {
+        const p = centerG(old.grid, c, r, oldOx, oldOy, oldTw);
+        return toCellG(mode, p.x, p.y, o.x, o.y, tw);
+      };
+      const blocked = [
+        ...new Set(
+          (Array.isArray(map.blocked) ? (map.blocked as string[]) : []).map((k) => {
+            const [c, r] = k.split(',').map(Number);
+            const n = convert(c, r);
+            return `${n.c},${n.r}`;
+          }),
+        ),
+      ];
+      patchMap({ background_url: writeMapSettings(old.url, { grid: mode }), tile_size: tw, origin_x: o.x, origin_y: o.y, blocked });
+      for (const t of tokens) {
+        const n = convert(t.c ?? 0, t.r ?? 0);
+        if (n.c !== t.c || n.r !== t.r) patchToken(t.id, { c: n.c, r: n.r, path: [] });
+      }
+      toast.success(mode === 'square' ? 'Grade vista de cima.' : 'Grade isométrica.');
+    },
+    [map, tokens, patchMap, patchToken],
   );
 
   // ── Ações de peça ──
@@ -683,6 +759,8 @@ export function DMBattleMapEditor() {
                   map={map}
                   maps={maps}
                   isUploading={isUploading}
+                  uploadStatus={uploadStatus}
+                  onGridMode={changeGridMode}
                   onSelectMap={setMapId}
                   onCreate={createMap}
                   onDuplicate={duplicateMap}

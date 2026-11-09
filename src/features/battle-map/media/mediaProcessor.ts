@@ -591,12 +591,22 @@ async function getFFmpeg(onProgress?: (pct: number) => void): Promise<any> {
       });
     }
 
-    // Carrega ffmpeg core single-thread via CDN confiável (sem dependência de SharedArrayBuffer)
-    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-    });
+    // Núcleo empacotado com o app (mesma origem, funciona mesmo com CDN bloqueado).
+    // Só é baixado quando alguém processa um vídeo. Se falhar, tenta o CDN.
+    try {
+      const [{ default: coreURL }, { default: wasmURL }] = await Promise.all([
+        import('@ffmpeg/core?url'),
+        import('@ffmpeg/core/wasm?url'),
+      ]);
+      await ffmpeg.load({ coreURL, wasmURL });
+    } catch (localErr) {
+      console.warn('[FFmpeg.wasm] núcleo local falhou, tentando CDN:', localErr);
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+    }
 
     ffmpegInstance = ffmpeg;
     return ffmpegInstance;
@@ -747,7 +757,7 @@ export async function processBattleMapBackground(
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(bmp, 0, 0, targetW, targetH);
-    fullBlob = await new Promise((res) => canvas.toBlob(res, 'image/webp', 0.85));
+    fullBlob = await new Promise((res) => canvas.toBlob(res, 'image/webp', 0.92));
     // Se o navegador não suportar WebP na conversão, faz fallback para JPEG
     if (!fullBlob) {
       fullBlob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.88));
@@ -791,6 +801,138 @@ export async function processBattleMapBackground(
     width: targetW,
     height: targetH,
   };
+}
+
+// ── 10b. FUNDO DO MAPA EM VÍDEO (loop) ──
+
+export interface ProcessedMapVideoResult {
+  blob: Blob;
+  width: number;
+  height: number;
+  duration: number;
+  /** true se o arquivo original foi mantido (já era leve/otimizado). */
+  original: boolean;
+  /** Tamanhos em bytes, para mostrar ao Mestre. */
+  sizeBefore: number;
+  sizeAfter: number;
+}
+
+/** Lê largura, altura e duração do vídeo (e confirma que o navegador toca). */
+function readVideoMeta(file: Blob): Promise<{ width: number; height: number; duration: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.muted = true;
+    v.onloadedmetadata = () => {
+      const meta = { width: v.videoWidth, height: v.videoHeight, duration: v.duration };
+      URL.revokeObjectURL(url);
+      if (!meta.width || !meta.height) reject(new Error('Não foi possível ler o vídeo.'));
+      else resolve(meta);
+    };
+    v.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Formato de vídeo não suportado pelo navegador.'));
+    };
+    v.src = url;
+  });
+}
+
+const MAX_BG_SECONDS = 180;
+const MAX_BG_BYTES = 600 * 1024 * 1024;
+
+/**
+ * Otimiza um vídeo de fundo para tocar em loop no mapa:
+ * H.264 (toca em qualquer navegador), CRF 22 (visualmente sem perda),
+ * no máximo 1920 px no lado maior e 30 fps, sem áudio, "faststart"
+ * (começa a tocar antes de baixar tudo). Se a versão otimizada não ficar
+ * menor, mantém o original.
+ */
+export async function processBattleMapVideoBackground(
+  file: File | Blob,
+  onProgress?: (pct: number, step: string) => void,
+): Promise<ProcessedMapVideoResult> {
+  if (file.size > MAX_BG_BYTES) throw new Error('Vídeo muito grande (máx. 600 MB).');
+  onProgress?.(3, 'Lendo o vídeo…');
+  const meta = await readVideoMeta(file);
+  if (meta.duration > MAX_BG_SECONDS) {
+    throw new Error(`Vídeo muito longo (${Math.round(meta.duration)} s). Use até ${MAX_BG_SECONDS / 60} minutos para o loop.`);
+  }
+
+  const maxDim = 1920;
+  const scale = Math.min(1, maxDim / Math.max(meta.width, meta.height));
+  const even = (n: number) => Math.max(2, Math.round(n / 2) * 2);
+  const w = even(meta.width * scale);
+  const h = even(meta.height * scale);
+
+  const original = (): ProcessedMapVideoResult => ({
+    blob: file,
+    width: meta.width,
+    height: meta.height,
+    duration: meta.duration,
+    original: true,
+    sizeBefore: file.size,
+    sizeAfter: file.size,
+  });
+
+  onProgress?.(8, 'Carregando o otimizador…');
+  const ffmpeg = await getFFmpeg();
+  if (!ffmpeg) {
+    // Sem otimizador neste aparelho: envia o original se não for exagerado
+    if (file.size <= 80 * 1024 * 1024) return original();
+    throw new Error('Este aparelho não conseguiu otimizar o vídeo e o arquivo é grande demais para enviar sem otimizar.');
+  }
+
+  const onFfProgress = ({ progress }: { progress: number }) => {
+    const pct = Math.max(0, Math.min(1, progress));
+    onProgress?.(Math.round(10 + pct * 85), `Otimizando o vídeo… ${Math.round(pct * 100)}%`);
+  };
+  ffmpeg.on('progress', onFfProgress);
+  try {
+    const { fetchFile } = await import('@ffmpeg/util');
+    const ext = (file as File).name?.split('.').pop()?.toLowerCase() || 'mp4';
+    const input = `bg_in.${ext}`;
+    await ffmpeg.writeFile(input, await fetchFile(file));
+    onProgress?.(10, 'Otimizando o vídeo…');
+    await ffmpeg.exec([
+      '-i', input,
+      '-vf', `scale=${w}:${h}:flags=lanczos`,
+      '-fpsmax', '30',
+      '-c:v', 'libx264',
+      '-preset', 'veryfast',
+      '-crf', '22',
+      '-pix_fmt', 'yuv420p',
+      '-movflags', '+faststart',
+      '-an',
+      'bg_out.mp4',
+    ]);
+    const out = await ffmpeg.readFile('bg_out.mp4');
+    try {
+      await ffmpeg.deleteFile(input);
+      await ffmpeg.deleteFile('bg_out.mp4');
+    } catch (_) {}
+
+    const blob = new Blob([out.buffer], { type: 'video/mp4' });
+    onProgress?.(98, 'Conferindo o resultado…');
+    if (!blob.size) throw new Error('vazio');
+    // Original já menor e no tamanho certo? Fica com ele.
+    if (blob.size >= file.size && scale === 1 && /mp4|webm/.test(file.type)) return original();
+    return {
+      blob,
+      width: w,
+      height: h,
+      duration: meta.duration,
+      original: false,
+      sizeBefore: file.size,
+      sizeAfter: blob.size,
+    };
+  } catch (err) {
+    console.warn('[fundo em vídeo] falha ao otimizar, tentando o original:', err);
+    if (file.size <= 80 * 1024 * 1024 && /mp4|webm/.test(file.type)) return original();
+    throw new Error('Não foi possível otimizar este vídeo. Tente um MP4 menor.');
+  } finally {
+    ffmpeg.off?.('progress', onFfProgress);
+  }
 }
 
 // ── 11. UPLOAD DE MÍDIA PARA BUCKET SUPABASE (banco principal) ──

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
-import { buildGrid, cellKey, center } from '../../engine/IsometricGrid.ts';
+import { buildGridG, cellKey, centerG } from '../../engine/IsometricGrid.ts';
+import { readMapSettings } from '../../engine/mapSettings.ts';
 import type { BattleMap, BattleToken } from '../../engine/types.ts';
 
 /**
@@ -61,10 +62,10 @@ export function findFreeCells(map: BattleMap, tokens: BattleToken[], count: numb
   const imgW = Number(map.img_w) || 1376;
   const imgH = Number(map.img_h) || 768;
   const tw = Math.max(16, Number(map.tile_size) || 86);
-  const th = tw / 2;
   const ox = Number(map.origin_x ?? 690);
   const oy = Number(map.origin_y ?? 418);
-  const valid = buildGrid(imgW, imgH, ox, oy, tw, th);
+  const mode = readMapSettings(map.background_url).grid;
+  const valid = buildGridG(mode, imgW, imgH, ox, oy, tw);
   const taken = new Set<string>(Array.isArray(map.blocked) ? map.blocked : []);
   for (const t of tokens) taken.add(cellKey(t.c ?? 0, t.r ?? 0));
 
@@ -72,7 +73,7 @@ export function findFreeCells(map: BattleMap, tokens: BattleToken[], count: numb
   let best = { c: 0, r: 0, d: Number.POSITIVE_INFINITY };
   for (const k of valid) {
     const [c, r] = k.split(',').map(Number);
-    const p = center(c, r, ox, oy, tw, th);
+    const p = centerG(mode, c, r, ox, oy, tw);
     const d = Math.hypot(p.x - imgW / 2, p.y - imgH / 2);
     if (d < best.d) best = { c, r, d };
   }

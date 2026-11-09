@@ -148,3 +148,99 @@ export function gridDistance(
 ): number {
   return Math.max(Math.abs(c1 - c2), Math.abs(r1 - r2));
 }
+
+// =====================================================================
+// GRADE GENÉRICA: isométrica (losangos) ou vista de cima (quadrados)
+// =====================================================================
+
+export type GridMode = 'iso' | 'square';
+
+/** Altura da célula: metade da largura na isométrica, igual na vista de cima. */
+export function cellHeight(mode: GridMode, tw: number): number {
+  return mode === 'square' ? tw : tw / 2;
+}
+
+export function centerG(mode: GridMode, c: number, r: number, ox: number, oy: number, tw: number): Point {
+  if (mode === 'square') return { x: ox + c * tw, y: oy + r * tw };
+  return center(c, r, ox, oy, tw, tw / 2);
+}
+
+export function toCellG(mode: GridMode, x: number, y: number, ox: number, oy: number, tw: number): CellCoord {
+  // `+ 0` evita -0 (Math.round(-0.4) === -0)
+  if (mode === 'square') return { c: Math.round((x - ox) / tw) + 0, r: Math.round((y - oy) / tw) + 0 };
+  return toCell(x, y, ox, oy, tw, tw / 2);
+}
+
+export function buildGridG(
+  mode: GridMode,
+  imgW: number,
+  imgH: number,
+  ox: number,
+  oy: number,
+  tw: number,
+): Set<string> {
+  if (mode !== 'square') return buildGrid(imgW, imgH, ox, oy, tw, tw / 2);
+  const valid = new Set<string>();
+  const c0 = Math.ceil((-ox - tw / 2) / tw);
+  const c1 = Math.floor((imgW - ox + tw / 2) / tw);
+  const r0 = Math.ceil((-oy - tw / 2) / tw);
+  const r1 = Math.floor((imgH - oy + tw / 2) / tw);
+  for (let c = c0; c <= c1; c++) {
+    for (let r = r0; r <= r1; r++) {
+      const x = ox + c * tw;
+      const y = oy + r * tw;
+      // célula conta se o centro está dentro da imagem
+      if (x >= 0 && x <= imgW && y >= 0 && y <= imgH) valid.add(cellKey(c, r));
+    }
+  }
+  return valid;
+}
+
+export function pickG(
+  mode: GridMode,
+  x: number,
+  y: number,
+  valid: Set<string>,
+  ox: number,
+  oy: number,
+  tw: number,
+  imgW: number,
+  imgH: number,
+): CellCoord | null {
+  if (x < 0 || y < 0 || x > imgW || y > imgH) return null;
+  const cell = toCellG(mode, x, y, ox, oy, tw);
+  return valid.has(cellKey(cell.c, cell.r)) ? cell : null;
+}
+
+/** Traça a forma da célula (losango ou quadrado) centrada em (x, y). */
+export function cellShape(
+  ctx: CanvasRenderingContext2D | Path2D,
+  mode: GridMode,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  begin = true,
+): void {
+  const hw = w / 2;
+  const hh = h / 2;
+  if (begin && 'beginPath' in ctx) ctx.beginPath();
+  if (mode === 'square') {
+    ctx.moveTo(x - hw, y - hh);
+    ctx.lineTo(x + hw, y - hh);
+    ctx.lineTo(x + hw, y + hh);
+    ctx.lineTo(x - hw, y + hh);
+  } else {
+    ctx.moveTo(x, y - hh);
+    ctx.lineTo(x + hw, y);
+    ctx.lineTo(x, y + hh);
+    ctx.lineTo(x - hw, y);
+  }
+  ctx.closePath();
+}
+
+/** Origem padrão para alinhar a grade à imagem quando se troca o tipo. */
+export function defaultOrigin(mode: GridMode, imgW: number, imgH: number, tw: number): { x: number; y: number } {
+  if (mode === 'square') return { x: Math.round(tw / 2), y: Math.round(tw / 2) };
+  return { x: Math.round(imgW / 2), y: Math.round(imgH / 2) };
+}

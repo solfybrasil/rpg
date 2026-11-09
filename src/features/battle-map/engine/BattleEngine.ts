@@ -1,4 +1,14 @@
-import { buildGrid, cellKey, center, diamond, gridDistance, pick } from './IsometricGrid.ts';
+import {
+  type GridMode,
+  buildGridG,
+  cellHeight,
+  cellKey,
+  cellShape,
+  centerG,
+  gridDistance,
+  pickG,
+} from './IsometricGrid.ts';
+import { readMapSettings } from './mapSettings.ts';
 import { bfs, computeReach, reconstructCoordPath, reconstructPath } from './Pathfinding.ts';
 import { VideoChromaPool } from './VideoChromaPool.ts';
 import type {
@@ -98,6 +108,13 @@ export class BattleEngine {
   private bgImg: HTMLImageElement;
   private currentBgUrl = '';
   private bgLoaded = false;
+  /** Fundo em vídeo (loop, mudo). Quando existe, a camada em cache guarda só a grade. */
+  private bgVideo: HTMLVideoElement | null = null;
+  private lastBgVideoT = -1;
+  private lastBgVideoDraw = 0;
+  /** Tipo de grade: isométrica (losangos) ou vista de cima (quadrados). */
+  private mode: GridMode = 'iso';
+  private layerAlpha = false;
   private pool: VideoChromaPool;
 
   // Camada estática (fundo + grade)
@@ -214,7 +231,9 @@ export class BattleEngine {
     if (document.hidden) {
       if (this.rafId !== null) cancelAnimationFrame(this.rafId);
       this.rafId = null;
+      this.bgVideo?.pause();
     } else {
+      if (this.bgVideo) void this.bgVideo.play().catch(() => {});
       this.invalidate();
     }
   }
@@ -241,7 +260,7 @@ export class BattleEngine {
       anyMoving = true;
       s.moving = true;
       const [tc, tr] = s.path[0];
-      const p = center(tc, tr, this.OX, this.OY, this.TW, this.TH);
+      const p = this.cc(tc, tr);
       const dx = p.x - s.x;
       const dy = p.y - s.y;
       const dist = Math.hypot(dx, dy);
@@ -286,6 +305,14 @@ export class BattleEngine {
 
     if (this.activePulse()) this.dirty = true;
 
+    // Fundo em vídeo: redesenha quando há quadro novo (no máximo ~30 fps).
+    const bgv = this.bgVideo;
+    if (bgv && !bgv.paused && bgv.readyState >= 2 && now - this.lastBgVideoDraw >= 33 && bgv.currentTime !== this.lastBgVideoT) {
+      this.lastBgVideoT = bgv.currentTime;
+      this.lastBgVideoDraw = now;
+      this.dirty = true;
+    }
+
     if (this.dirty) {
       this.draw(now);
       this.dirty = false;
@@ -295,7 +322,7 @@ export class BattleEngine {
     this.trackFps(now, performance.now() - frameStart);
 
     const keepRunning =
-      anyMoving || this.pings.length > 0 || this.activePulse() || this.hasVisibleVideo();
+      anyMoving || this.pings.length > 0 || this.activePulse() || this.hasVisibleVideo() || Boolean(this.bgVideo);
     if (keepRunning || this.dirty) {
       this.rafId = requestAnimationFrame(this.step);
     }
@@ -343,6 +370,71 @@ export class BattleEngine {
     this.scheduleLayerRebuild(0);
   }
 
+  /** Centro da célula na grade atual. */
+  private cc(c: number, r: number) {
+    return centerG(this.mode, c, r, this.OX, this.OY, this.TW);
+  }
+
+  /** Forma da célula (losango ou quadrado) no contexto. */
+  private shape(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    cellShape(ctx, this.mode, x, y, w, h);
+  }
+
+  private stopBgVideo() {
+    if (!this.bgVideo) return;
+    this.bgVideo.pause();
+    this.bgVideo.removeAttribute('src');
+    this.bgVideo.load();
+    this.bgVideo = null;
+  }
+
+  private loadBackground(url: string, isVideo: boolean) {
+    this.bgLoaded = false;
+    if (isVideo) {
+      this.stopBgVideo();
+      const v = document.createElement('video');
+      v.muted = true;
+      v.loop = true;
+      v.playsInline = true;
+      v.autoplay = true;
+      v.preload = 'auto';
+      v.crossOrigin = 'anonymous';
+      v.setAttribute('muted', '');
+      v.setAttribute('playsinline', '');
+      v.onloadeddata = () => {
+        this.bgLoaded = true;
+        this.layerDirty = true;
+        void v.play().catch(() => {});
+        this.invalidate();
+      };
+      v.onerror = () => {
+        // Sem CORS: tenta sem crossOrigin (o vídeo ainda pode ser desenhado)
+        if (v.crossOrigin) {
+          v.removeAttribute('crossorigin');
+          v.src = url;
+        }
+      };
+      v.src = url;
+      this.bgVideo = v;
+      return;
+    }
+    this.stopBgVideo();
+    this.bgImg.crossOrigin = 'anonymous';
+    this.bgImg.onload = () => {
+      this.bgLoaded = true;
+      this.layerDirty = true;
+      this.invalidate();
+    };
+    this.bgImg.onerror = () => {
+      // Alguns servidores não mandam CORS: tenta de novo sem crossOrigin.
+      if (this.bgImg.crossOrigin) {
+        this.bgImg.crossOrigin = null;
+        this.bgImg.src = url;
+      }
+    };
+    this.bgImg.src = url;
+  }
+
   public setMap(mapData: BattleMap | null): void {
     if (!mapData) return;
     // Mesa nova: refaz o enquadramento inicial (ajustes de grade não mexem na câmera).
@@ -350,25 +442,28 @@ export class BattleEngine {
       this.mapId = mapData.id;
       this.needsInitialView = true;
     }
-    const prevGeom = `${this.imgW}|${this.imgH}|${this.TW}|${this.OX}|${this.OY}`;
+    const prevGeom = `${this.mode}|${this.imgW}|${this.imgH}|${this.TW}|${this.OX}|${this.OY}`;
+    const settings = readMapSettings(mapData.background_url);
+    this.mode = settings.grid;
     this.imgW = Number(mapData.img_w) || 1376;
     this.imgH = Number(mapData.img_h) || 768;
     this.TW = Number(mapData.tile_size) || 86;
-    this.TH = this.TW / 2;
+    this.TH = cellHeight(this.mode, this.TW);
     this.OX = Number(mapData.origin_x ?? 690);
     this.OY = Number(mapData.origin_y ?? 418);
     this.moveLimit = Number(mapData.move_limit ?? 6);
     const grid = mapData.show_grid !== false;
-    const geom = `${this.imgW}|${this.imgH}|${this.TW}|${this.OX}|${this.OY}`;
+    const geom = `${this.mode}|${this.imgW}|${this.imgH}|${this.TW}|${this.OX}|${this.OY}`;
 
     if (geom !== prevGeom || this.valid.size === 0) {
-      this.valid = buildGridSafe(this.imgW, this.imgH, this.OX, this.OY, this.TW, this.TH);
+      this.valid = buildGridSafe(this.mode, this.imgW, this.imgH, this.OX, this.OY, this.TW);
+      this.blockedPath = null; // força refazer os bloqueios na nova grade
       this.base = this.containScale(this.cv.width, this.cv.height);
       this.layerDirty = true;
       // Reposiciona peças paradas na nova geometria
       for (const s of this.tokenStates.values()) {
         if (s.moving) continue;
-        const p = center(s.c, s.r, this.OX, this.OY, this.TW, this.TH);
+        const p = this.cc(s.c, s.r);
         s.x = p.x;
         s.y = p.y;
       }
@@ -380,24 +475,9 @@ export class BattleEngine {
 
     this.setBlocked(Array.isArray(mapData.blocked) ? mapData.blocked : []);
 
-    const bgUrl = mapData.background_url || '/batalha/santuario.jpg';
-    if (this.currentBgUrl !== bgUrl) {
-      this.currentBgUrl = bgUrl;
-      this.bgLoaded = false;
-      this.bgImg.crossOrigin = 'anonymous';
-      this.bgImg.onload = () => {
-        this.bgLoaded = true;
-        this.layerDirty = true;
-        this.invalidate();
-      };
-      this.bgImg.onerror = () => {
-        // Alguns servidores não mandam CORS: tenta de novo sem crossOrigin.
-        if (this.bgImg.crossOrigin) {
-          this.bgImg.crossOrigin = null;
-          this.bgImg.src = bgUrl;
-        }
-      };
-      this.bgImg.src = bgUrl;
+    if (this.currentBgUrl !== settings.url) {
+      this.currentBgUrl = settings.url;
+      this.loadBackground(settings.url, settings.isVideo);
     }
 
     if (this.needsInitialView) this.applyInitialView();
@@ -441,7 +521,7 @@ export class BattleEngine {
       currentIds.add(token.id);
       const targetC = token.c ?? 0;
       const targetR = token.r ?? 0;
-      const targetPos = center(targetC, targetR, this.OX, this.OY, this.TW, this.TH);
+      const targetPos = this.cc(targetC, targetR);
       let s = this.tokenStates.get(token.id);
 
       if (!s) {
@@ -557,16 +637,10 @@ export class BattleEngine {
   private cellsPath(keys: Iterable<string>): Path2D | null {
     if (typeof Path2D === 'undefined') return null;
     const p = new Path2D();
-    const hw = this.TW / 2;
-    const hh = this.TH / 2;
     for (const k of keys) {
       const [c, r] = k.split(',').map(Number);
-      const pt = center(c, r, this.OX, this.OY, this.TW, this.TH);
-      p.moveTo(pt.x, pt.y - hh);
-      p.lineTo(pt.x + hw, pt.y);
-      p.lineTo(pt.x, pt.y + hh);
-      p.lineTo(pt.x - hw, pt.y);
-      p.closePath();
+      const pt = this.cc(c, r);
+      cellShape(p, this.mode, pt.x, pt.y, this.TW, this.TH, false);
     }
     return p;
   }
@@ -619,20 +693,29 @@ export class BattleEngine {
     const w = Math.max(1, Math.round(this.imgW * k));
     const h = Math.max(1, Math.round(this.imgH * k));
 
-    if (!this.layer) this.layer = document.createElement('canvas');
+    // Com fundo em vídeo a camada guarda só a grade (transparente).
+    const alpha = Boolean(this.bgVideo);
+    if (!this.layer || this.layerAlpha !== alpha) {
+      this.layer = document.createElement('canvas');
+      this.layerAlpha = alpha;
+    }
     if (this.layer.width !== w || this.layer.height !== h) {
       this.layer.width = w;
       this.layer.height = h;
     }
-    const lctx = this.layer.getContext('2d', { alpha: false });
+    const lctx = this.layer.getContext('2d', { alpha });
     if (!lctx) return;
 
     lctx.setTransform(1, 0, 0, 1, 0, 0);
-    lctx.fillStyle = C.abyss;
-    lctx.fillRect(0, 0, w, h);
+    if (alpha) {
+      lctx.clearRect(0, 0, w, h);
+    } else {
+      lctx.fillStyle = C.abyss;
+      lctx.fillRect(0, 0, w, h);
+    }
     lctx.setTransform(k, 0, 0, k, 0, 0);
     lctx.imageSmoothingQuality = 'high';
-    if (this.bgLoaded && this.bgImg.naturalWidth) {
+    if (!alpha && this.bgLoaded && this.bgImg.naturalWidth) {
       lctx.drawImage(this.bgImg, 0, 0, this.imgW, this.imgH);
     }
     if (this.showGrid) {
@@ -661,6 +744,9 @@ export class BattleEngine {
     ctx.fillRect(0, 0, this.cv.width, this.cv.height);
     ctx.setTransform(this.scale, 0, 0, this.scale, -this.view.x * this.scale, -this.view.y * this.scale);
     ctx.imageSmoothingEnabled = true;
+    if (this.bgVideo && this.bgVideo.readyState >= 2) {
+      ctx.drawImage(this.bgVideo, 0, 0, this.imgW, this.imgH);
+    }
     if (this.layer) ctx.drawImage(this.layer, 0, 0, this.imgW, this.imgH);
 
     const lw = 1.2 / this.scale;
@@ -694,7 +780,7 @@ export class BattleEngine {
       const limit = hero.movesLeft ?? this.moveLimit;
       this.prevPath.forEach((k, n) => {
         const [c, r] = k.split(',').map(Number);
-        const p = center(c, r, this.OX, this.OY, this.TW, this.TH);
+        const p = this.cc(c, r);
         ctx.beginPath();
         ctx.ellipse(p.x, p.y, this.TW * 0.08, this.TH * 0.08, 0, 0, Math.PI * 2);
         ctx.fillStyle = n < limit ? C.goldHi : C.bloodHi;
@@ -706,7 +792,7 @@ export class BattleEngine {
 
     // Origem da grade (só Mestre)
     if (isDm) {
-      const op = center(0, 0, this.OX, this.OY, this.TW, this.TH);
+      const op = this.cc(0, 0);
       ctx.beginPath();
       ctx.arc(op.x, op.y, 4 / this.scale, 0, Math.PI * 2);
       ctx.strokeStyle = C.gold;
@@ -727,7 +813,7 @@ export class BattleEngine {
     if (!this.hover || this.options.mode === 'tv') return;
     const tool = this.options.tool || 'select';
     if (tool === 'pan' || tool === 'measure') return;
-    const p = center(this.hover.c, this.hover.r, this.OX, this.OY, this.TW, this.TH);
+    const p = this.cc(this.hover.c, this.hover.r);
     let stroke = C.gold;
     let fill = C.goldA(0.22);
 
@@ -749,7 +835,7 @@ export class BattleEngine {
       }
     }
 
-    diamond(ctx, p.x, p.y, this.TW, this.TH);
+    this.shape(ctx, p.x, p.y, this.TW, this.TH);
     ctx.fillStyle = fill;
     ctx.fill();
     ctx.lineWidth = lw * 2;
@@ -759,12 +845,12 @@ export class BattleEngine {
 
   private drawMeasure(ctx: CanvasRenderingContext2D, lw: number): void {
     if (!this.measureFrom || !this.measureTo) return;
-    const a = center(this.measureFrom.c, this.measureFrom.r, this.OX, this.OY, this.TW, this.TH);
-    const b = center(this.measureTo.c, this.measureTo.r, this.OX, this.OY, this.TW, this.TH);
+    const a = this.cc(this.measureFrom.c, this.measureFrom.r);
+    const b = this.cc(this.measureTo.c, this.measureTo.r);
     const n = gridDistance(this.measureFrom.c, this.measureFrom.r, this.measureTo.c, this.measureTo.r);
 
     for (const pt of [a, b]) {
-      diamond(ctx, pt.x, pt.y, this.TW, this.TH);
+      this.shape(ctx, pt.x, pt.y, this.TW, this.TH);
       ctx.fillStyle = C.goldA(0.25);
       ctx.fill();
     }
@@ -798,7 +884,7 @@ export class BattleEngine {
   private drawPings(ctx: CanvasRenderingContext2D, now: number): void {
     for (const ping of this.pings) {
       const t = Math.min(1, (now - ping.start) / PING_MS);
-      const p = center(ping.c, ping.r, this.OX, this.OY, this.TW, this.TH);
+      const p = this.cc(ping.c, ping.r);
       const color = ping.color || C.goldHi;
       ctx.save();
       ctx.strokeStyle = color;
@@ -853,7 +939,7 @@ export class BattleEngine {
     // Turno ativo: anel dourado pulsante
     if (isActive) {
       const pulse = 0.5 + 0.5 * Math.sin(now / 260);
-      diamond(ctx, s.x, s.y, this.TW * (1.05 + pulse * 0.1), this.TH * (1.05 + pulse * 0.1));
+      this.shape(ctx, s.x, s.y, this.TW * (1.05 + pulse * 0.1), this.TH * (1.05 + pulse * 0.1));
       ctx.fillStyle = C.goldA(0.12 + pulse * 0.12);
       ctx.fill();
       ctx.lineWidth = (2.2 / this.scale) * (1 + pulse * 0.4);
@@ -862,7 +948,7 @@ export class BattleEngine {
     }
 
     // Base da peça
-    diamond(ctx, s.x, s.y, this.TW * 0.9, this.TH * 0.9);
+    this.shape(ctx, s.x, s.y, this.TW * 0.9, this.TH * 0.9);
     ctx.lineWidth = (1.5 / this.scale) * (isSelected ? 2.4 : isMyHero ? 1.6 : 1);
     ctx.strokeStyle = isSelected || isMyHero ? C.gold : s.kind === 'heroi' ? C.moss : C.bloodHi;
     ctx.stroke();
@@ -880,7 +966,7 @@ export class BattleEngine {
         const H = s.size;
         const W = (H * sw) / sh;
         const bob = s.moving ? Math.abs(Math.sin(now / 95)) * -H * 0.025 : 0;
-        ctx.translate(s.x, s.y + this.TH * 0.14 + bob);
+        ctx.translate(s.x, s.y + (this.mode === 'square' ? this.TW * 0.12 : this.TH * 0.14) + bob);
         ctx.scale(s.facing, 1);
         ctx.drawImage(source, -W * s.anchorX, -H * s.anchorY, W, H);
         ctx.setTransform(this.scale, 0, 0, this.scale, -this.view.x * this.scale, -this.view.y * this.scale);
@@ -960,7 +1046,7 @@ export class BattleEngine {
 
   private cellAt(clientX: number, clientY: number): CellCoord | null {
     const pt = this.toImg(clientX, clientY);
-    return pick(pt.x, pt.y, this.valid, this.OX, this.OY, this.TW, this.TH, this.imgW, this.imgH);
+    return pickG(this.mode, pt.x, pt.y, this.valid, this.OX, this.OY, this.TW, this.imgW, this.imgH);
   }
 
   public clampView(): void {
@@ -1114,7 +1200,7 @@ export class BattleEngine {
     if (this.pts.size !== 1) return;
 
     const pt = this.toImg(e.clientX, e.clientY);
-    const cell = pick(pt.x, pt.y, this.valid, this.OX, this.OY, this.TW, this.TH, this.imgW, this.imgH);
+    const cell = pickG(this.mode, pt.x, pt.y, this.valid, this.OX, this.OY, this.TW, this.imgW, this.imgH);
     this.pressStart = { pt, client: { x: e.clientX, y: e.clientY }, time: performance.now() };
     this.panView0 = { ...this.view };
     this.isDragging = false;
@@ -1213,7 +1299,7 @@ export class BattleEngine {
             s.c = cell.c;
             s.r = cell.r;
             s.path = [];
-            const pos = center(cell.c, cell.r, this.OX, this.OY, this.TW, this.TH);
+            const pos = this.cc(cell.c, cell.r);
             s.x = pos.x;
             s.y = pos.y;
             this.invalidate();
@@ -1291,6 +1377,7 @@ export class BattleEngine {
     this.cv.removeEventListener('dblclick', this.handleDblClick);
     document.removeEventListener('visibilitychange', this.handleVisibility);
     this.pool.destroy();
+    this.stopBgVideo();
     this.layer = null;
   }
 }
@@ -1309,7 +1396,6 @@ function normalizePath(raw: unknown): Array<[number, number]> {
 }
 
 /** buildGrid protegido contra parâmetros absurdos (tile minúsculo trava a aba). */
-function buildGridSafe(w: number, h: number, ox: number, oy: number, tw: number, th: number): Set<string> {
-  const safeTw = Math.max(16, tw);
-  return buildGrid(w, h, ox, oy, safeTw, safeTw === tw ? th : safeTw / 2);
+function buildGridSafe(mode: GridMode, w: number, h: number, ox: number, oy: number, tw: number): Set<string> {
+  return buildGridG(mode, w, h, ox, oy, Math.max(16, tw));
 }

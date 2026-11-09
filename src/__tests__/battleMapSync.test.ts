@@ -50,3 +50,35 @@ describe('Mesa de batalha — células livres para novas peças', () => {
     expect(keys).not.toContain('0,1');
   });
 });
+
+import { buildGridG, centerG, pickG, toCellG } from '../features/battle-map/engine/IsometricGrid.ts';
+import { readMapSettings, writeMapSettings } from '../features/battle-map/engine/mapSettings.ts';
+
+describe('Mesa de batalha — grade vista de cima', () => {
+  it('centro e célula são inversos', () => {
+    const p = centerG('square', 3, 2, 32, 32, 64);
+    expect(p).toEqual({ x: 32 + 192, y: 32 + 128 });
+    expect(toCellG('square', p.x + 20, p.y - 20, 32, 32, 64)).toEqual({ c: 3, r: 2 });
+  });
+
+  it('cobre a imagem inteira com quadrados', () => {
+    const valid = buildGridG('square', 640, 384, 32, 32, 64);
+    expect(valid.size).toBe(10 * 6);
+    expect(pickG('square', 5, 5, valid, 32, 32, 64, 640, 384)).toEqual({ c: 0, r: 0 });
+    expect(pickG('square', 700, 5, valid, 32, 32, 64, 640, 384)).toBeNull();
+  });
+
+  it('isométrica continua igual à de antes', () => {
+    expect(centerG('iso', 0, 0, 690, 418, 86)).toEqual({ x: 690, y: 418 });
+  });
+});
+
+describe('Mesa de batalha — configurações no fundo', () => {
+  it('lê e grava o tipo de grade sem estragar a URL', () => {
+    const url = writeMapSettings('https://x/fundo.mp4', { grid: 'square' });
+    expect(url).toBe('https://x/fundo.mp4#grade=quadrada');
+    expect(readMapSettings(url)).toEqual({ url: 'https://x/fundo.mp4', grid: 'square', isVideo: true });
+    expect(readMapSettings('/batalha/santuario.jpg')).toEqual({ url: '/batalha/santuario.jpg', grid: 'iso', isVideo: false });
+    expect(writeMapSettings(url, { grid: 'iso' })).toBe('https://x/fundo.mp4');
+  });
+});

@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { fetchCreatureCatalog } from '../../api/battleApi.ts';
+import type { GridMode } from '../../engine/IsometricGrid.ts';
+import { readMapSettings, writeMapSettings } from '../../engine/mapSettings.ts';
 import type { BattleMap, BattleToken, HeroVital } from '../../engine/types.ts';
 import { IconButton, RangeField, Section, TextButton, Toggle, inputClass, kindColor } from './BattleUI.tsx';
 
@@ -458,6 +460,9 @@ export interface TablePanelProps {
   map: BattleMap;
   maps: BattleMap[];
   isUploading: boolean;
+  /** Texto do progresso do envio (ex.: "Otimizando o vídeo… 40%"). */
+  uploadStatus?: string | null;
+  onGridMode: (mode: GridMode) => void;
   onSelectMap: (id: string) => void;
   onCreate: () => void;
   onDuplicate: () => void;
@@ -476,6 +481,8 @@ export function TablePanel({
   map,
   maps,
   isUploading,
+  uploadStatus,
+  onGridMode,
   onSelectMap,
   onCreate,
   onDuplicate,
@@ -488,6 +495,7 @@ export function TablePanel({
   const [name, setName] = useState(map.name);
   useEffect(() => setName(map.name), [map.name]);
   const blockedCount = Array.isArray(map.blocked) ? map.blocked.length : 0;
+  const settings = readMapSettings(map.background_url);
 
   return (
     <div className="flex flex-col gap-5">
@@ -533,18 +541,19 @@ export function TablePanel({
         </div>
       </Section>
 
-      <Section title="Fundo">
+      <Section title={settings.isVideo ? 'Fundo · vídeo em loop' : 'Fundo'}>
         <label
-          className={`h-9 flex items-center justify-center gap-2 border border-dashed border-[var(--gold-lo)] text-xs text-[var(--gold-hi)] cursor-pointer hover:bg-[var(--gold)]/10 ${
-            isUploading ? 'opacity-60 pointer-events-none' : ''
+          className={`min-h-9 py-1.5 px-2 flex items-center justify-center gap-2 border border-dashed border-[var(--gold-lo)] text-xs text-center text-[var(--gold-hi)] cursor-pointer hover:bg-[var(--gold)]/10 ${
+            isUploading ? 'opacity-80 pointer-events-none' : ''
           }`}
         >
-          {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-          {isUploading ? 'Otimizando imagem…' : 'Enviar imagem'}
+          {isUploading ? <Loader2 className="w-4 h-4 shrink-0 animate-spin" /> : <Upload className="w-4 h-4 shrink-0" />}
+          {isUploading ? uploadStatus || 'Otimizando…' : 'Enviar imagem ou vídeo'}
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,video/mp4,video/webm,video/quicktime"
             className="hidden"
+            data-testid="bg-upload-input"
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) onUpload(f);
@@ -552,12 +561,16 @@ export function TablePanel({
             }}
           />
         </label>
+        <p className="text-[11px] italic text-[var(--muted)]">
+          Imagem: WebP até 2048 px. Vídeo: toca em loop, mudo; é otimizado antes de enviar (H.264, até 1920 px e 30 fps, sem perda
+          visível).
+        </p>
         <div className="grid grid-cols-2 gap-1.5">
           {BG_PRESETS.map((p) => (
             <TextButton
               key={p.url}
-              onClick={() => onPatch({ background_url: p.url })}
-              className={map.background_url === p.url ? '!border-[var(--gold)] !text-[var(--gold-hi)]' : ''}
+              onClick={() => onPatch({ background_url: writeMapSettings(p.url, { grid: settings.grid }) })}
+              className={settings.url === p.url ? '!border-[var(--gold)] !text-[var(--gold-hi)]' : ''}
             >
               {p.name}
             </TextButton>
@@ -566,6 +579,32 @@ export function TablePanel({
       </Section>
 
       <Section title="Grade">
+        <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Tipo de grade">
+          {(
+            [
+              { id: 'iso', label: 'Isométrica' },
+              { id: 'square', label: 'De cima' },
+            ] as const
+          ).map((g) => {
+            const on = settings.grid === g.id;
+            return (
+              <button
+                key={g.id}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                data-testid={`grid-mode-${g.id}`}
+                onClick={() => !on && onGridMode(g.id)}
+                className={`flex flex-col items-center gap-1 py-2 border cursor-pointer ${
+                  on ? 'border-[var(--gold)] bg-[var(--gold)]/12 text-[var(--gold-hi)]' : 'border-[var(--iron)] text-[var(--muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                <GridGlyph mode={g.id} />
+                <span className="text-xs">{g.label}</span>
+              </button>
+            );
+          })}
+        </div>
         <Toggle label="Mostrar grade" checked={map.show_grid !== false} onChange={(v) => onPatch({ show_grid: v })} />
         <RangeField
           label="Tamanho do quadrado"
@@ -615,5 +654,28 @@ export function TablePanel({
         </TextButton>
       </Section>
     </div>
+  );
+}
+
+/** Miniatura do tipo de grade (losangos ou quadrados). */
+function GridGlyph({ mode }: { mode: GridMode }) {
+  return (
+    <svg viewBox="0 0 48 28" width="48" height="28" aria-hidden="true">
+      {mode === 'iso'
+        ? [0, 1, 2].flatMap((c) =>
+            [0, 1].map((r) => {
+              const x = 24 + (c - r) * 8 - 8;
+              const y = 6 + (c + r) * 4;
+              return (
+                <path key={`${c}${r}`} d={`M${x} ${y - 4} L${x + 8} ${y} L${x} ${y + 4} L${x - 8} ${y} Z`} fill="none" stroke="currentColor" strokeWidth="1" />
+              );
+            }),
+          )
+        : [0, 1, 2, 3].flatMap((c) =>
+            [0, 1].map((r) => (
+              <rect key={`${c}${r}`} x={8 + c * 8} y={6 + r * 8} width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
+            )),
+          )}
+    </svg>
   );
 }
