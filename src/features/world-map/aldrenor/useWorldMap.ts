@@ -48,6 +48,22 @@ const K = {
   pins: ['world-map', 'pins'] as const,
 };
 
+/**
+ * O mapa antigo tinha 2400×1600; o de Aldrenor tem 9600×6400 (4×).
+ * Registros gravados pelo mapa antigo (antes da troca) ficam na escala velha.
+ */
+const LEGACY = { w: 2400, h: 1600, scale: 4, cutoff: Date.parse('2026-11-09T18:00:00Z') };
+function isLegacyTime(ts: unknown) {
+  if (!ts) return true;
+  const t = Date.parse(String(ts));
+  return Number.isNaN(t) || t < LEGACY.cutoff;
+}
+function inOldBounds(x: unknown, y: unknown) {
+  const nx = Number(x);
+  const ny = Number(y);
+  return Number.isFinite(nx) && Number.isFinite(ny) && nx <= LEGACY.w && ny <= LEGACY.h;
+}
+
 function fromBase(p: BasePlace): WorldPlace {
   return {
     id: `base-${p.id}`,
@@ -171,6 +187,15 @@ export function useWorldMap(role: 'player' | 'dm') {
     );
   }, [geo.data, usingBase, placesQ.data]);
 
+  /** Lugares gravados pelo mapa antigo, ainda na escala velha (só o Mestre corrige). */
+  const legacyPlaces = useMemo(
+    () =>
+      role === 'dm'
+        ? (placesQ.data ?? []).filter((r) => inOldBounds(r.x, r.y) && isLegacyTime(r.updated_at ?? r.created_at))
+        : [],
+    [role, placesQ.data],
+  );
+
   const hiddenRegions = useMemo(
     () => new Set((regionsQ.data ?? []).filter((r) => r.discovered === false).map((r) => r.region_id)),
     [regionsQ.data],
@@ -181,6 +206,8 @@ export function useWorldMap(role: 'player' | 'dm') {
     places,
     usingBase,
     missingBase,
+    legacyPlaces,
+    rawPlaces: (placesQ.data ?? []) as any[],
     dbCount: placesQ.data?.length ?? 0,
     loading: geo.isLoading || placesQ.isLoading,
     error: (geo.error || placesQ.error) as Error | null,
@@ -328,6 +355,81 @@ export function useWorldMapActions() {
     },
   });
 
+  /**
+   * Converte o que o mapa antigo gravou para a escala nova: lugares (para a
+   * posição do mapa base quando o nome bate, senão ×4; duplicados são
+   * apagados), posição do grupo, rota e alfinetes antigos.
+   */
+  const fixLegacy = useMutation({
+    mutationFn: async ({ legacy, all, base }: { legacy: any[]; all: any[]; base: BasePlace[] }) => {
+      const legacyIds = new Set(legacy.map((r) => r.id));
+      const keyOf = (n: unknown) => String(n ?? '').trim().toLowerCase();
+      const modern = new Set(all.filter((r) => !legacyIds.has(r.id)).map((r) => keyOf(r.name)));
+      const byName = new Map(base.map((b) => [keyOf(b.name), b]));
+      let moved = 0;
+      let removed = 0;
+      const jobs = legacy.map((r) => async () => {
+        if (modern.has(keyOf(r.name))) {
+          const { error } = await db.from('map_places').delete().eq('id', r.id);
+          if (error) throw error;
+          removed++;
+          return;
+        }
+        const b = byName.get(keyOf(r.name));
+        const x = b ? Math.round(b.x) : Math.round(Number(r.x) * LEGACY.scale);
+        const y = b ? Math.round(b.y) : Math.round(Number(r.y) * LEGACY.scale);
+        const { error } = await db
+          .from('map_places')
+          .update({ x, y, updated_at: new Date().toISOString() })
+          .eq('id', r.id);
+        if (error) throw error;
+        moved++;
+      });
+      for (let i = 0; i < jobs.length; i += 20) await Promise.all(jobs.slice(i, i + 20).map((j) => j()));
+
+      // Grupo e rota
+      const st = await db.from('map_state').select('*').eq('session_code', MAP_SESSION).maybeSingle();
+      const row = st.data as any;
+      if (!st.error && row && isLegacyTime(row.updated_at)) {
+        const patch: Record<string, unknown> = {};
+        if (row.party_x != null && inOldBounds(row.party_x, row.party_y)) {
+          patch.party_x = Math.round(Number(row.party_x) * LEGACY.scale);
+          patch.party_y = Math.round(Number(row.party_y) * LEGACY.scale);
+        }
+        if (Array.isArray(row.route) && row.route.length && row.route.every((p: any) => Array.isArray(p) && inOldBounds(p[0], p[1]))) {
+          patch.route = row.route.map((p: number[]) => [Math.round(p[0] * LEGACY.scale), Math.round(p[1] * LEGACY.scale)]);
+        }
+        if (Object.keys(patch).length) {
+          await db.from('map_state').update({ ...patch, updated_at: new Date().toISOString() }).eq('session_code', MAP_SESSION);
+        }
+      }
+
+      // Alfinetes
+      const pins = await db.from('map_pins').select('*').eq('session_code', MAP_SESSION);
+      if (!pins.error) {
+        for (const pin of (pins.data ?? []) as any[]) {
+          if (!inOldBounds(pin.x, pin.y) || !isLegacyTime(pin.created_at)) continue;
+          await db
+            .from('map_pins')
+            .update({ x: Math.round(Number(pin.x) * LEGACY.scale), y: Math.round(Number(pin.y) * LEGACY.scale) })
+            .eq('id', pin.id);
+        }
+      }
+      return { moved, removed };
+    },
+    onSuccess: ({ moved, removed }) => {
+      toast.success(
+        `Mapa antigo convertido: ${moved} ${moved === 1 ? 'lugar corrigido' : 'lugares corrigidos'}` +
+          (removed ? `, ${removed} ${removed === 1 ? 'duplicado apagado' : 'duplicados apagados'}.` : '.'),
+      );
+      for (const key of [['world-map', 'places'], K.state, K.pins]) void qc.invalidateQueries({ queryKey: key });
+    },
+    onError: (err) => {
+      void qc.invalidateQueries({ queryKey: ['world-map', 'places'] });
+      report('Não foi possível corrigir os lugares antigos')(err);
+    },
+  });
+
   /** Acrescenta um ponto à rota lendo o cache atual (cliques rápidos não se perdem). */
   const appendRoute = (pt: [number, number]) => {
     const cur = qc.getQueryData<MapStateRow | null>(K.state)?.route ?? [];
@@ -360,5 +462,5 @@ export function useWorldMapActions() {
     },
   });
 
-  return { updatePlace, createPlace, deletePlace, importBase, setRegionVisible, updateState, appendRoute, createPin, deletePin };
+  return { updatePlace, createPlace, deletePlace, importBase, setRegionVisible, updateState, appendRoute, fixLegacy, createPin, deletePin };
 }

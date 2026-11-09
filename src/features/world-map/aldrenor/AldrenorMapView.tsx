@@ -46,7 +46,7 @@ const MOBILE_SHEET = 0.6;
 export function AldrenorMapView({ role, playerId = 'mestre', onEnterCity }: Props) {
   const isDm = role === 'dm';
   const me = isDm ? 'mestre' : playerId;
-  const { geo, places, usingBase, missingBase, dbCount, loading, error, hiddenRegions, state, pins } = useWorldMap(role);
+  const { geo, places, usingBase, missingBase, legacyPlaces, rawPlaces, dbCount, loading, error, hiddenRegions, state, pins } = useWorldMap(role);
   const actions = useWorldMapActions();
   const data = geo.data;
 
@@ -121,7 +121,7 @@ export function AldrenorMapView({ role, playerId = 'mestre', onEnterCity }: Prop
   }, [data]);
 
   // Mestre com lugares para importar: abre o painel uma vez para o aviso aparecer.
-  const needsImport = isDm && !loading && (usingBase || missingBase.length > 0);
+  const needsImport = isDm && !loading && (usingBase || missingBase.length > 0 || legacyPlaces.length > 0);
   const openedForImport = useRef(false);
   useEffect(() => {
     if (needsImport && !openedForImport.current) {
@@ -442,7 +442,29 @@ export function AldrenorMapView({ role, playerId = 'mestre', onEnterCity }: Prop
               </span>
             </div>
 
-            {isDm && (usingBase || missingBase.length > 0) && (
+            {isDm && legacyPlaces.length > 0 && (
+              <div className="p-2.5 border border-[var(--blood)] bg-[var(--blood)]/10 text-xs text-[var(--text)] flex flex-col gap-2">
+                <p>
+                  <b>{legacyPlaces.length}</b> {legacyPlaces.length === 1 ? 'lugar foi gravado' : 'lugares foram gravados'} pelo
+                  mapa antigo, numa escala 4× menor — por isso aparecem fora do lugar. A correção leva cada um à posição certa
+                  (pelo nome, quando existe no mapa base), apaga duplicados e ajusta grupo, rota e alfinetes antigos.
+                </p>
+                <button
+                  type="button"
+                  disabled={actions.fixLegacy.isPending}
+                  onClick={() =>
+                    actions.fixLegacy.mutate({ legacy: legacyPlaces, all: rawPlaces, base: data.places })
+                  }
+                  data-testid="btn-fix-legacy"
+                  className="h-8 border border-[var(--gold)] bg-[var(--gold)] text-[var(--abyss)] text-xs cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5"
+                >
+                  {actions.fixLegacy.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Corrigir posições do mapa antigo
+                </button>
+              </div>
+            )}
+
+            {isDm && legacyPlaces.length === 0 && (usingBase || missingBase.length > 0) && (
               <div className="p-2.5 border border-[var(--gold-lo)] bg-[var(--gold)]/10 text-xs text-[var(--text)] flex flex-col gap-2">
                 <p>
                   {usingBase ? (
