@@ -45,6 +45,11 @@ import {
 } from './dm/editorUtils.ts';
 
 const MAPS_KEY = ['battle_maps', 'list'];
+
+/** Mostra o erro ao Mestre em vez de falhar em silêncio. */
+function reportError(err: unknown) {
+  toast.error(err instanceof Error ? err.message : 'Algo deu errado ao salvar a mesa.');
+}
 type PanelTab = 'pecas' | 'turno' | 'mesa';
 
 const TOOLS: Array<{ id: BattleEditorTool; label: string; key: string; icon: typeof Hand }> = [
@@ -61,7 +66,12 @@ export function DMBattleMapEditor() {
   const engineRef = useRef<BattleEngine | null>(null);
 
   // ── Dados ──
-  const { data: maps = [], isLoading: mapsLoading } = useQuery({
+  const {
+    data: maps = [],
+    isLoading: mapsLoading,
+    error: mapsError,
+    refetch: refetchMaps,
+  } = useQuery({
     queryKey: MAPS_KEY,
     queryFn: fetchBattleMaps,
     staleTime: Number.POSITIVE_INFINITY,
@@ -74,7 +84,9 @@ export function DMBattleMapEditor() {
     }
   }, [maps, mapId]);
   const map = useMemo(() => maps.find((m) => m.id === mapId) ?? null, [maps, mapId]);
-  const { tokens } = useBattleTokens(map?.id);
+  // A consulta periódica espera enquanto o Mestre tem gravações pendentes.
+  const savingRef = useRef<() => boolean>(() => false);
+  const { tokens } = useBattleTokens(map?.id, { isBusy: () => savingRef.current() });
   const { heroes, vitals } = useHeroVitals();
   const moveLimit = map?.move_limit ?? 6;
   const round = map?.round ?? 1;
@@ -92,6 +104,7 @@ export function DMBattleMapEditor() {
   // ── Gravação (debounce por item) ──
   const queueMapSave = useDebouncedSaver<BattleMap>((id, patch) => updateBattleMap(id, patch));
   const queueTokenSave = useDebouncedSaver<BattleToken>((id, patch) => updateBattleToken(id, patch));
+  savingRef.current = () => queueTokenSave.busy() || queueMapSave.busy();
 
   const setMapsCache = useCallback(
     (fn: (prev: BattleMap[]) => BattleMap[]) => qc.setQueryData<BattleMap[]>(MAPS_KEY, (prev) => fn(prev ?? [])),
@@ -103,7 +116,7 @@ export function DMBattleMapEditor() {
       if (!map) return;
       setMapsCache((prev) => prev.map((m) => (m.id === map.id ? { ...m, ...patch } : m)));
       if (isLive) qc.setQueryData(BATTLE_MAP_KEY, (prev: BattleMap | undefined) => (prev ? { ...prev, ...patch } : prev));
-      if (immediate) void updateBattleMap(map.id, patch);
+      if (immediate) updateBattleMap(map.id, patch).catch(reportError);
       else queueMapSave(map.id, patch);
     },
     [map, isLive, qc, queueMapSave, setMapsCache],
@@ -212,14 +225,18 @@ export function DMBattleMapEditor() {
 
   // ── Ações de turno ──
   const newRound = useCallback(async () => {
-    if (!map) return;
-    const res = await novaRodadaRPC(map.id).catch(() => ({ success: false, round }));
-    const next = res.success ? res.round : round + 1;
-    setMapsCache((prev) => prev.map((m) => (m.id === map.id ? { ...m, round: next } : m)));
-    if (!res.success) queueMapSave(map.id, { round: next });
-    setTokensCache((prev) => prev.map((t) => ({ ...t, moves_left: moveLimit })));
-    setActiveIdx(0);
-    toast.success(`Rodada ${next}: passos restaurados.`);
+    try {
+      if (!map) return;
+      const res = await novaRodadaRPC(map.id);
+      const next = res.success ? res.round : round + 1;
+      setMapsCache((prev) => prev.map((m) => (m.id === map.id ? { ...m, round: next } : m)));
+      if (!res.success) queueMapSave(map.id, { round: next });
+      setTokensCache((prev) => prev.map((t) => ({ ...t, moves_left: moveLimit })));
+      setActiveIdx(0);
+      toast.success(`Rodada ${next}: passos restaurados.`);
+    } catch (err) {
+      reportError(err);
+    }
   }, [map, round, moveLimit, queueMapSave, setMapsCache, setTokensCache]);
 
   const nextTurn = useCallback(() => {
@@ -239,37 +256,53 @@ export function DMBattleMapEditor() {
 
   // ── Ações de mesa ──
   const createMap = useCallback(async () => {
-    const created = await createBattleMap({ name: `Mesa ${maps.length + 1}`, status: 'rascunho' });
-    setMapsCache((prev) => [created, ...prev]);
-    setMapId(created.id);
-    toast.success('Mesa criada.');
+    try {
+      const created = await createBattleMap({ name: `Mesa ${maps.length + 1}`, status: 'rascunho' });
+      setMapsCache((prev) => [created, ...prev]);
+      setMapId(created.id);
+      toast.success('Mesa criada.');
+    } catch (err) {
+      reportError(err);
+    }
   }, [maps.length, setMapsCache]);
 
   const duplicateMap = useCallback(async () => {
-    if (!map) return;
-    const copy = await duplicateBattleMap(map.id);
-    setMapsCache((prev) => [copy, ...prev]);
-    setMapId(copy.id);
-    toast.success('Mesa duplicada.');
+    try {
+      if (!map) return;
+      const copy = await duplicateBattleMap(map.id);
+      setMapsCache((prev) => [copy, ...prev]);
+      setMapId(copy.id);
+      toast.success('Mesa duplicada.');
+    } catch (err) {
+      reportError(err);
+    }
   }, [map, setMapsCache]);
 
   const deleteMap = useCallback(async () => {
-    if (!map || maps.length <= 1) return;
-    if (!window.confirm(`Excluir a mesa "${map.name}" e todas as suas peças?`)) return;
-    await deleteBattleMap(map.id);
-    setMapsCache((prev) => prev.filter((m) => m.id !== map.id));
-    setMapId(null);
-    toast.success('Mesa excluída.');
+    try {
+      if (!map || maps.length <= 1) return;
+      if (!window.confirm(`Excluir a mesa "${map.name}" e todas as suas peças?`)) return;
+      await deleteBattleMap(map.id);
+      setMapsCache((prev) => prev.filter((m) => m.id !== map.id));
+      setMapId(null);
+      toast.success('Mesa excluída.');
+    } catch (err) {
+      reportError(err);
+    }
   }, [map, maps.length, setMapsCache]);
 
   const toggleLive = useCallback(async () => {
-    if (!map) return;
-    const updated = await setMapLiveStatus(map.id, !isLive);
-    setMapsCache((prev) =>
-      prev.map((m) => (m.id === map.id ? { ...m, ...updated } : !isLive ? { ...m, status: 'rascunho' } : m)),
-    );
-    qc.setQueryData(BATTLE_MAP_KEY, { ...map, ...updated });
-    toast.success(!isLive ? 'Mesa ao vivo: jogadores e telão sincronizados.' : 'Mesa em rascunho.');
+    try {
+      if (!map) return;
+      const updated = await setMapLiveStatus(map.id, !isLive);
+      setMapsCache((prev) =>
+        prev.map((m) => (m.id === map.id ? { ...m, ...updated } : !isLive ? { ...m, status: 'rascunho' } : m)),
+      );
+      qc.setQueryData(BATTLE_MAP_KEY, { ...map, ...updated });
+      toast.success(!isLive ? 'Mesa ao vivo: jogadores e telão sincronizados.' : 'Mesa em rascunho.');
+    } catch (err) {
+      reportError(err);
+    }
   }, [map, isLive, qc, setMapsCache]);
 
   const uploadBackground = useCallback(
@@ -297,22 +330,26 @@ export function DMBattleMapEditor() {
   // ── Ações de peça ──
   const addTokens = useCallback(
     async (drafts: Array<Partial<BattleToken>>) => {
-      if (!map) return;
-      const cells = findFreeCells(map, tokens, drafts.length);
-      const created = await Promise.all(
-        drafts.map((d, i) =>
-          createBattleToken({ map_id: map.id, facing: 1, visible: true, moves_left: moveLimit, ...d, ...cells[i] }),
-        ),
-      );
-      setTokensCache((prev) => {
-        const ids = new Set(prev.map((t) => t.id));
-        return [...prev, ...created.filter((t) => !ids.has(t.id))];
-      });
-      if (created[0]) {
-        setSelectedId(created[0].id);
-        engineRef.current?.centerOnToken(created[0].id);
+      try {
+        if (!map) return;
+        const cells = findFreeCells(map, tokens, drafts.length);
+        const created = await Promise.all(
+          drafts.map((d, i) =>
+            createBattleToken({ map_id: map.id, facing: 1, visible: true, moves_left: moveLimit, ...d, ...cells[i] }),
+          ),
+        );
+        setTokensCache((prev) => {
+          const ids = new Set(prev.map((t) => t.id));
+          return [...prev, ...created.filter((t) => !ids.has(t.id))];
+        });
+        if (created[0]) {
+          setSelectedId(created[0].id);
+          engineRef.current?.centerOnToken(created[0].id);
+        }
+        return created;
+      } catch (err) {
+        reportError(err);
       }
-      return created;
     },
     [map, tokens, moveLimit, setTokensCache],
   );
@@ -348,11 +385,15 @@ export function DMBattleMapEditor() {
 
   const removeToken = useCallback(
     async (id: string) => {
-      const t = tokens.find((x) => x.id === id);
-      if (!t || !window.confirm(`Remover "${t.name}" da mesa?`)) return;
-      setTokensCache((prev) => prev.filter((x) => x.id !== id));
-      if (selectedId === id) setSelectedId(null);
-      await deleteBattleToken(id);
+      try {
+        const t = tokens.find((x) => x.id === id);
+        if (!t || !window.confirm(`Remover "${t.name}" da mesa?`)) return;
+        setTokensCache((prev) => prev.filter((x) => x.id !== id));
+        if (selectedId === id) setSelectedId(null);
+        await deleteBattleToken(id);
+      } catch (err) {
+        reportError(err);
+      }
     },
     [tokens, selectedId, setTokensCache],
   );
@@ -374,8 +415,13 @@ export function DMBattleMapEditor() {
   }, [tokens, patchToken]);
 
   // ── Atalhos de teclado ──
-  const keyRef = useRef({ nextTurn, removeToken, selectedToken, patchToken, centerOn });
-  keyRef.current = { nextTurn, removeToken, selectedToken, patchToken, centerOn };
+  const currentToken = useCallback(
+    (id: string) =>
+      map ? qc.getQueryData<BattleToken[]>(BATTLE_TOKENS_KEY(map.id))?.find((t) => t.id === id) : undefined,
+    [map, qc],
+  );
+  const keyRef = useRef({ nextTurn, removeToken, selectedToken, patchToken, centerOn, currentToken });
+  keyRef.current = { nextTurn, removeToken, selectedToken, patchToken, centerOn, currentToken };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target)) return;
@@ -411,7 +457,9 @@ export function DMBattleMapEditor() {
       if (delta[key]) {
         e.preventDefault();
         const [dc, dr] = delta[key];
-        k.patchToken(sel.id, { c: (sel.c ?? 0) + dc, r: (sel.r ?? 0) + dr, path: [] });
+        // Lê a posição atual do cache: com teclas repetidas a tela pode ainda não ter re-renderizado.
+        const cur = k.currentToken(sel.id) ?? sel;
+        k.patchToken(sel.id, { c: (cur.c ?? 0) + dc, r: (cur.r ?? 0) + dr, path: [] });
       }
     };
     window.addEventListener('keydown', onKey);
@@ -462,7 +510,51 @@ export function DMBattleMapEditor() {
         <IconButton icon={PanelRight} label="Painel" active={panelOpen} onClick={() => setPanelOpen((v) => !v)} />
       </header>
 
+      {map && !isLive && (
+        <div className="shrink-0 flex flex-wrap items-center gap-2 px-3 py-2 border-b border-[var(--ember)]/40 bg-[var(--ember)]/10 text-sm text-[var(--text)]">
+          <Radio className="w-4 h-4 text-[var(--ember)]" />
+          <span className="flex-1 min-w-0">
+            Esta mesa está em <b>rascunho</b>: a TV e os jogadores <b>não</b> a veem.
+          </span>
+          <button
+            type="button"
+            onClick={toggleLive}
+            className="h-7 px-3 border border-[var(--ember)] text-xs text-[var(--ember)] hover:bg-[var(--ember)]/15 cursor-pointer"
+          >
+            Pôr ao vivo
+          </button>
+        </div>
+      )}
+
       <div className="relative flex-1 min-h-0 flex">
+        {/* Sem mesa / erro de leitura */}
+        {!mapsLoading && (mapsError || maps.length === 0) && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 p-6 text-center bg-[var(--abyss)]">
+            <p className="font-['Cinzel',serif] text-lg tracking-[0.12em] text-[var(--gold-hi)]">
+              {mapsError ? 'Não foi possível abrir as mesas' : 'Nenhuma mesa ainda'}
+            </p>
+            <p className="max-w-md text-sm italic text-[var(--muted)]">
+              {mapsError
+                ? (mapsError as Error).message
+                : 'Crie a primeira mesa de batalha. Depois coloque-a ao vivo para que a TV e os jogadores a vejam.'}
+            </p>
+            {mapsError ? (
+              <button type="button" onClick={() => void refetchMaps()} className="h-9 px-4 border border-[var(--gold-lo)] text-sm text-[var(--gold-hi)] cursor-pointer">
+                Tentar de novo
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={createMap}
+                data-testid="btn-create-first-map"
+                className="h-9 px-4 border border-[var(--gold)] bg-[var(--gold)] text-sm text-[var(--abyss)] cursor-pointer hover:brightness-110"
+              >
+                Criar primeira mesa
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Mapa */}
         <div className={`relative flex-1 min-w-0 ${isLive ? 'shadow-[inset_0_0_0_2px_var(--gold-lo)]' : ''}`}>
           <canvas

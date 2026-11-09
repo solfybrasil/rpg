@@ -15,7 +15,7 @@ export function TVBattleCanvas() {
   const engineRef = useRef<BattleEngine | null>(null);
   const lastMapId = useRef<string | null>(null);
 
-  const { data: map } = useActiveBattleMap();
+  const { data: map, isLoading: mapLoading } = useActiveBattleMap();
   const { tokens } = useBattleTokens(map?.id);
   const { vitals } = useHeroVitals();
   const [turn, setTurn] = useState<BattleTurn | null>(null);
@@ -89,6 +89,7 @@ export function TVBattleCanvas() {
 
       {/* Título */}
       <div
+        hidden={!map}
         className="absolute top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none text-center"
         data-testid="tv-map-title"
       >
@@ -136,6 +137,13 @@ export function TVBattleCanvas() {
       </div>
 
       <TVClock />
+
+      {!mapLoading && !map && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[var(--abyss)]">
+          <p className="font-['Cinzel',serif] text-3xl tracking-[0.2em] uppercase text-[var(--gold-hi)]">Peste do Juramento</p>
+          <p className="text-lg italic text-[var(--muted)]">Aguardando o Mestre pôr uma mesa ao vivo…</p>
+        </div>
+      )}
 
       {isLive && (
         <span className="absolute top-6 left-6 z-20 flex items-center gap-2 font-['Cinzel',serif] text-xs uppercase tracking-[0.2em] text-[#e0645a]">

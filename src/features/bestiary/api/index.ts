@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatarCriaturaParaBatalha } from '../../../entities/creature/index.ts';
 import { supabase } from '../../../shared/supabase/client.ts';
-import { fetchActiveBattleMap, createBattleToken } from '../../battle-map/api/battleApi.ts';
+import { createBattleToken, fetchActiveBattleMap, fetchBattleTokens } from '../../battle-map/api/battleApi.ts';
+import { findFreeCells } from '../../battle-map/components/dm/editorUtils.ts';
 import type { Creature, CreatureFilter, PaginatedCreaturesResult } from './types.ts';
 
 export * from './types.ts';
@@ -343,29 +344,32 @@ export async function sendCreatureToBattle(
 export async function sendCreatureToTable(
   creature: Creature,
 ): Promise<{ success: boolean; token: any }> {
-  try {
-    const activeMap = await fetchActiveBattleMap();
-    const mapId = activeMap?.id || 'default_mesa_map';
-
-    const token = await createBattleToken({
-      map_id: mapId,
-      name: creature.name,
-      kind: 'creature',
-      grid_x: 10,
-      grid_y: 10,
-      color: '#e63946',
-      image_url: creature.image_url || creature.poster_url || null,
-      max_hp: creature.max_hp,
-      current_hp: creature.max_hp,
-      visible: true,
-      size_blocks: (creature.size || '').toLowerCase() === 'enorme' ? 2 : 1,
-    });
-
-    return { success: true, token };
-  } catch (err: any) {
-    console.error('[BestiaryAPI] Erro ao enviar criatura para mesa:', err);
-    throw err;
+  const activeMap = await fetchActiveBattleMap();
+  if (!activeMap) {
+    throw new Error('Nenhuma mesa ao vivo. Abra a Mesa e coloque uma ao vivo primeiro.');
   }
+  // Primeira célula livre perto do centro do mapa
+  const tokens = await fetchBattleTokens(activeMap.id);
+  const [cell] = findFreeCells(activeMap, tokens, 1);
+  const media = creature.idle_webm_url || creature.idle_mp4_url || creature.image_url || creature.poster_url || '/batalha/fera_idle.webm';
+
+  const token = await createBattleToken({
+    map_id: activeMap.id,
+    kind: 'fera',
+    beast_id: creature.id,
+    name: creature.name,
+    media_url: media,
+    media_type: /\.(webm|mp4)$/i.test(media) ? 'video' : 'imagem',
+    chroma: (creature.media_chroma as string) || 'verde',
+    anchor_x: creature.media_anchor_x ?? 0.284,
+    anchor_y: creature.media_anchor_y ?? 0.96,
+    size: creature.media_size ?? 160,
+    facing: creature.media_facing ?? 1,
+    c: cell.c,
+    r: cell.r,
+    visible: true,
+  });
+  return { success: true, token };
 }
 
 export async function saveCreatureBattleMedia(

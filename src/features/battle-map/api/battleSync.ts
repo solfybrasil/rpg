@@ -1,9 +1,10 @@
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { subscribeRealtime } from '../../../shared/supabase/realtime.ts';
 import { supabase as mainSupabase } from '../../../shared/supabase/client.ts';
 import type { BattlePing, HeroVital } from '../engine/types.ts';
-import { battleSupabase } from './battleApi.ts';
+import { getBattleDb } from './battleApi.ts';
 
 /** Estado do turno, mantido pelo Mestre e espelhado em Jogadores e TV. */
 export interface BattleTurn {
@@ -26,35 +27,44 @@ interface SyncHandlers {
 export function useBattleSync(mapId: string | undefined, handlers: SyncHandlers) {
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;
-  const channelRef = useRef<ReturnType<typeof battleSupabase.channel> | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!mapId) return;
-    const channel = battleSupabase.channel(`battle_sync_${mapId}`, {
-      config: { broadcast: { self: false } },
-    });
-
-    channel
-      .on('broadcast', { event: 'ping' }, ({ payload }) => {
-        handlersRef.current.onPing?.(payload as BattlePing);
-      })
-      .on('broadcast', { event: 'turn' }, ({ payload }) => {
-        handlersRef.current.onTurn?.(payload as BattleTurn);
-      })
-      .on('broadcast', { event: 'hello' }, () => {
-        const turn = handlersRef.current.getTurn?.();
-        if (turn) void channel.send({ type: 'broadcast', event: 'turn', payload: turn });
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          void channel.send({ type: 'broadcast', event: 'hello', payload: {} });
-        }
+    let cancelled = false;
+    let cleanup: (() => void) | null = null;
+    void getBattleDb().then((db) => {
+      if (cancelled) return;
+      const channel = db.channel(`battle_sync_${mapId}`, {
+        config: { broadcast: { self: false } },
       });
 
-    channelRef.current = channel;
+      channel
+        .on('broadcast', { event: 'ping' }, ({ payload }) => {
+          handlersRef.current.onPing?.(payload as BattlePing);
+        })
+        .on('broadcast', { event: 'turn' }, ({ payload }) => {
+          handlersRef.current.onTurn?.(payload as BattleTurn);
+        })
+        .on('broadcast', { event: 'hello' }, () => {
+          const turn = handlersRef.current.getTurn?.();
+          if (turn) void channel.send({ type: 'broadcast', event: 'turn', payload: turn });
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            void channel.send({ type: 'broadcast', event: 'hello', payload: {} });
+          }
+        });
+
+      channelRef.current = channel;
+      cleanup = () => {
+        channelRef.current = null;
+        void db.removeChannel(channel);
+      };
+    });
     return () => {
-      channelRef.current = null;
-      void battleSupabase.removeChannel(channel);
+      cancelled = true;
+      cleanup?.();
     };
   }, [mapId]);
 

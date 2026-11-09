@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { toast } from 'sonner';
 import { buildGrid, cellKey, center } from '../../engine/IsometricGrid.ts';
 import type { BattleMap, BattleToken } from '../../engine/types.ts';
 
@@ -13,13 +14,20 @@ export function useDebouncedSaver<T extends object>(
   const pending = useRef(new Map<string, { patch: Partial<T>; timer: ReturnType<typeof setTimeout> }>());
   const saveRef = useRef(save);
   saveRef.current = save;
+  const inFlight = useRef(0);
 
   const flush = useCallback((id: string) => {
     const entry = pending.current.get(id);
     if (!entry) return;
     clearTimeout(entry.timer);
     pending.current.delete(id);
-    saveRef.current(id, entry.patch).catch((err) => console.warn('[mesa] falha ao salvar', id, err));
+    inFlight.current++;
+    saveRef
+      .current(id, entry.patch)
+      .catch((err) => toast.error(err instanceof Error ? err.message : 'Falha ao salvar na mesa.'))
+      .finally(() => {
+        inFlight.current--;
+      });
   }, []);
 
   const queue = useCallback(
@@ -41,7 +49,11 @@ export function useDebouncedSaver<T extends object>(
     };
   }, [flush]);
 
-  return queue;
+  // `queue(id, patch)` + `queue.busy()` (há algo pendente ou gravando?)
+  return useMemo(
+    () => Object.assign(queue, { busy: () => pending.current.size > 0 || inFlight.current > 0 }),
+    [queue],
+  );
 }
 
 /** Procura `count` células livres em espiral a partir do centro da imagem. */

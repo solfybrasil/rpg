@@ -1,5 +1,6 @@
 import { Crosshair, Maximize2, Minus, Plus, Ruler } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useSessionStore } from '../../../shared/stores/session.ts';
 import { type BattleTurn, useBattleSync, useHeroVitals } from '../api/battleSync.ts';
 import { useActiveBattleMap, useBattleTokens } from '../api/useBattle.ts';
@@ -30,7 +31,9 @@ export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasPro
   const engineRef = useRef<BattleEngine | null>(null);
 
   const { data: map, isLoading } = useActiveBattleMap();
-  const { tokens, moveToken } = useBattleTokens(map?.id);
+  const { tokens, moveToken, refetch: refetchTokens } = useBattleTokens(map?.id);
+  const refetchRef = useRef(refetchTokens);
+  refetchRef.current = refetchTokens;
   const { vitals } = useHeroVitals();
   const moveRef = useRef(moveToken);
   moveRef.current = moveToken;
@@ -57,7 +60,12 @@ export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasPro
     const engine = new BattleEngine(canvasRef.current, {
       mode: 'player',
       onMoveToken: async (id, c, r, path) => {
-        await moveRef.current(id, c, r, path);
+        try {
+          await moveRef.current(id, c, r, path);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Não foi possível mover.');
+          void refetchRef.current(); // devolve a peça à posição real
+        }
       },
       onPing: (p) => sendPingRef.current(p),
       onMeasure: setMeasure,
@@ -199,7 +207,7 @@ export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasPro
       {!isLoading && !map && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-[var(--abyss)]/90">
           <p className="font-['Cinzel',serif] text-sm tracking-[0.12em] text-[var(--muted)]">
-            Aguardando o Mestre abrir a mesa…
+            Aguardando o Mestre pôr uma mesa ao vivo…
           </p>
         </div>
       )}

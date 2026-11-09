@@ -1,425 +1,217 @@
-import { createClient } from '@supabase/supabase-js';
+import { type SupabaseClient, createClient } from '@supabase/supabase-js';
 import { supabase as mainSupabase } from '../../../shared/supabase/client.ts';
 import type { BattleMap, BattleToken } from '../engine/types.ts';
 
+/**
+ * Banco da mesa de batalha.
+ *
+ * Antes, cada leitura/escrita tentava um projeto e caía no outro, e no fim
+ * devolvia uma mesa e peças de EXEMPLO fixas no código ("Tigre-Serpente").
+ * Resultado: o Mestre "salvava" peças de exemplo (nada ia para o banco) e a TV
+ * e os jogadores viam sempre a mesma fera, na mesma posição.
+ *
+ * Agora: um único banco é escolhido no início e usado por todos (Mestre,
+ * jogador e TV); nenhum dado falso; erros sobem para a tela.
+ */
+
+// Projeto dedicado da mesa (o mesmo que o código já usava como primário).
 const BATTLE_URL =
-  import.meta.env.VITE_BATTLE_SUPABASE_URL ||
-  'https://ngwexiqejyfsfnhtnrhf.supabase.co';
+  (import.meta.env.VITE_BATTLE_SUPABASE_URL as string | undefined) || 'https://ngwexiqejyfsfnhtnrhf.supabase.co';
 const BATTLE_KEY =
-  import.meta.env.VITE_BATTLE_SUPABASE_ANON_KEY ||
+  (import.meta.env.VITE_BATTLE_SUPABASE_ANON_KEY as string | undefined) ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nd2V4aXFlanlmc2ZuaHRucmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDU3NTgsImV4cCI6MjA5MzQ4MTc1OH0.Q8zUGKrQIiuVHskdYrg069h5vlce_L2lSUwb2LgQJUo';
 
-export const battleSupabase = createClient(BATTLE_URL, BATTLE_KEY, {
-  realtime: {
-    params: {
-      eventsPerSecond: 20,
-    },
-  },
+const dedicated: SupabaseClient<any> = createClient(BATTLE_URL, BATTLE_KEY, {
+  realtime: { params: { eventsPerSecond: 20 } },
 });
+const main = mainSupabase as unknown as SupabaseClient<any>;
 
-export const DEFAULT_BATTLE_MAP: BattleMap = {
-  id: '00000000-0000-0000-0000-000000000001',
-  name: 'Santuário do Tigre-Serpente',
-  background_url: '/batalha/santuario.jpg',
-  img_w: 1376,
-  img_h: 768,
-  tile_size: 86,
-  origin_x: 690,
-  origin_y: 418,
-  show_grid: true,
-  blocked: ['1,1', '2,2'],
-  move_limit: 6,
-  status: 'ao_vivo',
-  round: 1,
-  updated_at: new Date().toISOString(),
-};
+let chosen: SupabaseClient<any> | null = null;
+let dbPromise: Promise<SupabaseClient<any>> | null = null;
 
-export const DEFAULT_BATTLE_TOKENS: BattleToken[] = [
-  {
-    id: '00000000-0000-0000-0000-000000000011',
-    map_id: '00000000-0000-0000-0000-000000000001',
-    kind: 'heroi',
-    hero_id: 'malenia',
-    name: 'Malenia',
-    media_url: '/batalha/malenia_idle.webm',
-    media_type: 'video',
-    chroma: 'verde',
-    anchor_x: 0.487,
-    anchor_y: 0.985,
-    size: 172,
-    facing: 1,
-    c: -1,
-    r: 3,
-    moves_left: 6,
-    visible: true,
-  },
-  {
-    id: '00000000-0000-0000-0000-000000000012',
-    map_id: '00000000-0000-0000-0000-000000000001',
-    kind: 'heroi',
-    hero_id: 'kaelis_moonfire',
-    name: 'Kaelis',
-    media_url: '/batalha/kaelis_idle.webm',
-    media_type: 'video',
-    chroma: 'magenta',
-    anchor_x: 0.486,
-    anchor_y: 0.985,
-    size: 166,
-    facing: 1,
-    c: -3,
-    r: 3,
-    moves_left: 6,
-    visible: true,
-  },
-  {
-    id: '00000000-0000-0000-0000-000000000013',
-    map_id: '00000000-0000-0000-0000-000000000001',
-    kind: 'heroi',
-    hero_id: 'tor_bjorn',
-    name: 'Tor',
-    media_url: '/batalha/tor_idle.webm',
-    media_type: 'video',
-    chroma: 'verde',
-    anchor_x: 0.412,
-    anchor_y: 0.954,
-    size: 130,
-    facing: 1,
-    c: 0,
-    r: 5,
-    moves_left: 6,
-    visible: true,
-  },
-  {
-    id: '00000000-0000-0000-0000-000000000014',
-    map_id: '00000000-0000-0000-0000-000000000001',
-    kind: 'fera',
-    name: 'Tigre-Serpente',
-    media_url: '/batalha/fera_idle.webm',
-    media_type: 'video',
-    chroma: 'verde',
-    anchor_x: 0.284,
-    anchor_y: 0.96,
-    size: 160,
-    facing: 1,
-    c: 3,
-    r: 0,
-    moves_left: 6,
-    visible: true,
-  },
-];
+async function probe(db: SupabaseClient<any>) {
+  const all = await db.from('battle_maps').select('id', { count: 'exact', head: true });
+  if (all.error) return { ok: false, maps: 0, live: 0 };
+  const live = await db.from('battle_maps').select('id', { count: 'exact', head: true }).eq('status', 'ao_vivo');
+  return { ok: true, maps: all.count ?? 0, live: live.count ?? 0 };
+}
 
-// ── 1. CONSULTA DE MAPAS ──
+/**
+ * Escolhe UM banco para a mesa, igual para todos os clientes:
+ * o que tem mesa ao vivo; senão o que tem mesas; senão o dedicado (o primário
+ * de antes); se o dedicado não responder, o principal.
+ */
+export function getBattleDb(): Promise<SupabaseClient<any>> {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      const [d, m] = await Promise.all([probe(dedicated), probe(main)]);
+      let pick: SupabaseClient<any>;
+      if (d.ok && m.ok) {
+        if (d.live !== m.live) pick = d.live > m.live ? dedicated : main;
+        else if ((d.maps > 0) !== (m.maps > 0)) pick = d.maps > 0 ? dedicated : main;
+        else pick = dedicated;
+      } else pick = d.ok ? dedicated : main;
+      if (!d.ok && !m.ok) console.warn('[mesa] nenhum banco respondeu à tabela battle_maps');
+      chosen = pick;
+      return pick;
+    })();
+  }
+  return dbPromise;
+}
 
+/** Cliente já escolhido (para canais de tempo real); antes da escolha, o dedicado. */
+export function battleClient(): SupabaseClient<any> {
+  return chosen ?? dedicated;
+}
+
+/** @deprecated use battleClient() / getBattleDb() */
+export const battleSupabase: SupabaseClient<any> = dedicated;
+
+function fail(what: string, error: { message?: string } | null | undefined): never {
+  throw new Error(`${what}: ${error?.message || 'sem resposta do banco'}`);
+}
+
+const now = () => new Date().toISOString();
+
+// ── 1. MESAS ──
+
+/** Mesa ao vivo (a mais recente, se houver mais de uma). Sem mesa ao vivo: null. */
 export async function fetchActiveBattleMap(): Promise<BattleMap | null> {
-  try {
-    const { data, error } = await battleSupabase
-      .from('battle_maps')
-      .select('*')
-      .eq('status', 'ao_vivo')
-      .maybeSingle();
-
-    if (!error && data) {
-      return data as BattleMap;
-    }
-  } catch (_) {}
-
-  try {
-    const { data, error } = await mainSupabase
-      .from('battle_maps' as any)
-      .select('*')
-      .eq('status', 'ao_vivo')
-      .maybeSingle();
-
-    if (!error && data) {
-      return data as unknown as BattleMap;
-    }
-  } catch (_) {}
-
-  try {
-    const { data } = await battleSupabase
-      .from('battle_maps')
-      .select('*')
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (data) return data as BattleMap;
-  } catch (_) {}
-
-  return DEFAULT_BATTLE_MAP;
+  const db = await getBattleDb();
+  const { data, error } = await db
+    .from('battle_maps')
+    .select('*')
+    .eq('status', 'ao_vivo')
+    .order('updated_at', { ascending: false })
+    .limit(1);
+  if (error) fail('Não foi possível ler a mesa ao vivo', error);
+  return (data?.[0] as BattleMap) ?? null;
 }
 
 export async function fetchBattleMaps(): Promise<BattleMap[]> {
-  try {
-    const { data, error } = await battleSupabase
-      .from('battle_maps')
-      .select('*')
-      .order('updated_at', { ascending: false });
-
-    if (!error && data && data.length > 0) {
-      return data as BattleMap[];
-    }
-  } catch (_) {}
-
-  try {
-    const { data, error } = await mainSupabase
-      .from('battle_maps' as any)
-      .select('*')
-      .order('updated_at', { ascending: false });
-
-    if (!error && data && (data as any).length > 0) {
-      return data as unknown as BattleMap[];
-    }
-  } catch (_) {}
-
-  return [DEFAULT_BATTLE_MAP];
+  const db = await getBattleDb();
+  const { data, error } = await db.from('battle_maps').select('*').order('updated_at', { ascending: false });
+  if (error) fail('Não foi possível ler as mesas', error);
+  return (data ?? []) as BattleMap[];
 }
 
-export async function createBattleMap(
-  mapData: Partial<BattleMap>,
-): Promise<BattleMap> {
-  const newMap: Partial<BattleMap> = {
+export async function createBattleMap(mapData: Partial<BattleMap>): Promise<BattleMap> {
+  const db = await getBattleDb();
+  const row: Partial<BattleMap> = {
     name: mapData.name || 'Nova Mesa de Batalha',
     background_url: mapData.background_url || '/batalha/santuario.jpg',
     img_w: mapData.img_w || 1376,
     img_h: mapData.img_h || 768,
     tile_size: mapData.tile_size || 86,
-    origin_x: mapData.origin_x || 690,
-    origin_y: mapData.origin_y || 418,
+    origin_x: mapData.origin_x ?? 690,
+    origin_y: mapData.origin_y ?? 418,
     show_grid: mapData.show_grid ?? true,
     blocked: mapData.blocked || [],
     move_limit: mapData.move_limit || 6,
     status: mapData.status || 'rascunho',
-    round: 1,
-    updated_at: new Date().toISOString(),
+    round: mapData.round || 1,
+    updated_at: now(),
   };
-
-  try {
-    const { data, error } = await battleSupabase
-      .from('battle_maps')
-      .insert([newMap])
-      .select()
-      .single();
-
-    if (!error && data) return data as BattleMap;
-  } catch (_) {}
-
-  try {
-    const { data, error } = await mainSupabase
-      .from('battle_maps' as any)
-      .insert([newMap])
-      .select()
-      .single();
-
-    if (!error && data) return data as unknown as BattleMap;
-  } catch (_) {}
-
-  return {
-    ...newMap,
-    id: `local_${Date.now()}`,
-  } as BattleMap;
+  const { data, error } = await db.from('battle_maps').insert([row]).select().single();
+  if (error || !data) fail('Não foi possível criar a mesa', error);
+  return data as BattleMap;
 }
 
-export async function updateBattleMap(
-  id: string,
-  updates: Partial<BattleMap>,
-): Promise<BattleMap> {
-  const payload = {
-    ...updates,
-    updated_at: new Date().toISOString(),
-  };
-
-  try {
-    const { data, error } = await battleSupabase
-      .from('battle_maps')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (!error && data) return data as BattleMap;
-  } catch (_) {}
-
-  try {
-    const { data, error } = await mainSupabase
-      .from('battle_maps' as any)
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (!error && data) return data as unknown as BattleMap;
-  } catch (_) {}
-
-  return { id, ...updates } as BattleMap;
+export async function updateBattleMap(id: string, updates: Partial<BattleMap>): Promise<BattleMap> {
+  const db = await getBattleDb();
+  const { id: _ignore, created_at: _c, ...patch } = updates as BattleMap;
+  const { data, error } = await db
+    .from('battle_maps')
+    .update({ ...patch, updated_at: now() })
+    .eq('id', id)
+    .select();
+  if (error) fail('Não foi possível salvar a mesa', error);
+  if (!data || data.length === 0) fail('A mesa não existe mais no banco', null);
+  return data[0] as BattleMap;
 }
 
-export async function deleteBattleMap(id: string): Promise<boolean> {
-  try {
-    await battleSupabase.from('battle_tokens').delete().eq('map_id', id);
-    const { error } = await battleSupabase
-      .from('battle_maps')
-      .delete()
-      .eq('id', id);
-    if (!error) return true;
-  } catch (_) {}
-
-  try {
-    await mainSupabase.from('battle_tokens' as any).delete().eq('map_id', id);
-    await mainSupabase.from('battle_maps' as any).delete().eq('id', id);
-    return true;
-  } catch (_) {}
-
-  return true;
+export async function deleteBattleMap(id: string): Promise<void> {
+  const db = await getBattleDb();
+  const { error: e1 } = await db.from('battle_tokens').delete().eq('map_id', id);
+  if (e1) fail('Não foi possível apagar as peças da mesa', e1);
+  const { error } = await db.from('battle_maps').delete().eq('id', id);
+  if (error) fail('Não foi possível apagar a mesa', error);
 }
 
+/** Duplica a mesa e também as suas peças. */
 export async function duplicateBattleMap(id: string): Promise<BattleMap> {
-  const maps = await fetchBattleMaps();
-  const source = maps.find((m) => m.id === id) || DEFAULT_BATTLE_MAP;
-
-  return createBattleMap({
-    ...source,
-    name: `${source.name} (Cópia)`,
-    status: 'rascunho',
-  });
-}
-
-export async function setMapLiveStatus(
-  id: string,
-  isLive: boolean,
-): Promise<BattleMap> {
-  const newStatus = isLive ? 'ao_vivo' : 'rascunho';
-
-  if (isLive) {
-    try {
-      await battleSupabase
-        .from('battle_maps')
-        .update({ status: 'rascunho' })
-        .neq('id', id);
-    } catch (_) {}
+  const db = await getBattleDb();
+  const { data: src, error } = await db.from('battle_maps').select('*').eq('id', id).single();
+  if (error || !src) fail('Mesa de origem não encontrada', error);
+  const { id: _i, created_at: _c, updated_at: _u, ...rest } = src as BattleMap;
+  const copy = await createBattleMap({ ...rest, name: `${src.name} (cópia)`, status: 'rascunho', round: 1 });
+  const tokens = await fetchBattleTokens(id);
+  if (tokens.length) {
+    const rows = tokens.map(({ id: _t, created_at: _tc, ...t }: BattleToken & { created_at?: string }) => ({
+      ...t,
+      map_id: copy.id,
+      path: [],
+      updated_at: now(),
+    }));
+    const { error: te } = await db.from('battle_tokens').insert(rows);
+    if (te) fail('Mesa copiada, mas as peças não', te);
   }
-
-  return updateBattleMap(id, { status: newStatus });
+  return copy;
 }
 
-// ── 2. TOKENS DA MESA ──
-
-export async function fetchBattleTokens(
-  mapId: string,
-): Promise<BattleToken[]> {
-  try {
-    const { data, error } = await battleSupabase
-      .from('battle_tokens')
-      .select('*')
-      .eq('map_id', mapId)
-      .order('size', { ascending: true });
-
-    if (!error && data && data.length > 0) {
-      return data as BattleToken[];
-    }
-  } catch (_) {}
-
-  try {
-    const { data, error } = await mainSupabase
-      .from('battle_tokens' as any)
-      .select('*')
-      .eq('map_id', mapId);
-
-    if (!error && data && (data as any).length > 0) {
-      return data as unknown as BattleToken[];
-    }
-  } catch (_) {}
-
-  return DEFAULT_BATTLE_TOKENS.map((t) => ({ ...t, map_id: mapId }));
+/** Põe uma mesa ao vivo (as outras voltam a rascunho) ou tira do ar. */
+export async function setMapLiveStatus(id: string, isLive: boolean): Promise<BattleMap> {
+  const db = await getBattleDb();
+  if (isLive) {
+    const { error } = await db.from('battle_maps').update({ status: 'rascunho' }).eq('status', 'ao_vivo').neq('id', id);
+    if (error) fail('Não foi possível tirar as outras mesas do ar', error);
+  }
+  return updateBattleMap(id, { status: isLive ? 'ao_vivo' : 'rascunho' });
 }
 
-export async function createBattleToken(
-  tokenData: Partial<BattleToken>,
-): Promise<BattleToken> {
-  const payload = {
-    ...tokenData,
+// ── 2. PEÇAS ──
+
+export async function fetchBattleTokens(mapId: string): Promise<BattleToken[]> {
+  const db = await getBattleDb();
+  const { data, error } = await db.from('battle_tokens').select('*').eq('map_id', mapId);
+  if (error) fail('Não foi possível ler as peças', error);
+  return (data ?? []) as BattleToken[];
+}
+
+export async function createBattleToken(tokenData: Partial<BattleToken>): Promise<BattleToken> {
+  const db = await getBattleDb();
+  const { hp: _hp, max_hp: _mhp, ...rest } = tokenData;
+  const row = {
+    ...rest,
     moves_left: tokenData.moves_left ?? 6,
     visible: tokenData.visible ?? true,
-    updated_at: new Date().toISOString(),
+    updated_at: now(),
   };
-
-  try {
-    const { data, error } = await battleSupabase
-      .from('battle_tokens')
-      .insert([payload])
-      .select()
-      .single();
-
-    if (!error && data) return data as BattleToken;
-  } catch (_) {}
-
-  try {
-    const { data, error } = await mainSupabase
-      .from('battle_tokens' as any)
-      .insert([payload])
-      .select()
-      .single();
-
-    if (!error && data) return data as unknown as BattleToken;
-  } catch (_) {}
-
-  return {
-    ...payload,
-    id: `local_tok_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-  } as BattleToken;
+  const { data, error } = await db.from('battle_tokens').insert([row]).select().single();
+  if (error || !data) fail('Não foi possível criar a peça', error);
+  return data as BattleToken;
 }
 
-export async function updateBattleToken(
-  id: string,
-  updates: Partial<BattleToken>,
-): Promise<BattleToken> {
-  const payload = {
-    ...updates,
-    updated_at: new Date().toISOString(),
-  };
-
-  try {
-    const { data, error } = await battleSupabase
-      .from('battle_tokens')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (!error && data) return data as BattleToken;
-  } catch (_) {}
-
-  try {
-    const { data, error } = await mainSupabase
-      .from('battle_tokens' as any)
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (!error && data) return data as unknown as BattleToken;
-  } catch (_) {}
-
-  return { id, ...updates } as BattleToken;
+export async function updateBattleToken(id: string, updates: Partial<BattleToken>): Promise<BattleToken> {
+  const db = await getBattleDb();
+  const { id: _i, hp: _hp, max_hp: _mhp, ...patch } = updates;
+  const { data, error } = await db
+    .from('battle_tokens')
+    .update({ ...patch, updated_at: now() })
+    .eq('id', id)
+    .select();
+  if (error) fail('Não foi possível salvar a peça', error);
+  if (!data || data.length === 0) fail('A peça não existe mais no banco', null);
+  return data[0] as BattleToken;
 }
 
-export async function deleteBattleToken(id: string): Promise<boolean> {
-  try {
-    const { error } = await battleSupabase
-      .from('battle_tokens')
-      .delete()
-      .eq('id', id);
-    if (!error) return true;
-  } catch (_) {}
-
-  try {
-    await mainSupabase.from('battle_tokens' as any).delete().eq('id', id);
-    return true;
-  } catch (_) {}
-
-  return true;
+export async function deleteBattleToken(id: string): Promise<void> {
+  const db = await getBattleDb();
+  const { error } = await db.from('battle_tokens').delete().eq('id', id);
+  if (error) fail('Não foi possível remover a peça', error);
 }
 
+/** Movimento do jogador: RPC (valida passos no servidor) ou, se não existir, update direto. */
 export async function moverTokenRpc(
   tokenId: string,
   c: number,
@@ -427,124 +219,52 @@ export async function moverTokenRpc(
   path: Array<[number, number]>,
   currentMovesLeft?: number,
 ): Promise<boolean> {
-  try {
-    const { data, error } = await battleSupabase.rpc('mover_token', {
-      p_token: tokenId,
-      p_c: c,
-      p_r: r,
-      p_path: path,
-    });
+  const db = await getBattleDb();
+  const { data, error } = await db.rpc('mover_token', { p_token: tokenId, p_c: c, p_r: r, p_path: path });
+  if (!error && (data as { success?: boolean } | null)?.success !== false) return true;
 
-    if (!error && data && (data as any).success) {
-      return true;
-    }
-  } catch (_) {}
-
-  try {
-    const { error } = await battleSupabase
-      .from('battle_tokens')
-      .update({
-        c,
-        r,
-        path,
-        moves_left: Math.max(0, (currentMovesLeft ?? 6) - path.length),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', tokenId);
-
-    if (!error) return true;
-  } catch (_) {}
-
+  await updateBattleToken(tokenId, {
+    c,
+    r,
+    path,
+    moves_left: Math.max(0, (currentMovesLeft ?? 6) - path.length),
+  });
   return true;
 }
 
-// ── 3. NOVA RODADA (Restaura movimentos) ──
-export async function novaRodadaRPC(
-  mapId: string,
-): Promise<{ success: boolean; round: number }> {
-  try {
-    const { data, error } = await battleSupabase.rpc('nova_rodada_batalha', {
-      p_map_id: mapId,
-    });
+/** Nova rodada: RPC ou, se não existir, incrementa a rodada e restaura os passos. */
+export async function novaRodadaRPC(mapId: string): Promise<{ success: boolean; round: number }> {
+  const db = await getBattleDb();
+  const { data, error } = await db.rpc('nova_rodada_batalha', { p_map_id: mapId });
+  if (!error && (data as { success?: boolean })?.success) {
+    return { success: true, round: (data as { round?: number }).round || 1 };
+  }
 
-    if (!error && data && (data as any).success) {
-      return { success: true, round: (data as any).round || 1 };
-    }
-  } catch (_) {}
-
-  try {
-    const map = await fetchActiveBattleMap();
-    const nextRound = (map?.round || 1) + 1;
-
-    await updateBattleMap(mapId, { round: nextRound });
-    await battleSupabase
-      .from('battle_tokens')
-      .update({ moves_left: map?.move_limit || 6, updated_at: new Date().toISOString() })
-      .eq('map_id', mapId)
-      .eq('kind', 'heroi');
-
-    return { success: true, round: nextRound };
-  } catch (_) {}
-
-  return { success: true, round: 2 };
+  const { data: map, error: me } = await db.from('battle_maps').select('round, move_limit').eq('id', mapId).single();
+  if (me || !map) fail('Mesa não encontrada', me);
+  const round = Number(map.round || 1) + 1;
+  await updateBattleMap(mapId, { round });
+  const { error: te } = await db
+    .from('battle_tokens')
+    .update({ moves_left: map.move_limit || 6, updated_at: now() })
+    .eq('map_id', mapId);
+  if (te) fail('Rodada avançada, mas os passos não foram restaurados', te);
+  return { success: true, round };
 }
 
-// ── 4. BUSCA NO CATÁLOGO DO BESTIÁRIO ──
-export async function fetchCreatureCatalog(
-  search = '',
-  limit = 20,
-): Promise<any[]> {
-  try {
-    let query = mainSupabase
-      .from('creature_catalog')
-      .select('id, name, species, category, size, threat, max_hp, defense, image_url, description')
-      .order('name', { ascending: true })
-      .limit(limit);
+// ── 3. BESTIÁRIO ──
 
-    if (search.trim()) {
-      query = query.ilike('name', `%${search.trim()}%`);
-    }
-
-    const { data, error } = await query;
-    if (!error && data && data.length > 0) return data;
-  } catch (_) {}
-
-  return [
-    {
-      id: 'tigre_serpente',
-      name: 'Tigre-Serpente',
-      species: 'Monstruosidade',
-      category: 'Fera',
-      size: 'Médio',
-      threat: 3,
-      max_hp: 28,
-      defense: 12,
-      image_url: '/batalha/fera_idle.webm',
-      description: 'Predador silencioso dos pântanos com pele venenosa.',
-    },
-    {
-      id: 'lobo_peste',
-      name: 'Lobo da Peste',
-      species: 'Besta Corrompida',
-      category: 'Fera',
-      size: 'Médio',
-      threat: 2,
-      max_hp: 18,
-      defense: 10,
-      image_url: '/batalha/fera_idle.webm',
-      description: 'Lobo emaciado portador do esporo sombrio.',
-    },
-    {
-      id: 'hidra_venenosa',
-      name: 'Hidra Abissal',
-      species: 'Monstruosidade',
-      category: 'Fera',
-      size: 'Grande',
-      threat: 5,
-      max_hp: 55,
-      defense: 14,
-      image_url: '/batalha/fera_idle.webm',
-      description: 'Ser serpentino com três cabeças que cospem bile pútrida.',
-    },
-  ];
+export async function fetchCreatureCatalog(search = '', limit = 20): Promise<any[]> {
+  let query = mainSupabase
+    .from('creature_catalog')
+    .select('id, name, species, category, size, threat, max_hp, defense, image_url, description')
+    .order('name', { ascending: true })
+    .limit(limit);
+  if (search.trim()) query = query.ilike('name', `%${search.trim()}%`);
+  const { data, error } = await query;
+  if (error) {
+    console.warn('[mesa] bestiário indisponível:', error.message);
+    return [];
+  }
+  return data ?? [];
 }

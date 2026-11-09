@@ -21,7 +21,7 @@ import {
   uploadBattleMedia,
 } from '../media/mediaProcessor.ts';
 import { supabase } from '../../../shared/supabase/client.ts';
-import { battleSupabase } from '../api/battleApi.ts';
+import { getBattleDb } from '../api/battleApi.ts';
 import type { ChromaMode } from '../engine/types.ts';
 
 export interface MediaBattleTarget {
@@ -432,7 +432,7 @@ export function MediaBattleModal({
       };
 
       try {
-        await battleSupabase
+        await (await getBattleDb())
           .from('battle_tokens')
           .update(tokenUpdates)
           .or(`hero_id.eq.${id},beast_id.eq.${id},id.eq.${id}`);
