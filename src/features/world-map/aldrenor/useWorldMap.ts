@@ -160,6 +160,17 @@ export function useWorldMap(role: 'player' | 'dm') {
     return (placesQ.data ?? []).map((r) => fromRow(r, majorNames));
   }, [geo.data, usingBase, placesQ.data, majorNames]);
 
+  /** Lugares do mapa base que ainda não estão no banco (mesmo nome ou mesmo ponto). */
+  const missingBase = useMemo<BasePlace[]>(() => {
+    if (!geo.data || usingBase) return [];
+    const rows = placesQ.data ?? [];
+    const names = new Set(rows.map((r) => String(r.name ?? '').trim().toLowerCase()));
+    const spots = new Set(rows.map((r) => `${Math.round(Number(r.x) / 4)},${Math.round(Number(r.y) / 4)}`));
+    return geo.data.places.filter(
+      (p) => !names.has(p.name.trim().toLowerCase()) && !spots.has(`${Math.round(p.x / 4)},${Math.round(p.y / 4)}`),
+    );
+  }, [geo.data, usingBase, placesQ.data]);
+
   const hiddenRegions = useMemo(
     () => new Set((regionsQ.data ?? []).filter((r) => r.discovered === false).map((r) => r.region_id)),
     [regionsQ.data],
@@ -169,6 +180,8 @@ export function useWorldMap(role: 'player' | 'dm') {
     geo,
     places,
     usingBase,
+    missingBase,
+    dbCount: placesQ.data?.length ?? 0,
     loading: geo.isLoading || placesQ.isLoading,
     error: (geo.error || placesQ.error) as Error | null,
     hiddenRegions,
@@ -270,7 +283,7 @@ export function useWorldMapActions() {
       return rows.length;
     },
     onSuccess: (n) => {
-      toast.success(`${n} lugares importados. Agora você pode editar tudo.`);
+      toast.success(`${n} lugares adicionados ao banco. Agora você pode editar tudo.`);
       void qc.invalidateQueries({ queryKey: ['world-map', 'places'] });
     },
     onError: report('Falha ao importar'),

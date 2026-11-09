@@ -46,7 +46,7 @@ const MOBILE_SHEET = 0.6;
 export function AldrenorMapView({ role, playerId = 'mestre', onEnterCity }: Props) {
   const isDm = role === 'dm';
   const me = isDm ? 'mestre' : playerId;
-  const { geo, places, usingBase, loading, error, hiddenRegions, state, pins } = useWorldMap(role);
+  const { geo, places, usingBase, missingBase, dbCount, loading, error, hiddenRegions, state, pins } = useWorldMap(role);
   const actions = useWorldMapActions();
   const data = geo.data;
 
@@ -119,6 +119,16 @@ export function AldrenorMapView({ role, playerId = 'mestre', onEnterCity }: Prop
       engineRef.current = null;
     };
   }, [data]);
+
+  // Mestre com lugares para importar: abre o painel uma vez para o aviso aparecer.
+  const needsImport = isDm && !loading && (usingBase || missingBase.length > 0);
+  const openedForImport = useRef(false);
+  useEffect(() => {
+    if (needsImport && !openedForImport.current) {
+      openedForImport.current = true;
+      setPanelOpen(true);
+    }
+  }, [needsImport]);
 
   const panelInset = panelOpen && !isMobile ? PANEL_W : 0;
   const sheetOpen = panelOpen && isMobile;
@@ -323,7 +333,10 @@ export function AldrenorMapView({ role, playerId = 'mestre', onEnterCity }: Prop
       )}
 
       {/* Ferramentas */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5">
+      <div
+        className="absolute top-3 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5"
+        style={{ left: `calc(50% + ${panelInset / 2}px)` }}
+      >
         <div className="flex gap-1 p-1 border border-[var(--iron)] bg-[var(--stone)]/95 shadow-[0_6px_18px_rgba(0,0,0,0.5)]">
           {tools.map((t) => (
             <button
@@ -429,20 +442,28 @@ export function AldrenorMapView({ role, playerId = 'mestre', onEnterCity }: Prop
               </span>
             </div>
 
-            {isDm && usingBase && (
+            {isDm && (usingBase || missingBase.length > 0) && (
               <div className="p-2.5 border border-[var(--gold-lo)] bg-[var(--gold)]/10 text-xs text-[var(--text)] flex flex-col gap-2">
                 <p>
-                  Você está vendo o <b>mapa base</b>. Para editar lugares, importe-os para o banco (uma vez só).
+                  {usingBase ? (
+                    <>
+                      Você está vendo o <b>mapa base</b>. Para editar lugares, importe-os para o banco (uma vez só).
+                    </>
+                  ) : (
+                    <>
+                      O banco tem <b>{dbCount}</b> lugares; faltam <b>{missingBase.length}</b> do mapa base de Aldrenor.
+                    </>
+                  )}
                 </p>
                 <button
                   type="button"
                   disabled={actions.importBase.isPending}
-                  onClick={() => actions.importBase.mutate(data.places)}
+                  onClick={() => actions.importBase.mutate(usingBase ? data.places : missingBase)}
                   data-testid="btn-import-places"
                   className="h-8 border border-[var(--gold)] bg-[var(--gold)] text-[var(--abyss)] text-xs cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5"
                 >
                   {actions.importBase.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  Importar {data.places.length} lugares
+                  {usingBase ? `Importar ${data.places.length} lugares` : `Adicionar ${missingBase.length} lugares que faltam`}
                 </button>
               </div>
             )}
