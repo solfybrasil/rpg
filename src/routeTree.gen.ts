@@ -17,6 +17,7 @@ import { Route as MesaRouteImport } from './routes/mesa'
 import { Route as MestreRouteImport } from './routes/mestre'
 import { Route as TvRouteImport } from './routes/tv'
 import { Route as JogadorArvoreRouteImport } from './routes/jogador/arvore'
+import { Route as JogadorBaseRouteImport } from './routes/jogador/base'
 import { Route as JogadorCombateRouteImport } from './routes/jogador/combate'
 import { Route as JogadorDadosRouteImport } from './routes/jogador/dados'
 import { Route as JogadorDiarioRouteImport } from './routes/jogador/diario'
@@ -30,6 +31,7 @@ import { Route as JogadorMochilaRouteImport } from './routes/jogador/mochila'
 import { Route as JogadorOficinaRouteImport } from './routes/jogador/oficina'
 import { Route as JogadorReceitasRouteImport } from './routes/jogador/receitas'
 import { Route as MestreIndexRouteImport } from './routes/mestre/index'
+import { Route as MestreBaseRouteImport } from './routes/mestre/base'
 import { Route as MestreBestiarioRouteImport } from './routes/mestre/bestiario'
 import { Route as MestreCampanhaRouteImport } from './routes/mestre/campanha'
 import { Route as MestreGrimorioRouteImport } from './routes/mestre/grimorio'
@@ -78,6 +80,11 @@ const TvRoute = TvRouteImport.update({
 const JogadorArvoreRoute = JogadorArvoreRouteImport.update({
   id: '/arvore',
   path: '/arvore',
+  getParentRoute: () => JogadorRoute,
+} as any)
+const JogadorBaseRoute = JogadorBaseRouteImport.update({
+  id: '/base',
+  path: '/base',
   getParentRoute: () => JogadorRoute,
 } as any)
 const JogadorCombateRoute = JogadorCombateRouteImport.update({
@@ -145,6 +152,11 @@ const MestreIndexRoute = MestreIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MestreRoute,
 } as any)
+const MestreBaseRoute = MestreBaseRouteImport.update({
+  id: '/base',
+  path: '/base',
+  getParentRoute: () => MestreRoute,
+} as any)
 const MestreBestiarioRoute = MestreBestiarioRouteImport.update({
   id: '/bestiario',
   path: '/bestiario',
@@ -200,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/mestre': typeof MestreRouteWithChildren
   '/tv': typeof TvRoute
   '/jogador/arvore': typeof JogadorArvoreRoute
+  '/jogador/base': typeof JogadorBaseRoute
   '/jogador/combate': typeof JogadorCombateRoute
   '/jogador/dados': typeof JogadorDadosRoute
   '/jogador/diario': typeof JogadorDiarioRoute
@@ -212,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/jogador/mochila': typeof JogadorMochilaRoute
   '/jogador/oficina': typeof JogadorOficinaRoute
   '/jogador/receitas': typeof JogadorReceitasRoute
+  '/mestre/base': typeof MestreBaseRoute
   '/mestre/bestiario': typeof MestreBestiarioRoute
   '/mestre/campanha': typeof MestreCampanhaRoute
   '/mestre/grimorio': typeof MestreGrimorioRoute
@@ -231,6 +245,7 @@ export interface FileRoutesByTo {
   '/mesa': typeof MesaRoute
   '/tv': typeof TvRoute
   '/jogador/arvore': typeof JogadorArvoreRoute
+  '/jogador/base': typeof JogadorBaseRoute
   '/jogador/combate': typeof JogadorCombateRoute
   '/jogador/dados': typeof JogadorDadosRoute
   '/jogador/diario': typeof JogadorDiarioRoute
@@ -243,6 +258,7 @@ export interface FileRoutesByTo {
   '/jogador/mochila': typeof JogadorMochilaRoute
   '/jogador/oficina': typeof JogadorOficinaRoute
   '/jogador/receitas': typeof JogadorReceitasRoute
+  '/mestre/base': typeof MestreBaseRoute
   '/mestre/bestiario': typeof MestreBestiarioRoute
   '/mestre/campanha': typeof MestreCampanhaRoute
   '/mestre/grimorio': typeof MestreGrimorioRoute
@@ -264,6 +280,7 @@ export interface FileRoutesById {
   '/mestre': typeof MestreRouteWithChildren
   '/tv': typeof TvRoute
   '/jogador/arvore': typeof JogadorArvoreRoute
+  '/jogador/base': typeof JogadorBaseRoute
   '/jogador/combate': typeof JogadorCombateRoute
   '/jogador/dados': typeof JogadorDadosRoute
   '/jogador/diario': typeof JogadorDiarioRoute
@@ -276,6 +293,7 @@ export interface FileRoutesById {
   '/jogador/mochila': typeof JogadorMochilaRoute
   '/jogador/oficina': typeof JogadorOficinaRoute
   '/jogador/receitas': typeof JogadorReceitasRoute
+  '/mestre/base': typeof MestreBaseRoute
   '/mestre/bestiario': typeof MestreBestiarioRoute
   '/mestre/campanha': typeof MestreCampanhaRoute
   '/mestre/grimorio': typeof MestreGrimorioRoute
@@ -298,6 +316,7 @@ export interface FileRouteTypes {
     | '/mestre'
     | '/tv'
     | '/jogador/arvore'
+    | '/jogador/base'
     | '/jogador/combate'
     | '/jogador/dados'
     | '/jogador/diario'
@@ -310,6 +329,7 @@ export interface FileRouteTypes {
     | '/jogador/mochila'
     | '/jogador/oficina'
     | '/jogador/receitas'
+    | '/mestre/base'
     | '/mestre/bestiario'
     | '/mestre/campanha'
     | '/mestre/grimorio'
@@ -329,6 +349,7 @@ export interface FileRouteTypes {
     | '/mesa'
     | '/tv'
     | '/jogador/arvore'
+    | '/jogador/base'
     | '/jogador/combate'
     | '/jogador/dados'
     | '/jogador/diario'
@@ -341,6 +362,7 @@ export interface FileRouteTypes {
     | '/jogador/mochila'
     | '/jogador/oficina'
     | '/jogador/receitas'
+    | '/mestre/base'
     | '/mestre/bestiario'
     | '/mestre/campanha'
     | '/mestre/grimorio'
@@ -361,6 +383,7 @@ export interface FileRouteTypes {
     | '/mestre'
     | '/tv'
     | '/jogador/arvore'
+    | '/jogador/base'
     | '/jogador/combate'
     | '/jogador/dados'
     | '/jogador/diario'
@@ -373,6 +396,7 @@ export interface FileRouteTypes {
     | '/jogador/mochila'
     | '/jogador/oficina'
     | '/jogador/receitas'
+    | '/mestre/base'
     | '/mestre/bestiario'
     | '/mestre/campanha'
     | '/mestre/grimorio'
@@ -451,6 +475,13 @@ declare module '@tanstack/react-router' {
       path: '/arvore'
       fullPath: '/jogador/arvore'
       preLoaderRoute: typeof JogadorArvoreRouteImport
+      parentRoute: typeof JogadorRoute
+    }
+    '/jogador/base': {
+      id: '/jogador/base'
+      path: '/base'
+      fullPath: '/jogador/base'
+      preLoaderRoute: typeof JogadorBaseRouteImport
       parentRoute: typeof JogadorRoute
     }
     '/jogador/combate': {
@@ -544,6 +575,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MestreIndexRouteImport
       parentRoute: typeof MestreRoute
     }
+    '/mestre/base': {
+      id: '/mestre/base'
+      path: '/base'
+      fullPath: '/mestre/base'
+      preLoaderRoute: typeof MestreBaseRouteImport
+      parentRoute: typeof MestreRoute
+    }
     '/mestre/bestiario': {
       id: '/mestre/bestiario'
       path: '/bestiario'
@@ -612,6 +650,7 @@ declare module '@tanstack/react-router' {
 
 interface JogadorRouteChildren {
   JogadorArvoreRoute: typeof JogadorArvoreRoute
+  JogadorBaseRoute: typeof JogadorBaseRoute
   JogadorCombateRoute: typeof JogadorCombateRoute
   JogadorDadosRoute: typeof JogadorDadosRoute
   JogadorDiarioRoute: typeof JogadorDiarioRoute
@@ -628,6 +667,7 @@ interface JogadorRouteChildren {
 
 const JogadorRouteChildren: JogadorRouteChildren = {
   JogadorArvoreRoute: JogadorArvoreRoute,
+  JogadorBaseRoute: JogadorBaseRoute,
   JogadorCombateRoute: JogadorCombateRoute,
   JogadorDadosRoute: JogadorDadosRoute,
   JogadorDiarioRoute: JogadorDiarioRoute,
@@ -646,6 +686,7 @@ const JogadorRouteWithChildren =
   JogadorRoute._addFileChildren(JogadorRouteChildren)
 
 interface MestreRouteChildren {
+  MestreBaseRoute: typeof MestreBaseRoute
   MestreBestiarioRoute: typeof MestreBestiarioRoute
   MestreCampanhaRoute: typeof MestreCampanhaRoute
   MestreGrimorioRoute: typeof MestreGrimorioRoute
@@ -659,6 +700,7 @@ interface MestreRouteChildren {
 }
 
 const MestreRouteChildren: MestreRouteChildren = {
+  MestreBaseRoute: MestreBaseRoute,
   MestreBestiarioRoute: MestreBestiarioRoute,
   MestreCampanhaRoute: MestreCampanhaRoute,
   MestreGrimorioRoute: MestreGrimorioRoute,

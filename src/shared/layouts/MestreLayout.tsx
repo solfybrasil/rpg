@@ -15,11 +15,12 @@ const DM_SECTIONS = [
   { label: '♙ Jurados', path: '/mestre/jogadores', key: '1' },
   { label: '♜ Mesa', path: '/mestre/mesa', key: '2' },
   { label: '⌖ Mapa', path: '/mestre/mapa', key: '3' },
-  { label: '♞ Bestiário', path: '/mestre/bestiario', key: '4' },
-  { label: '⚒ Itens', path: '/mestre/itens', key: '5' },
-  { label: '⚒ Oficina', path: '/mestre/oficina', key: '6' },
-  { label: '▤ Grimórios', path: '/mestre/grimorio', key: '7' },
-  { label: '⚙ Sistema', path: '/mestre/sistema', key: '8' },
+  { label: '⌂ Base', path: '/mestre/base', key: '4' },
+  { label: '♞ Bestiário', path: '/mestre/bestiario', key: '5' },
+  { label: '⚒ Itens', path: '/mestre/itens', key: '6' },
+  { label: '⚒ Oficina', path: '/mestre/oficina', key: '7' },
+  { label: '▤ Grimórios', path: '/mestre/grimorio', key: '8' },
+  { label: '⚙ Sistema', path: '/mestre/sistema', key: '9' },
 ] as const;
 
 function isActive(currentPath: string, itemPath: string) {
@@ -42,7 +43,7 @@ export const MestreLayout: React.FC = () => {
   const currentIndexRef = useRef(currentIndex);
   currentIndexRef.current = currentIndex;
 
-  // Navegação por teclado: Q / E (anterior/próxima) e 1-8
+  // Navegação por teclado: Q / E (anterior/próxima) e 1-9
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;

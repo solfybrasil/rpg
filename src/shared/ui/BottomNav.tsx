@@ -3,6 +3,7 @@ import {
   Anvil,
   Backpack,
   BookOpen,
+  House,
   MapPin,
   Menu,
   Scroll,
@@ -34,6 +35,7 @@ export const BottomNav: React.FC<BottomNavProps> = () => {
     { label: 'Oficina', icon: <Anvil size={22} />, to: '/jogador/oficina' },
     { label: 'Receitas', icon: <Scroll size={22} />, to: '/jogador/receitas' },
     { label: 'Mapa', icon: <MapPin size={22} />, to: '/jogador/mapa' },
+    { label: 'Base', icon: <House size={22} />, to: '/jogador/base' },
     { label: 'Loja', icon: <Store size={22} />, to: '/jogador/loja' },
   ];
 
