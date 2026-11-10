@@ -59,7 +59,7 @@ Ignore RPG game stats, dice, damage numbers, mechanics, and lore. Focus ONLY on 
 Reply with ONLY the English visual description (max 15 words). No quotes, no explanations.
 Examples:
 - "Alaúde do Bardo" -> "wooden lute musical instrument, polished dark pear-shaped body with strings and tuning pegs"
-- "Adaga de cobre temperado" -> "copper dagger, sharp tempered copper blade, wrapped leather hilt"
+- "Adaga de cobre temperado" -> "tempered copper dagger, sharp reddish copper blade with dark wrapped hilt and brass pommel"
 - "Ácido de pedra" -> "bubbling green acid potion vial in ornate glass bottle"`,
           },
           {
@@ -130,7 +130,7 @@ serve(async (req) => {
         cfApiToken
       );
 
-      const fullPrompt = `Fantasy RPG inventory icon of ${visualPrompt}, single object centered, full view, painterly game asset style, dark fantasy, warm soft lighting, plain dark stone background, no text, no border, square`;
+      const fullPrompt = `Fantasy RPG inventory item icon of ${visualPrompt}, single object centered, full view, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no text, no border, square`;
 
       const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
       const resp = await fetch(cfUrl, {
@@ -242,7 +242,6 @@ serve(async (req) => {
       );
     }
 
-    // Agrupa por família (máximo 10 famílias por execução)
     const familyMap = new Map<string, typeof pendingItems[0]>();
     for (const item of pendingItems) {
       const family = item.image_family || item.id;
@@ -254,7 +253,6 @@ serve(async (req) => {
     const selectedFamilies = Array.from(familyMap.entries());
     const processedResults = [];
 
-    // Marca as famílias selecionadas como 'gerando'
     for (const [family] of selectedFamilies) {
       await supabase
         .from("item_catalog")
@@ -262,7 +260,6 @@ serve(async (req) => {
         .eq("image_family", family);
     }
 
-    // Processa cada família com FLUX
     for (let i = 0; i < selectedFamilies.length; i++) {
       const [family, sampleItem] = selectedFamilies[i];
       const visualPrompt =
@@ -275,7 +272,7 @@ serve(async (req) => {
           cfApiToken
         ));
 
-      const fullPrompt = `Fantasy RPG inventory icon of ${visualPrompt}, single object centered, full view, painterly game asset style, dark fantasy, warm soft lighting, plain dark stone background, no text, no border, square`;
+      const fullPrompt = `Fantasy RPG inventory item icon of ${visualPrompt}, single object centered, full view, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no text, no border, square`;
 
       try {
         const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
@@ -288,7 +285,6 @@ serve(async (req) => {
           body: JSON.stringify({ prompt: fullPrompt, steps: 4 }),
         });
 
-        // Verificação de Cota / Limite
         if (resp.status === 429) {
           console.warn("⚠️ Cota diária da Cloudflare atingida (HTTP 429). Interrompendo execução.");
           for (let j = i; j < selectedFamilies.length; j++) {

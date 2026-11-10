@@ -69,9 +69,9 @@ export async function generateItemImageWithAI(
     console.warn('[AI Image] Erro ao invocar gerar-imagens-itens no Supabase:', err);
   }
 
-  // 3. Fallback client-side direto com o mesmo prompt FLUX (dark fantasy, stone background)
+  // 3. Fallback client-side direto com o mesmo prompt FLUX e fundo cinza sólido
   const desc = params.description ? params.description.slice(0, 80) : params.category || 'equipment';
-  const prompt = `Fantasy RPG inventory icon of ${params.name}, ${desc}, single object centered, full view, painterly game asset style, dark fantasy, warm soft lighting, plain dark stone background, no text, no border, square`;
+  const prompt = `Fantasy RPG inventory item icon of ${params.name}, ${desc}, single object centered, full view, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no text, no border, square`;
   const seed = Math.floor(Math.random() * 1000000);
   const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=flux&width=512&height=512&nologo=true&seed=${seed}`;
 

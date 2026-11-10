@@ -12,7 +12,6 @@ async function translateToVisualEnglishPrompt(
   cfAccountId: string,
   cfApiToken: string,
 ): Promise<string> {
-  // 1. Tentar IA de texto Llama 3.1 da Cloudflare para tradução visual precisa
   try {
     const llamaUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`;
     const res = await fetch(llamaUrl, {
@@ -26,13 +25,13 @@ async function translateToVisualEnglishPrompt(
           {
             role: 'system',
             content: `You are an expert RPG visual asset artist. Convert the Portuguese item name and description into a clear, precise English physical description for an icon generator.
-Identify the exact physical object (e.g. "Alaúde" -> "lute musical instrument", "Adaga" -> "dagger", "Ácido" -> "acid potion vial", "Espada" -> "sword", "Poção" -> "potion bottle", "Armadura" -> "armor").
+Identify the exact physical object (e.g. "Alaúde" -> "wooden lute musical instrument", "Adaga" -> "dagger", "Ácido" -> "acid potion vial", "Espada" -> "sword", "Poção" -> "potion bottle", "Armadura" -> "armor").
 Describe its material, color, and distinctive physical visual shape.
 Ignore RPG game stats, dice, damage numbers, mechanics, and lore. Focus ONLY on what the object physically looks like.
 Reply with ONLY the English visual description (max 15 words). No quotes, no explanations.
 Examples:
 - "Alaúde do Bardo" -> "wooden lute musical instrument, polished dark pear-shaped body with strings and tuning pegs"
-- "Adaga de cobre temperado" -> "copper dagger, sharp tempered copper blade, wrapped leather hilt"
+- "Adaga de cobre temperado" -> "tempered copper dagger, sharp reddish copper blade with dark wrapped hilt and brass pommel"
 - "Ácido de pedra" -> "bubbling green acid potion vial in ornate glass bottle"`,
           },
           {
@@ -56,7 +55,6 @@ Examples:
     console.warn('[AI Translator] Falha no Llama 3.1, usando fallback de dicionário:', err.message);
   }
 
-  // 2. Dicionário de termos comuns de RPG caso a IA de texto falhe
   let cleanName = (name || '').toLowerCase();
   cleanName = cleanName.replace(/\b(alaude|alaúde)\b/gi, 'wooden lute musical instrument');
   cleanName = cleanName.replace(/\b(adaga)\b/gi, 'dagger');
@@ -110,8 +108,8 @@ function aiItemGeneratorPlugin(env: Record<string, string>) {
                 cfApiToken,
               );
 
-              // 2. Montagem do prompt FLUX padronizado
-              const prompt = `Fantasy RPG inventory icon of ${visualPrompt}, single object centered, full view, painterly game asset style, dark fantasy, warm soft lighting, plain dark stone background, no text, no border, square`;
+              // 2. Montagem do prompt FLUX padronizado com fundo CINZA sólido
+              const prompt = `Fantasy RPG inventory item icon of ${visualPrompt}, single object centered, full view, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no text, no border, square`;
 
               // 3. Chamada ao FLUX-1-schnell
               const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
