@@ -176,9 +176,9 @@ function aiItemGeneratorPlugin(env: Record<string, string>) {
               return;
             } catch (err: any) {
               console.error('[AI Generator Plugin] Erro:', err.message);
-              res.statusCode = 500;
+              res.statusCode = 200;
               res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ error: err.message }));
+              res.end(JSON.stringify({ success: false, error: err.message }));
             }
           });
           return;

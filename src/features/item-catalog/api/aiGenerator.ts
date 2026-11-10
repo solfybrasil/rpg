@@ -45,10 +45,14 @@ export async function generateItemImageWithAI(
       };
     }
 
+    // Se o endpoint local retornou uma mensagem de erro específica (ex: cota da Cloudflare), lançar diretamente
     if (data?.error) {
-      lastError = data.error;
+      throw new Error(data.error);
     }
   } catch (err: any) {
+    if (err?.message && !err.message.includes('Failed to fetch')) {
+      throw err;
+    }
     console.warn('[AI Image] Falha no endpoint local Vite:', err);
     lastError = err?.message || 'Falha na conexão com o servidor local.';
   }
