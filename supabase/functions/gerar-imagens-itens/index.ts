@@ -54,13 +54,14 @@ async function translateToVisualEnglishPrompt(
             role: "system",
             content: `You are an expert RPG visual asset artist. Convert the Portuguese item name and description into a clear, precise English physical description for an icon generator.
 Identify the exact physical object (e.g. "Alaúde" -> "wooden lute musical instrument", "Adaga" -> "dagger", "Ácido" -> "acid potion vial", "Espada" -> "sword", "Poção" -> "potion bottle", "Armadura" -> "armor").
+CRITICAL RULE: Always describe exactly ONE single solitary object. Never describe pairs, dual weapons, sets, or multiples (e.g. "single dagger", "one potion vial", "single sword").
 Describe its material, color, and distinctive physical visual shape.
 Ignore RPG game stats, dice, damage numbers, mechanics, and lore. Focus ONLY on what the object physically looks like.
 Reply with ONLY the English visual description (max 15 words). No quotes, no explanations.
 Examples:
-- "Alaúde do Bardo" -> "wooden lute musical instrument, polished dark pear-shaped body with strings and tuning pegs"
-- "Adaga de cobre temperado" -> "tempered copper dagger, sharp reddish copper blade with dark wrapped hilt and brass pommel"
-- "Ácido de pedra" -> "bubbling green acid potion vial in ornate glass bottle"`,
+- "Alaúde do Bardo" -> "single wooden lute musical instrument, polished dark pear-shaped body with strings"
+- "Adaga de cobre temperado" -> "single tempered copper dagger, sharp reddish copper blade with dark hilt"
+- "Ácido de pedra" -> "one bubbling green acid potion vial in ornate glass bottle"`,
           },
           {
             role: "user",
@@ -130,7 +131,7 @@ serve(async (req) => {
         cfApiToken
       );
 
-      const fullPrompt = `Fantasy RPG inventory item icon of ${visualPrompt}, single object centered, full view, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no text, no border, square`;
+      const fullPrompt = `Fantasy RPG inventory item icon of exactly one single standalone ${visualPrompt}, solitary solo object centered, full view, isolated single item, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no multiple objects, no pairs, no second item, no dual weapons, no duplicates, no text, no border, square`;
 
       const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
       const resp = await fetch(cfUrl, {
@@ -272,7 +273,7 @@ serve(async (req) => {
           cfApiToken
         ));
 
-      const fullPrompt = `Fantasy RPG inventory item icon of ${visualPrompt}, single object centered, full view, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no text, no border, square`;
+      const fullPrompt = `Fantasy RPG inventory item icon of exactly one single standalone ${visualPrompt}, solitary solo object centered, full view, isolated single item, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no multiple objects, no pairs, no second item, no dual weapons, no duplicates, no text, no border, square`;
 
       try {
         const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;

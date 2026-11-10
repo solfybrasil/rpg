@@ -15,7 +15,7 @@ export interface GenerateItemImageParams {
 export interface GenerateItemImageResult {
   imageUrl: string;
   promptEn?: string;
-  provider: 'cloudflare-flux' | 'pollinations-flux';
+  provider: 'cloudflare-flux';
 }
 
 export async function generateItemImageWithAI(
@@ -25,7 +25,9 @@ export async function generateItemImageWithAI(
     throw new Error('Informe o nome do artigo antes de gerar a imagem.');
   }
 
-  // 1. Tentar endpoint local do Vite (servidor de desenvolvimento com Cloudflare FLUX)
+  let lastError: string | null = null;
+
+  // 1. Tentar endpoint do Vite (servidor com Cloudflare FLUX)
   try {
     const res = await fetch('/api/ai/generate-item-image', {
       method: 'POST',
@@ -33,21 +35,25 @@ export async function generateItemImageWithAI(
       body: JSON.stringify(params),
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.imageUrl) {
-        return {
-          imageUrl: data.imageUrl,
-          promptEn: data.promptEn,
-          provider: 'cloudflare-flux',
-        };
-      }
+    const data = await res.json().catch(() => null);
+
+    if (res.ok && data?.imageUrl) {
+      return {
+        imageUrl: data.imageUrl,
+        promptEn: data.promptEn,
+        provider: 'cloudflare-flux',
+      };
     }
-  } catch (err) {
-    console.warn('[AI Image] Endpoint local Vite indisponível, tentando Edge Function:', err);
+
+    if (data?.error) {
+      lastError = data.error;
+    }
+  } catch (err: any) {
+    console.warn('[AI Image] Falha no endpoint local Vite:', err);
+    lastError = err?.message || 'Falha na conexão com o servidor local.';
   }
 
-  // 2. Tentar Edge Function Supabase: 'gerar-imagens-itens' (em produção ou se o Vite não estiver interceptando)
+  // 2. Tentar Edge Function Supabase: 'gerar-imagens-itens' (Cloudflare FLUX)
   try {
     const { data, error } = await supabase.functions.invoke('gerar-imagens-itens', {
       body: {
@@ -65,19 +71,18 @@ export async function generateItemImageWithAI(
         provider: 'cloudflare-flux',
       };
     }
-  } catch (err) {
-    console.warn('[AI Image] Erro ao invocar gerar-imagens-itens no Supabase:', err);
+
+    if (error?.message) {
+      lastError = error.message;
+    }
+  } catch (err: any) {
+    console.warn('[AI Image] Erro ao invocar Edge Function:', err);
+    if (!lastError) lastError = err?.message || 'Falha na Edge Function da Cloudflare.';
   }
 
-  // 3. Fallback client-side direto com o mesmo prompt FLUX e fundo cinza sólido
-  const desc = params.description ? params.description.slice(0, 80) : params.category || 'equipment';
-  const prompt = `Fantasy RPG inventory item icon of ${params.name}, ${desc}, single object centered, full view, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no text, no border, square`;
-  const seed = Math.floor(Math.random() * 1000000);
-  const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=flux&width=512&height=512&nologo=true&seed=${seed}`;
-
-  return {
-    imageUrl,
-    promptEn: prompt,
-    provider: 'pollinations-flux',
-  };
+  // Não usar Pollinations! Lançar o erro real da Cloudflare
+  throw new Error(
+    lastError ||
+      'Não foi possível gerar a imagem no Cloudflare FLUX. Verifique as credenciais ou a cota diária gratuita (10.000 neurônios).',
+  );
 }

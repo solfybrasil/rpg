@@ -26,13 +26,14 @@ async function translateToVisualEnglishPrompt(
             role: 'system',
             content: `You are an expert RPG visual asset artist. Convert the Portuguese item name and description into a clear, precise English physical description for an icon generator.
 Identify the exact physical object (e.g. "Alaúde" -> "wooden lute musical instrument", "Adaga" -> "dagger", "Ácido" -> "acid potion vial", "Espada" -> "sword", "Poção" -> "potion bottle", "Armadura" -> "armor").
+CRITICAL RULE: Always describe exactly ONE single solitary object. Never describe pairs, dual weapons, sets, or multiples (e.g. "single dagger", "one potion vial", "single sword").
 Describe its material, color, and distinctive physical visual shape.
 Ignore RPG game stats, dice, damage numbers, mechanics, and lore. Focus ONLY on what the object physically looks like.
 Reply with ONLY the English visual description (max 15 words). No quotes, no explanations.
 Examples:
-- "Alaúde do Bardo" -> "wooden lute musical instrument, polished dark pear-shaped body with strings and tuning pegs"
-- "Adaga de cobre temperado" -> "tempered copper dagger, sharp reddish copper blade with dark wrapped hilt and brass pommel"
-- "Ácido de pedra" -> "bubbling green acid potion vial in ornate glass bottle"`,
+- "Alaúde do Bardo" -> "single wooden lute musical instrument, polished dark pear-shaped body with strings"
+- "Adaga de cobre temperado" -> "single tempered copper dagger, sharp reddish copper blade with dark hilt"
+- "Ácido de pedra" -> "one bubbling green acid potion vial in ornate glass bottle"`,
           },
           {
             role: 'user',
@@ -108,10 +109,10 @@ function aiItemGeneratorPlugin(env: Record<string, string>) {
                 cfApiToken,
               );
 
-              // 2. Montagem do prompt FLUX padronizado com fundo CINZA sólido
-              const prompt = `Fantasy RPG inventory item icon of ${visualPrompt}, single object centered, full view, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no text, no border, square`;
+              // 2. Montagem do prompt FLUX padronizado com fundo CINZA sólido e objeto único
+              const prompt = `Fantasy RPG inventory item icon of exactly one single standalone ${visualPrompt}, solitary solo object centered, full view, isolated single item, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no multiple objects, no pairs, no second item, no dual weapons, no duplicates, no text, no border, square`;
 
-              // 3. Chamada ao FLUX-1-schnell
+              // 3. Chamada EXCLUSIVA ao FLUX-1-schnell da Cloudflare Workers AI
               const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
               const cfRes = await fetch(cfUrl, {
                 method: 'POST',
@@ -124,15 +125,22 @@ function aiItemGeneratorPlugin(env: Record<string, string>) {
 
               if (!cfRes.ok) {
                 const errText = await cfRes.text();
-                throw new Error(`Cloudflare error (${cfRes.status}): ${errText}`);
+                if (cfRes.status === 429 || errText.includes('10,000 neurons') || errText.includes('daily free allocation')) {
+                  throw new Error(
+                    'Cota diária gratuita da Cloudflare atingida (10.000 neurônios diários). A cota zera automaticamente às 21h (00:00 UTC).',
+                  );
+                }
+                throw new Error(`Cloudflare FLUX error (${cfRes.status}): ${errText}`);
               }
 
               const json: any = await cfRes.json();
               if (!json.success || !json.result?.image) {
-                throw new Error('Falha na resposta do FLUX');
+                throw new Error(`Erro na resposta da Cloudflare: ${JSON.stringify(json.errors || json)}`);
               }
 
               const buffer = Buffer.from(json.result.image, 'base64');
+              const provider = 'cloudflare-flux';
+
               const slug = (name || 'item')
                 .toLowerCase()
                 .normalize('NFD')
@@ -162,9 +170,10 @@ function aiItemGeneratorPlugin(env: Record<string, string>) {
                   success: true,
                   imageUrl: publicUrl,
                   promptEn: visualPrompt,
-                  provider: 'cloudflare-flux',
+                  provider,
                 }),
               );
+              return;
             } catch (err: any) {
               console.error('[AI Generator Plugin] Erro:', err.message);
               res.statusCode = 500;
