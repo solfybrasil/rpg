@@ -5,26 +5,60 @@ import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
+interface CloudflareAccount {
+  accountId: string;
+  apiToken: string;
+}
+
+function getCloudflareAccounts(env: Record<string, string>): CloudflareAccount[] {
+  const accounts: CloudflareAccount[] = [];
+  const seen = new Set<string>();
+
+  const addAccount = (id?: string, token?: string) => {
+    const cleanId = (id || '').trim();
+    const cleanToken = (token || '').trim();
+    if (cleanId && cleanToken && !seen.has(cleanId)) {
+      seen.add(cleanId);
+      accounts.push({ accountId: cleanId, apiToken: cleanToken });
+    }
+  };
+
+  for (let i = 1; i <= 5; i++) {
+    addAccount(
+      env[`CF_ACCOUNT_${i}_ID`] || env[`CLOUDFLARE_ACCOUNT_${i}_ID`] || process.env[`CF_ACCOUNT_${i}_ID`],
+      env[`CF_ACCOUNT_${i}_TOKEN`] || env[`CLOUDFLARE_API_${i}_TOKEN`] || process.env[`CF_ACCOUNT_${i}_TOKEN`],
+    );
+  }
+
+  addAccount(
+    env.CLOUDFLARE_ACCOUNT_ID || env.CF_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID,
+    env.CLOUDFLARE_API_TOKEN || env.CF_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN,
+  );
+
+  return accounts;
+}
+
 async function translateToVisualEnglishPrompt(
   name: string,
   description: string,
   category: string,
-  cfAccountId: string,
-  cfApiToken: string,
+  accounts: CloudflareAccount[],
 ): Promise<string> {
-  try {
-    const llamaUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`;
-    const res = await fetch(llamaUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${cfApiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert RPG visual asset artist. Convert the Portuguese item name and description into a clear, precise English physical description for an icon generator.
+  for (let idx = 0; idx < accounts.length; idx++) {
+    const { accountId, apiToken } = accounts[idx];
+    try {
+      const llamaUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`;
+      const res = await fetch(llamaUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: `You are an expert RPG visual asset artist. Convert the Portuguese item name and description into a clear, precise English physical description for an icon generator.
 Identify the exact physical object (e.g. "Alaúde" -> "wooden lute musical instrument", "Adaga" -> "dagger", "Ácido" -> "acid potion vial", "Espada" -> "sword", "Poção" -> "potion bottle", "Armadura" -> "armor").
 CRITICAL RULE: Always describe exactly ONE single solitary object. Never describe pairs, dual weapons, sets, or multiples (e.g. "single dagger", "one potion vial", "single sword").
 Describe its material, color, and distinctive physical visual shape.
@@ -34,26 +68,27 @@ Examples:
 - "Alaúde do Bardo" -> "single wooden lute musical instrument, polished dark pear-shaped body with strings"
 - "Adaga de cobre temperado" -> "single tempered copper dagger, sharp reddish copper blade with dark hilt"
 - "Ácido de pedra" -> "one bubbling green acid potion vial in ornate glass bottle"`,
-          },
-          {
-            role: 'user',
-            content: `Nome: "${name}"\nCategoria: "${category || ''}"\nDescrição: "${(description || '').slice(0, 150)}"`,
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 45,
-      }),
-    });
+            },
+            {
+              role: 'user',
+              content: `Nome: "${name}"\nCategoria: "${category || ''}"\nDescrição: "${(description || '').slice(0, 150)}"`,
+            },
+          ],
+          temperature: 0.1,
+          max_tokens: 45,
+        }),
+      });
 
-    if (res.ok) {
-      const data: any = await res.json();
-      const output = data.result?.response?.trim().replace(/^["']|["']$/g, '');
-      if (output && output.length > 3) {
-        return output;
+      if (res.ok) {
+        const data: any = await res.json();
+        const output = data.result?.response?.trim().replace(/^["']|["']$/g, '');
+        if (output && output.length > 3) {
+          return output;
+        }
       }
+    } catch (err: any) {
+      console.warn(`[AI Translator] Falha no Llama 3.1 na conta ${idx + 1}:`, err.message);
     }
-  } catch (err: any) {
-    console.warn('[AI Translator] Falha no Llama 3.1, usando fallback de dicionário:', err.message);
   }
 
   let cleanName = (name || '').toLowerCase();
@@ -88,57 +123,73 @@ function aiItemGeneratorPlugin(env: Record<string, string>) {
           req.on('end', async () => {
             try {
               const { name, description, category } = JSON.parse(body || '{}');
-              const cfAccountId =
-                env.CLOUDFLARE_ACCOUNT_ID || env.CF_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID || '';
-              const cfApiToken =
-                env.CLOUDFLARE_API_TOKEN || env.CF_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN || '';
+              const accounts = getCloudflareAccounts(env);
 
-              if (!cfAccountId || !cfApiToken) {
-                res.statusCode = 500;
+              if (accounts.length === 0) {
+                res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({ error: 'Chaves da Cloudflare não configuradas no ambiente local.' }));
+                res.end(JSON.stringify({ success: false, error: 'Nenhuma conta Cloudflare configurada no ambiente local.' }));
                 return;
               }
 
-              // 1. Tradução visual precisa baseada no nome e descrição
+              // 1. Tradução visual precisa baseada no nome e descrição (usando o pool de contas)
               const visualPrompt = await translateToVisualEnglishPrompt(
                 name,
                 description || '',
                 category || '',
-                cfAccountId,
-                cfApiToken,
+                accounts,
               );
 
               // 2. Montagem do prompt FLUX padronizado com fundo CINZA sólido e objeto único
               const prompt = `Fantasy RPG inventory item icon of exactly one single standalone ${visualPrompt}, solitary solo object centered, full view, isolated single item, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no multiple objects, no pairs, no second item, no dual weapons, no duplicates, no text, no border, square`;
 
-              // 3. Chamada EXCLUSIVA ao FLUX-1-schnell da Cloudflare Workers AI
-              const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
-              const cfRes = await fetch(cfUrl, {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${cfApiToken}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ prompt, steps: 4 }),
-              });
+              // 3. Chamada com Failover automático entre as contas Cloudflare disponíveis
+              let buffer: Buffer | null = null;
+              let usedAccount: CloudflareAccount | null = null;
+              let lastCfError = '';
 
-              if (!cfRes.ok) {
-                const errText = await cfRes.text();
-                if (cfRes.status === 429 || errText.includes('10,000 neurons') || errText.includes('daily free allocation')) {
+              for (let i = 0; i < accounts.length; i++) {
+                const acc = accounts[i];
+                const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${acc.accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
+                try {
+                  console.info(`[Cloudflare FLUX] Tentando gerar com conta ${i + 1}/${accounts.length} (${acc.accountId.slice(0, 6)}...)...`);
+                  const cfRes = await fetch(cfUrl, {
+                    method: 'POST',
+                    headers: {
+                      Authorization: `Bearer ${acc.apiToken}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt, steps: 4 }),
+                  });
+
+                  if (cfRes.ok) {
+                    const json: any = await cfRes.json();
+                    if (json.success && json.result?.image) {
+                      buffer = Buffer.from(json.result.image, 'base64');
+                      usedAccount = acc;
+                      console.info(`[Cloudflare FLUX] Sucesso na conta ${i + 1}!`);
+                      break;
+                    }
+                  }
+
+                  const errText = await cfRes.text();
+                  console.warn(`[Cloudflare FLUX] Conta ${i + 1} (${acc.accountId.slice(0, 6)}...) retornou erro (${cfRes.status}):`, errText);
+                  lastCfError = errText;
+                } catch (netErr: any) {
+                  console.warn(`[Cloudflare FLUX] Erro de rede na conta ${i + 1}:`, netErr.message);
+                  lastCfError = netErr.message;
+                }
+              }
+
+              if (!buffer) {
+                if (lastCfError.includes('10,000 neurons') || lastCfError.includes('daily free allocation') || lastCfError.includes('429')) {
                   throw new Error(
-                    'Cota diária gratuita da Cloudflare atingida (10.000 neurônios diários). A cota zera automaticamente às 21h (00:00 UTC).',
+                    `Todas as ${accounts.length} contas Cloudflare atingiram a cota diária gratuita (10.000 neurônios cada). A cota zera às 21h (00:00 UTC).`,
                   );
                 }
-                throw new Error(`Cloudflare FLUX error (${cfRes.status}): ${errText}`);
+                throw new Error(`Falha ao gerar nas contas Cloudflare: ${lastCfError}`);
               }
 
-              const json: any = await cfRes.json();
-              if (!json.success || !json.result?.image) {
-                throw new Error(`Erro na resposta da Cloudflare: ${JSON.stringify(json.errors || json)}`);
-              }
-
-              const buffer = Buffer.from(json.result.image, 'base64');
               const provider = 'cloudflare-flux';
 
               const slug = (name || 'item')

@@ -33,26 +33,53 @@ function normalizeFamily(name: string): string {
   );
 }
 
+interface CloudflareAccount {
+  accountId: string;
+  apiToken: string;
+}
+
+function getCloudflareAccounts(): CloudflareAccount[] {
+  const accounts: CloudflareAccount[] = [];
+  const seen = new Set<string>();
+
+  const add = (id?: string | null, token?: string | null) => {
+    const cleanId = (id || "").trim();
+    const cleanToken = (token || "").trim();
+    if (cleanId && cleanToken && !seen.has(cleanId)) {
+      seen.add(cleanId);
+      accounts.push({ accountId: cleanId, apiToken: cleanToken });
+    }
+  };
+
+  for (let i = 1; i <= 5; i++) {
+    add(Deno.env.get(`CF_ACCOUNT_${i}_ID`), Deno.env.get(`CF_ACCOUNT_${i}_TOKEN`));
+  }
+  add(Deno.env.get("CF_ACCOUNT_ID"), Deno.env.get("CF_API_TOKEN"));
+
+  return accounts;
+}
+
 async function translateToVisualEnglishPrompt(
   name: string,
   description: string,
   category: string,
-  cfAccountId: string,
-  cfApiToken: string
+  accounts: CloudflareAccount[]
 ): Promise<string> {
-  try {
-    const llamaUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`;
-    const res = await fetch(llamaUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${cfApiToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert RPG visual asset artist. Convert the Portuguese item name and description into a clear, precise English physical description for an icon generator.
+  for (let idx = 0; idx < accounts.length; idx++) {
+    const { accountId, apiToken } = accounts[idx];
+    try {
+      const llamaUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`;
+      const res = await fetch(llamaUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert RPG visual asset artist. Convert the Portuguese item name and description into a clear, precise English physical description for an icon generator.
 Identify the exact physical object (e.g. "Alaúde" -> "wooden lute musical instrument", "Adaga" -> "dagger", "Ácido" -> "acid potion vial", "Espada" -> "sword", "Poção" -> "potion bottle", "Armadura" -> "armor").
 CRITICAL RULE: Always describe exactly ONE single solitary object. Never describe pairs, dual weapons, sets, or multiples (e.g. "single dagger", "one potion vial", "single sword").
 Describe its material, color, and distinctive physical visual shape.
@@ -62,26 +89,27 @@ Examples:
 - "Alaúde do Bardo" -> "single wooden lute musical instrument, polished dark pear-shaped body with strings"
 - "Adaga de cobre temperado" -> "single tempered copper dagger, sharp reddish copper blade with dark hilt"
 - "Ácido de pedra" -> "one bubbling green acid potion vial in ornate glass bottle"`,
-          },
-          {
-            role: "user",
-            content: `Nome: "${name}"\nCategoria: "${category || ""}"\nDescrição: "${(description || "").slice(0, 150)}"`,
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 45,
-      }),
-    });
+            },
+            {
+              role: "user",
+              content: `Nome: "${name}"\nCategoria: "${category || ""}"\nDescrição: "${(description || "").slice(0, 150)}"`,
+            },
+          ],
+          temperature: 0.1,
+          max_tokens: 45,
+        }),
+      });
 
-    if (res.ok) {
-      const data: any = await res.json();
-      const output = data.result?.response?.trim().replace(/^["']|["']$/g, "");
-      if (output && output.length > 3) {
-        return output;
+      if (res.ok) {
+        const data: any = await res.json();
+        const output = data.result?.response?.trim().replace(/^["']|["']$/g, "");
+        if (output && output.length > 3) {
+          return output;
+        }
       }
+    } catch (err: any) {
+      console.warn(`[AI Translator] Falha no Llama 3.1 na conta ${idx + 1}:`, err.message);
     }
-  } catch (err: any) {
-    console.warn("[AI Translator] Falha no Llama 3.1:", err.message);
   }
 
   let cleanName = (name || "").toLowerCase();
@@ -102,11 +130,10 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const cfAccountId = Deno.env.get("CF_ACCOUNT_ID")!;
-    const cfApiToken = Deno.env.get("CF_API_TOKEN")!;
+    const accounts = getCloudflareAccounts();
 
-    if (!cfAccountId || !cfApiToken) {
-      throw new Error("Secrets CF_ACCOUNT_ID ou CF_API_TOKEN ausentes nas configurações da Edge Function.");
+    if (accounts.length === 0) {
+      throw new Error("Nenhuma credencial da Cloudflare configurada nas variáveis da Edge Function.");
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -127,33 +154,45 @@ serve(async (req) => {
         reqBody.name,
         reqBody.description || "",
         reqBody.category || "",
-        cfAccountId,
-        cfApiToken
+        accounts
       );
 
       const fullPrompt = `Fantasy RPG inventory item icon of exactly one single standalone ${visualPrompt}, solitary solo object centered, full view, isolated single item, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no multiple objects, no pairs, no second item, no dual weapons, no duplicates, no text, no border, square`;
 
-      const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
-      const resp = await fetch(cfUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${cfApiToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ prompt: fullPrompt, steps: 4 }),
-      });
+      let base64Data: string | null = null;
+      let lastError = "";
 
-      if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`Cloudflare FLUX error (${resp.status}): ${errText}`);
+      for (let a = 0; a < accounts.length; a++) {
+        const acc = accounts[a];
+        try {
+          const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${acc.accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
+          const resp = await fetch(cfUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${acc.apiToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ prompt: fullPrompt, steps: 4 }),
+          });
+
+          if (resp.ok) {
+            const json = await resp.json();
+            if (json.success && json.result?.image) {
+              base64Data = json.result.image;
+              break;
+            }
+          }
+
+          const errText = await resp.text();
+          lastError = errText;
+        } catch (e: any) {
+          lastError = e.message;
+        }
       }
 
-      const json = await resp.json();
-      if (!json.success && !json.result?.image) {
-        throw new Error(`Erro Cloudflare: ${JSON.stringify(json.errors || json)}`);
+      if (!base64Data) {
+        throw new Error(`Todas as contas Cloudflare falharam ou atingiram a cota. Último erro: ${lastError}`);
       }
-
-      const base64Data = json.result.image;
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       for (let b = 0; b < binaryString.length; b++) {
@@ -269,56 +308,63 @@ serve(async (req) => {
           sampleItem.name,
           sampleItem.description || "",
           sampleItem.category || "",
-          cfAccountId,
-          cfApiToken
+          accounts
         ));
 
       const fullPrompt = `Fantasy RPG inventory item icon of exactly one single standalone ${visualPrompt}, solitary solo object centered, full view, isolated single item, detailed painted game asset, soft studio lighting, solid flat neutral gray background, plain uniform medium gray backdrop, no pattern, no texture, no multiple objects, no pairs, no second item, no dual weapons, no duplicates, no text, no border, square`;
 
-      try {
-        const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
-        const resp = await fetch(cfUrl, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${cfApiToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ prompt: fullPrompt, steps: 4 }),
-        });
+      let base64Data: string | null = null;
 
-        if (resp.status === 429) {
-          console.warn("⚠️ Cota diária da Cloudflare atingida (HTTP 429). Interrompendo execução.");
-          for (let j = i; j < selectedFamilies.length; j++) {
-            await supabase
-              .from("item_catalog")
-              .update({ image_status: "pendente" })
-              .eq("image_family", selectedFamilies[j][0]);
+      for (let a = 0; a < accounts.length; a++) {
+        const acc = accounts[a];
+        try {
+          const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${acc.accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
+          const resp = await fetch(cfUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${acc.apiToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ prompt: fullPrompt, steps: 4 }),
+          });
+
+          if (resp.status === 429) {
+            console.warn(`Conta ${a + 1} (${acc.accountId.slice(0, 6)}...) atingiu 429. Tentando próxima...`);
+            continue;
           }
-          return new Response(
-            JSON.stringify({
-              warning: "Cota diária da Cloudflare atingida (429). A fila continuará no próximo ciclo.",
-              processed: processedResults.length,
-            }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+
+          const json = await resp.json();
+          const responseText = JSON.stringify(json).toLowerCase();
+          if (responseText.includes("limit") || responseText.includes("neuron") || responseText.includes("quota")) {
+            console.warn(`Conta ${a + 1} (${acc.accountId.slice(0, 6)}...) limite de neurônios atingido. Tentando próxima...`);
+            continue;
+          }
+
+          if (json.success && json.result?.image) {
+            base64Data = json.result.image;
+            break;
+          }
+        } catch (e: any) {
+          console.warn(`Conta ${a + 1} erro:`, e.message);
         }
+      }
 
-        const json = await resp.json();
-
-        const responseText = JSON.stringify(json).toLowerCase();
-        if (responseText.includes("limit") || responseText.includes("neuron") || responseText.includes("quota")) {
-          console.warn("⚠️ Mensagem de cota detectada:", json);
-          for (let j = i; j < selectedFamilies.length; j++) {
-            await supabase
-              .from("item_catalog")
-              .update({ image_status: "pendente" })
-              .eq("image_family", selectedFamilies[j][0]);
-          }
-          return new Response(
-            JSON.stringify({
-              warning: "Limite de cota/neurons detectado. Interrompendo fila até amanhã.",
-              processed: processedResults.length,
-            }),
+      if (!base64Data) {
+        console.warn("⚠️ Todas as contas Cloudflare atingiram o limite diário. Interrompendo fila até amanhã.");
+        for (let j = i; j < selectedFamilies.length; j++) {
+          await supabase
+            .from("item_catalog")
+            .update({ image_status: "pendente" })
+            .eq("image_family", selectedFamilies[j][0]);
+        }
+        return new Response(
+          JSON.stringify({
+            warning: "Cota de todas as contas Cloudflare atingida. A fila continuará no próximo ciclo.",
+            processed: processedResults.length,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
