@@ -27,6 +27,8 @@ interface ItemCatalogTableViewProps {
   onEditItem: (item: ItemCatalog) => void;
   onGiveItem: (item: ItemCatalog) => void;
   onArchiveItem?: (item: ItemCatalog) => void;
+  onGenerateImage?: (item: ItemCatalog) => void;
+  generatingItemId?: string | null;
   isLoading?: boolean;
 }
 
@@ -40,6 +42,8 @@ export const ItemCatalogTableView: React.FC<ItemCatalogTableViewProps> = ({
   onEditItem,
   onGiveItem,
   onArchiveItem,
+  onGenerateImage,
+  generatingItemId,
   isLoading,
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -214,6 +218,19 @@ export const ItemCatalogTableView: React.FC<ItemCatalogTableViewProps> = ({
                       <Gift className="h-3.5 w-3.5 sm:mr-1" />
                       <span className="hidden sm:inline">Dar</span>
                     </Button>
+
+                    {onGenerateImage && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onGenerateImage(item)}
+                        disabled={generatingItemId === item.id}
+                        className="px-2 py-1 text-xs text-[#f5b65b] border-[#f5b65b]/30 hover:border-[#f5b65b] hover:bg-[#f5b65b]/10"
+                        title={item.image_url ? 'Regerar imagem com IA' : 'Gerar imagem agora com IA'}
+                      >
+                        <Sparkles className={`h-3.5 w-3.5 ${generatingItemId === item.id ? 'animate-spin' : ''}`} />
+                      </Button>
+                    )}
 
                     <Button
                       variant="outline"

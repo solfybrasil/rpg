@@ -11,7 +11,6 @@ export default defineConfig({
       routesDirectory: './src/routes',
       generatedRouteTree: './src/routeTree.gen.ts',
       routeFileIgnorePrefix: '-',
-      // Cada rota vira um chunk próprio: o navegador só baixa a tela que está aberta.
       autoCodeSplitting: true,
     }),
     tailwindcss(),
@@ -89,7 +88,6 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts'],
-    // Valores falsos só para os testes: o cliente Supabase exige as variáveis ao ser importado.
     env: {
       VITE_SUPABASE_URL: 'http://localhost:54321',
       VITE_SUPABASE_ANON_KEY: 'test-anon-key',

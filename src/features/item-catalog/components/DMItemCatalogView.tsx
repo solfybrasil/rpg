@@ -4,7 +4,9 @@ import React, { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import {
   archiveCatalogItem,
+  triggerItemImageGeneration,
   useCatalogItems,
+  useItemImageStats,
 } from '../api/index.ts';
 import type { ItemCatalog, ItemCatalogFilter } from '../api/types.ts';
 import { GiveItemSelectorModal } from './GiveItemSelectorModal.tsx';
@@ -94,14 +96,19 @@ export const DMItemCatalogView: React.FC = memo(() => {
   const [itemToEdit, setItemToEdit] = useState<ItemCatalog | null>(null);
   const [giveModalOpen, setGiveModalOpen] = useState(false);
   const [itemToGive, setItemToGive] = useState<ItemCatalog | null>(null);
+  const [generatingItemId, setGeneratingItemId] = useState<string | null>(null);
 
   // TanStack Query
   const { data, isLoading, isError, error } = useCatalogItems(filter);
+  const { data: stats } = useItemImageStats();
 
   const items = data?.data || [];
   const totalCount = data?.total || 0;
   const totalPages = data?.totalPages || 1;
   const currentPage = filter.page || 1;
+
+  const prontas = stats?.prontas ?? 0;
+  const pendentes = stats?.pendentes ?? Math.max(0, totalCount - prontas);
 
   const handleFilterChange = useCallback((updates: Partial<ItemCatalogFilter>) => {
     setFilter((prev) => ({ ...prev, ...updates }));
@@ -139,6 +146,21 @@ export const DMItemCatalogView: React.FC = memo(() => {
     setGiveModalOpen(true);
   }, []);
 
+  const handleGenerateImage = useCallback(async (item: ItemCatalog) => {
+    setGeneratingItemId(item.id);
+    const toastId = toast.loading(`Gerando imagem com IA para "${item.name}"...`);
+    try {
+      await triggerItemImageGeneration(item);
+      toast.success(`Imagem de "${item.name}" gerada com sucesso!`, { id: toastId });
+      queryClient.invalidateQueries({ queryKey: ['item_catalog'] });
+      queryClient.invalidateQueries({ queryKey: ['item_image_stats'] });
+    } catch (err: any) {
+      toast.error(`Falha ao gerar imagem: ${err.message || 'Erro desconhecido'}`, { id: toastId });
+    } finally {
+      setGeneratingItemId(null);
+    }
+  }, [queryClient]);
+
   const handleArchiveItem = useCallback(async (item: ItemCatalog) => {
     const nextArchived = !item.archived;
     const actionLabel = nextArchived ? 'arquivar' : 'desarquivar';
@@ -155,6 +177,7 @@ export const DMItemCatalogView: React.FC = memo(() => {
           : `Artigo "${item.name}" restaurado ao catálogo ativo.`,
       );
       queryClient.invalidateQueries({ queryKey: ['item_catalog'] });
+      queryClient.invalidateQueries({ queryKey: ['item_image_stats'] });
     } catch (err: any) {
       toast.error(`Falha ao alterar arquivamento: ${err.message}`);
     }
@@ -168,7 +191,19 @@ export const DMItemCatalogView: React.FC = memo(() => {
     <div className={DM_PAGE_CLASS}>
       <DMPageHeader
         title="Itens"
-        subtitle={`${totalCount} ${totalCount === 1 ? 'item' : 'itens'} no catálogo`}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>{totalCount} {totalCount === 1 ? 'item' : 'itens'} no catálogo</span>
+            <span className="text-white/30">•</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-0.5 text-xs text-[#a8947c] border border-white/10">
+              <Sparkles className="h-3.5 w-3.5 text-[#f5b65b]" />
+              <span>
+                Imagens: <strong className="font-mono text-emerald-400">{prontas}</strong> prontas /{' '}
+                <strong className="font-mono text-amber-400">{pendentes}</strong> pendentes
+              </span>
+            </span>
+          </span>
+        }
       />
 
       {/* Filter and View Bar */}
@@ -201,6 +236,8 @@ export const DMItemCatalogView: React.FC = memo(() => {
           onEditItem={handleEditItem}
           onGiveItem={handleGiveItem}
           onArchiveItem={handleArchiveItem}
+          onGenerateImage={handleGenerateImage}
+          generatingItemId={generatingItemId}
           isLoading={isLoading}
         />
       ) : (
@@ -214,6 +251,8 @@ export const DMItemCatalogView: React.FC = memo(() => {
           onEditItem={handleEditItem}
           onGiveItem={handleGiveItem}
           onArchiveItem={handleArchiveItem}
+          onGenerateImage={handleGenerateImage}
+          generatingItemId={generatingItemId}
           isLoading={isLoading}
         />
       )}
@@ -230,8 +269,14 @@ export const DMItemCatalogView: React.FC = memo(() => {
         item={itemToEdit}
         open={formSheetOpen}
         onOpenChange={setFormSheetOpen}
-        onSaved={() => queryClient.invalidateQueries({ queryKey: ['item_catalog'] })}
-        onArchived={() => queryClient.invalidateQueries({ queryKey: ['item_catalog'] })}
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ['item_catalog'] });
+          queryClient.invalidateQueries({ queryKey: ['item_image_stats'] });
+        }}
+        onArchived={() => {
+          queryClient.invalidateQueries({ queryKey: ['item_catalog'] });
+          queryClient.invalidateQueries({ queryKey: ['item_image_stats'] });
+        }}
       />
     </div>
   );

@@ -1,8 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../shared/supabase/client.ts';
 import type { HeroTarget, ItemCatalog, ItemCatalogFilter, PaginatedItemsResult } from './types.ts';
+import { generateItemImageWithAI } from './aiGenerator.ts';
 
 export * from './types.ts';
+export * from './aiGenerator.ts';
+
+export function normalizeItemFamily(name: string): string {
+  let cleaned = (name || '').trim();
+  cleaned = cleaned.replace(/\s*[\(\[].*?[\)\]]/g, '');
+  cleaned = cleaned.replace(/\s*[\+\-]\d+/g, '');
+  cleaned = cleaned.replace(/\s+\b(X|IX|VIII|VII|VI|V|IV|III|II|I)\b/gi, '');
+  cleaned = cleaned.replace(
+    /\s*[-–—]?\s*\b(menor|maior|superior|supremo|perfeito|perfeita|básico|basico|avançado|avancado|pequeno|pequena|médio|medio|média|media|grande|gigante|antigo|antiga|velho|velha|desgastado|desgastada|bruto|bruta|refinado|refinada)\b$/i,
+    ''
+  );
+  cleaned = cleaned.replace(/\s+\d+$/g, '');
+  cleaned = cleaned.trim();
+  if (!cleaned) cleaned = (name || '').trim();
+
+  return cleaned
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'item';
+}
 
 const ITEM_COLUMNS =
   'id, name, category, subcategory, rarity, quality, equippable_as, weapon_class, armor_class, damage_dice, attack_attr, two_handed, ranged, ammo_type, armor_bonus, attack_bonus, damage_bonus, focus_bonus, health_bonus, skill_bonus, wear_type, durability, max_durability, stackable, default_quantity, reagent_tier, material_tier, special, description, origin, price_bronze, icon, image_url, tags, archived, plague_cost, saciedade, created_at, updated_at';
@@ -111,6 +134,10 @@ export async function fetchCatalogItems(
     price_bronze: it.price_bronze !== null ? Number(it.price_bronze) : 50,
     icon: it.icon || '🗡️',
     image_url: it.image_url || null,
+    image_status: it.image_status || (it.image_url ? 'pronta' : 'pendente'),
+    image_prompt_en: it.image_prompt_en || null,
+    image_family: it.image_family || null,
+    image_error: it.image_error || null,
     tags: Array.isArray(it.tags) ? it.tags : [],
     archived: !!it.archived,
     plague_cost: Number(it.plague_cost || 0),
@@ -136,6 +163,87 @@ export function useCatalogItems(filter: ItemCatalogFilter = {}) {
   });
 }
 
+export function useItemImageStats() {
+  return useQuery({
+    queryKey: ['item_image_stats'],
+    queryFn: async () => {
+      const { count: prontasCount } = await supabase
+        .from('item_catalog')
+        .select('id', { count: 'exact', head: true })
+        .not('image_url', 'is', null)
+        .neq('image_url', '');
+
+      const { count: totalCount } = await supabase
+        .from('item_catalog')
+        .select('id', { count: 'exact', head: true });
+
+      const prontas = prontasCount || 0;
+      const total = totalCount || 0;
+      const pendentes = Math.max(0, total - prontas);
+
+      return { prontas, pendentes, total };
+    },
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  });
+}
+
+export async function triggerItemImageGeneration(item: ItemCatalog): Promise<string> {
+  const family = item.image_family || normalizeItemFamily(item.name);
+
+  // 1. Tentar acionar via Edge Function do Supabase
+  try {
+    const { data, error } = await supabase.functions.invoke('gerar-imagens-itens', {
+      body: { itemId: item.id, family },
+    });
+    if (!error && data?.families?.[0]?.url) {
+      return data.families[0].url;
+    }
+  } catch (e) {
+    console.warn('[triggerItemImageGeneration] Edge function invoke ignorado, fallback para generator:', e);
+  }
+
+  // 2. Fallback direto via AI Generator (Vite endpoint / Pollinations)
+  const result = await generateItemImageWithAI({
+    name: item.name,
+    description: item.description || item.special || undefined,
+    category: item.category,
+    itemId: item.id,
+  });
+
+  // 3. Atualizar no banco Supabase
+  const updatePayload: any = {
+    image_url: result.imageUrl,
+    image_status: 'pronta',
+    image_prompt_en: result.promptEn || null,
+    image_family: family,
+    image_error: null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error: updateError } = await supabase
+    .from('item_catalog')
+    .update(updatePayload)
+    .eq('id', item.id);
+
+  if (updateError) {
+    if (updateError.message?.includes('column') && updateError.message?.includes('does not exist')) {
+      // Fallback gracioso se as novas colunas da migração ainda não foram criadas no banco
+      await supabase
+        .from('item_catalog')
+        .update({
+          image_url: result.imageUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', item.id);
+    } else {
+      console.warn('[triggerItemImageGeneration] Erro ao atualizar item_catalog:', updateError);
+    }
+  }
+
+  return result.imageUrl;
+}
+
 export async function fetchHeroesForGive(): Promise<HeroTarget[]> {
   try {
     const { data, error } = await supabase
@@ -143,8 +251,9 @@ export async function fetchHeroesForGive(): Promise<HeroTarget[]> {
       .select('id, name, title, avatar_icon')
       .order('name', { ascending: true });
 
-    if (error || !data) return [];
-    return data.map((h: any) => ({
+    if (error) throw error;
+
+    return (data || []).map((h: any) => ({
       id: h.id,
       name: h.name,
       title: h.title,
@@ -170,10 +279,14 @@ export async function saveCatalogItem(
       .replace(/^-+|-+$/g, '') ||
     `item_${Date.now()}`;
 
+  const itemName = itemData.name?.trim() || 'Novo Artigo';
+  const family = itemData.image_family || normalizeItemFamily(itemName);
+  const hasImage = Boolean(itemData.image_url && itemData.image_url.trim());
+
   const payload: any = {
     ...itemData,
     id,
-    name: itemData.name?.trim() || 'Novo Artigo',
+    name: itemName,
     category: itemData.category || 'Geral',
     rarity: itemData.rarity || 'Comum',
     price_bronze: Number(itemData.price_bronze) || 0,
@@ -190,6 +303,8 @@ export async function saveCatalogItem(
     max_durability: Number(itemData.max_durability ?? 1),
     default_quantity: Number(itemData.default_quantity ?? 1),
     plague_cost: itemData.rarity === 'Maldito' ? Number(itemData.plague_cost || 1) : Number(itemData.plague_cost || 0),
+    image_family: family,
+    image_status: itemData.image_status || (hasImage ? 'pronta' : 'pendente'),
     tags: Array.isArray(itemData.tags) ? itemData.tags : [],
     updated_at: new Date().toISOString(),
   };
@@ -201,6 +316,22 @@ export async function saveCatalogItem(
     .single();
 
   if (error) {
+    if (error.message?.includes('column') && error.message?.includes('does not exist')) {
+      // Fallback gracioso se as novas colunas ainda não foram adicionadas via migração
+      const { image_status, image_family, image_prompt_en, image_error, ...safePayload } = payload;
+      const { data: retryData, error: retryError } = await supabase
+        .from('item_catalog')
+        .upsert(safePayload, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (retryError) {
+        console.error('[ItemCatalogAPI] Erro ao salvar item no catálogo:', retryError);
+        throw new Error(retryError.message);
+      }
+      return retryData as unknown as ItemCatalog;
+    }
+
     console.error('[ItemCatalogAPI] Erro ao salvar item no catálogo:', error);
     throw new Error(error.message);
   }

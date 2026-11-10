@@ -32,6 +32,10 @@ export interface ItemCatalog {
   price_bronze: number | null;
   icon: string | null;
   image_url: string | null;
+  image_status?: 'pendente' | 'gerando' | 'pronta' | 'erro' | null;
+  image_prompt_en?: string | null;
+  image_family?: string | null;
+  image_error?: string | null;
   tags: any[] | null;
   archived: boolean;
   plague_cost: number | null;

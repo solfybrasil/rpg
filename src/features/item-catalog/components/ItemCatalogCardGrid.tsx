@@ -67,6 +67,8 @@ interface ItemCatalogCardGridProps {
   onEditItem: (item: ItemCatalog) => void;
   onGiveItem: (item: ItemCatalog) => void;
   onArchiveItem?: (item: ItemCatalog) => void;
+  onGenerateImage?: (item: ItemCatalog) => void;
+  generatingItemId?: string | null;
   isLoading?: boolean;
 }
 
@@ -80,6 +82,8 @@ export const ItemCatalogCardGrid: React.FC<ItemCatalogCardGridProps> = memo(({
   onEditItem,
   onGiveItem,
   onArchiveItem,
+  onGenerateImage,
+  generatingItemId,
   isLoading,
 }) => {
   if (isLoading) {
@@ -108,23 +112,24 @@ export const ItemCatalogCardGrid: React.FC<ItemCatalogCardGridProps> = memo(({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Cards Grid */}
+      {/* Responsive Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {items.map((item) => {
           const badgeVariant = getItemRarityBadgeVariant(item.rarity);
-          const borderClass = getItemRarityBorder(item.rarity);
+          const rarityBorder = getItemRarityBorder(item.rarity);
 
           return (
             <div
               key={item.id}
               data-testid={`item-card-${item.id}`}
-              className={`group flex flex-col justify-between rounded-2xl border bg-[#141418] p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${borderClass}`}
+              className={`group relative flex flex-col justify-between rounded-xl border bg-[#141418]/90 p-3.5 backdrop-blur-md transition-all duration-200 hover:-translate-y-1 hover:shadow-xl ${rarityBorder}`}
             >
+              {/* Top: Image & Essential info */}
               <div>
-                {/* 128px Image or Large Slot Thumbnail */}
+                {/* Image / Icon container */}
                 <div
                   onClick={() => onSelectItem(item)}
-                  className="relative flex h-32 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-white/5 bg-[#0d0d10] transition-colors group-hover:border-white/20"
+                  className="relative flex h-36 w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[#0e0e11] border border-white/5 transition-colors group-hover:border-white/20"
                 >
                   {item.image_url ? (
                     <img
@@ -141,9 +146,24 @@ export const ItemCatalogCardGrid: React.FC<ItemCatalogCardGridProps> = memo(({
                     />
                   ) : null}
                   <div
-                    className={`img-fallback ${item.image_url ? 'hidden' : 'flex'} items-center justify-center text-4xl select-none`}
+                    className={`img-fallback ${item.image_url ? 'hidden' : 'flex'} flex-col items-center justify-center select-none`}
                   >
-                    {item.icon || '🗡️'}
+                    <span className="text-4xl">{item.icon || '🗡️'}</span>
+                    {onGenerateImage && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onGenerateImage(item);
+                        }}
+                        disabled={generatingItemId === item.id}
+                        className="mt-2 inline-flex items-center gap-1 rounded bg-[#f5b65b]/20 px-2 py-0.5 text-[10px] font-sans text-[#f5b65b] hover:bg-[#f5b65b]/30 border border-[#f5b65b]/30 transition-colors"
+                        title="Gerar imagem agora com IA"
+                      >
+                        <Sparkles className={`h-2.5 w-2.5 ${generatingItemId === item.id ? 'animate-spin' : ''}`} />
+                        <span>Gerar Imagem</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Rarity & Category floating badges */}
@@ -172,29 +192,23 @@ export const ItemCatalogCardGrid: React.FC<ItemCatalogCardGridProps> = memo(({
                     </h3>
                   </div>
 
-                  <p className="mt-0.5 text-[11px] text-white/50 truncate">
+                  <p className="mt-0.5 text-[11px] text-white/50 truncate font-serif">
                     {item.category}
                     {item.subcategory ? ` · ${item.subcategory}` : ''}
-                    {item.equippable_as ? ` (${item.equippable_as})` : ''}
                   </p>
                 </div>
 
-                {/* Combat & Stat Badges */}
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-white/70">
+                {/* Attribute stats snippet */}
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                   {item.damage_dice && (
-                    <span className="flex items-center gap-1 rounded bg-red-950/30 px-1.5 py-0.5 text-[11px] font-mono text-red-300 border border-red-900/30">
+                    <span className="inline-flex items-center gap-1 rounded bg-red-950/50 px-1.5 py-0.5 text-[11px] font-mono text-red-300 border border-red-500/20">
                       <Sword className="h-3 w-3" />
                       {item.damage_dice}
                     </span>
                   )}
                   {Boolean(item.armor_bonus && item.armor_bonus > 0) && (
-                    <span className="flex items-center gap-1 rounded bg-blue-950/30 px-1.5 py-0.5 text-[11px] font-mono text-blue-300 border border-blue-900/30">
-                      <Shield className="h-3 w-3" />+{item.armor_bonus} Def
-                    </span>
-                  )}
-                  {Boolean(item.attack_bonus && item.attack_bonus !== 0) && (
-                    <span className="rounded bg-white/5 px-1.5 py-0.5 text-[11px] font-mono text-white/80 border border-white/10">
-                      Atq +{item.attack_bonus}
+                    <span className="inline-flex items-center gap-1 rounded bg-blue-950/50 px-1.5 py-0.5 text-[11px] font-mono text-blue-300 border border-blue-500/20">
+                      <Shield className="h-3 w-3" />+{item.armor_bonus}
                     </span>
                   )}
                   {Boolean(item.durability && item.wear_type === 'repairable') && (
@@ -231,6 +245,20 @@ export const ItemCatalogCardGrid: React.FC<ItemCatalogCardGridProps> = memo(({
                     <Gift className="h-3.5 w-3.5" />
                     <span>Dar a…</span>
                   </Button>
+
+                  {onGenerateImage && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid={`generate-image-btn-${item.id}`}
+                      onClick={() => onGenerateImage(item)}
+                      disabled={generatingItemId === item.id}
+                      className="px-2 py-1.5 text-xs text-[#f5b65b] border-[#f5b65b]/30 hover:border-[#f5b65b] hover:bg-[#f5b65b]/10"
+                      title={item.image_url ? 'Regerar imagem com IA' : 'Gerar imagem agora com IA'}
+                    >
+                      <Sparkles className={`h-3.5 w-3.5 ${generatingItemId === item.id ? 'animate-spin' : ''}`} />
+                    </Button>
+                  )}
 
                   <Button
                     variant="outline"
