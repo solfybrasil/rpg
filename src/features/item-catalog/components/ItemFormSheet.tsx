@@ -15,8 +15,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge, Button, CoinsBadge, Sheet } from '../../../shared/ui/index.ts';
-import { archiveCatalogItem, saveCatalogItem, uploadItemImage } from '../api/index.ts';
-import { generateItemImages } from '../../market/api/aiImages.ts';
+import { archiveCatalogItem, generateItemImageWithAI, saveCatalogItem, uploadItemImage } from '../api/index.ts';
 import type { ItemCatalog } from '../api/types.ts';
 import { ITEM_CATEGORIES, ITEM_EQUIP_SLOTS, ITEM_RARITIES } from '../data/constants.ts';
 import { getItemRarityBadgeVariant, getItemRarityBorder } from './ItemCatalogCardGrid.tsx';
@@ -64,6 +63,7 @@ export const ItemFormSheet: React.FC<ItemFormSheetProps> = ({
   // UI state
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -129,6 +129,36 @@ export const ItemFormSheet: React.FC<ItemFormSheetProps> = ({
     }
   };
 
+  const handleGenerateAI = async () => {
+    if (!name.trim()) {
+      toast.error('Informe o nome do artigo antes de gerar a imagem');
+      return;
+    }
+
+    const toastId = toast.loading('Gerando imagem com IA FLUX...');
+    setIsGeneratingAI(true);
+    try {
+      const result = await generateItemImageWithAI({
+        name: name.trim(),
+        description: description.trim(),
+        category,
+        itemId: item?.id,
+      });
+      const freshUrl = `${result.imageUrl}?t=${Date.now()}`;
+      setImageUrl(freshUrl);
+      toast.success(
+        imageUrl
+          ? 'Nova imagem regerada com FLUX! Salve o artigo para fixar.'
+          : 'Imagem gerada com sucesso com FLUX! Salve o artigo para fixar.',
+        { id: toastId },
+      );
+    } catch (err: any) {
+      toast.error(`Falha ao gerar com IA: ${err.message || 'Erro'}`, { id: toastId });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -155,7 +185,7 @@ export const ItemFormSheet: React.FC<ItemFormSheetProps> = ({
         wear_type: wearType,
         plague_cost: rarity === 'Maldito' ? Math.max(1, Number(plagueCost) || 1) : 0,
         icon: icon.trim() || '🗡️',
-        image_url: imageUrl.trim() || null,
+        image_url: imageUrl ? imageUrl.split('?')[0].trim() : null,
         description: description.trim() || null,
         special: special.trim() || null,
         two_handed: twoHanded,
@@ -437,22 +467,40 @@ export const ItemFormSheet: React.FC<ItemFormSheetProps> = ({
             </div>
           </div>
 
-          {/* Image URL & File Upload */}
+          {/* Image URL, File Upload & AI Generator */}
           <div className="space-y-2 rounded-xl border border-white/10 bg-[#18181d] p-3">
             <label className="text-xs font-semibold uppercase tracking-wider text-white/60 flex items-center justify-between">
               <span>Imagem / Ilustração do Artigo</span>
-              {isUploading && <span className="text-[#f5b65b] text-[11px] animate-pulse">Enviando ao Storage...</span>}
+              <div className="flex items-center gap-2">
+                {isUploading && <span className="text-[#f5b65b] text-[11px] animate-pulse">Enviando ao Storage...</span>}
+                {isGeneratingAI && <span className="text-[#f5b65b] text-[11px] animate-pulse">Gerando com IA...</span>}
+              </div>
             </label>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <input
                 type="url"
                 data-testid="item-form-image-url"
-                placeholder="https://... ou suba um arquivo"
+                placeholder="https://... ou gere com IA"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                className="flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-[#ebe6d6] focus:border-[#f5b65b] focus:outline-none"
+                className="flex-1 min-w-[200px] rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-[#ebe6d6] focus:border-[#f5b65b] focus:outline-none"
               />
+
+              <button
+                type="button"
+                onClick={handleGenerateAI}
+                disabled={isGeneratingAI || !name.trim()}
+                title="Gera ou regera o ícone do item usando Inteligência Artificial"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#f5b65b]/40 bg-[#f5b65b]/15 hover:bg-[#f5b65b]/25 px-3 py-1.5 text-xs font-semibold text-[#f5b65b] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-95"
+              >
+                {isGeneratingAI ? (
+                  <RotateCcw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 text-[#f5b65b]" />
+                )}
+                <span>{isGeneratingAI ? 'Gerando...' : imageUrl ? 'Regerar com IA' : 'Gerar com IA'}</span>
+              </button>
 
               <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 transition-colors">
                 <Upload className="h-3.5 w-3.5" />
