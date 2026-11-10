@@ -1,11 +1,17 @@
 import { Crosshair, Maximize2, Minus, Plus, Ruler } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useSessionStore } from '../../../shared/stores/session.ts';
 import { type BattleTurn, useBattleSync, useHeroVitals } from '../api/battleSync.ts';
+import { updateBattleToken } from '../api/battleApi.ts';
 import { useActiveBattleMap, useBattleTokens } from '../api/useBattle.ts';
+import { fetchChest } from '../../treasure/api/treasureQuery';
+import { chestUrl, parseSpecial } from '../engine/FxSprite.ts';
 import { BattleEngine } from '../engine/BattleEngine.ts';
 import type { BattleToken } from '../engine/types.ts';
+
+// Janela do baú: só baixa quando alguém abre um baú.
+const ChestModal = lazy(() => import('../../treasure/components/PlayerChests').then((m) => ({ default: m.ChestModal })));
 
 interface PlayerBattleCanvasProps {
   heroId?: string;
@@ -18,6 +24,10 @@ function findMyToken(tokens: BattleToken[], heroId: string | null): BattleToken 
   if (byId) return byId;
   const first = heroId.split('_')[0].toLowerCase();
   return tokens.find((t) => t.kind === 'heroi' && t.name.toLowerCase().includes(first)) ?? null;
+}
+
+function myTokenName(tokens: BattleToken[], heroId: string | null) {
+  return findMyToken(tokens, heroId)?.name || 'Jurado';
 }
 
 const hudBtn =
@@ -41,6 +51,8 @@ export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasPro
   const [measuring, setMeasuring] = useState(false);
   const [measure, setMeasure] = useState<number | null>(null);
   const [turn, setTurn] = useState<BattleTurn | null>(null);
+  const [openChest, setOpenChest] = useState<{ chestId: string; tokenId: string; opened: boolean } | null>(null);
+  const heroName = myTokenName(tokens, heroId);
 
   const myToken = useMemo(() => findMyToken(tokens, heroId), [tokens, heroId]);
   const moveLimit = map?.move_limit ?? 6;
@@ -51,6 +63,7 @@ export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasPro
   const { sendPing } = useBattleSync(map?.id, {
     onPing: (p) => engineRef.current?.showPing(p),
     onTurn: setTurn,
+    onFx: (f) => engineRef.current?.playFx(f.id, f.c, f.r, f.scale),
   });
   const sendPingRef = useRef(sendPing);
   sendPingRef.current = sendPing;
@@ -69,6 +82,15 @@ export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasPro
       },
       onPing: (p) => sendPingRef.current(p),
       onMeasure: setMeasure,
+      onTapChest: (token, near) => {
+        const sp = parseSpecial(token.media_url);
+        if (sp?.kind !== 'bau') return;
+        if (!near) {
+          toast('Chegue numa casa ao lado do baú para abrir.');
+          return;
+        }
+        setOpenChest({ chestId: sp.chestId, tokenId: token.id, opened: sp.opened });
+      },
     });
     engineRef.current = engine;
     return () => {
@@ -203,6 +225,30 @@ export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasPro
           </p>
         )}
       </div>
+
+      {openChest && heroId && (
+        <Suspense fallback={null}>
+          <ChestModal
+            chestId={openChest.chestId}
+            heroId={heroId}
+            heroName={heroName}
+            onClose={() => {
+              const oc = openChest;
+              setOpenChest(null);
+              // Esvaziado: some para os jogadores (o Mestre ainda vê, translúcido).
+              void fetchChest(oc.chestId)
+                .then((c) => {
+                  if (c.status === 'vazio') void updateBattleToken(oc.tokenId, { visible: false });
+                })
+                .catch(() => {});
+            }}
+            onOpened={() => {
+              // A tampa abre para todos (mesa, TV e jogadores).
+              if (!openChest.opened) void updateBattleToken(openChest.tokenId, { media_url: chestUrl(openChest.chestId, true) }).catch(() => {});
+            }}
+          />
+        </Suspense>
+      )}
 
       {!isLoading && !map && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-[var(--abyss)]/90">

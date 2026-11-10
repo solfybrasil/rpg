@@ -41,6 +41,7 @@ import { Route as MestreMapaRouteImport } from './routes/mestre/mapa'
 import { Route as MestreMesaRouteImport } from './routes/mestre/mesa'
 import { Route as MestreOficinaRouteImport } from './routes/mestre/oficina'
 import { Route as MestreSistemaRouteImport } from './routes/mestre/sistema'
+import { Route as MestreTesourosRouteImport } from './routes/mestre/tesouros'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -202,6 +203,11 @@ const MestreSistemaRoute = MestreSistemaRouteImport.update({
   path: '/sistema',
   getParentRoute: () => MestreRoute,
 } as any)
+const MestreTesourosRoute = MestreTesourosRouteImport.update({
+  id: '/tesouros',
+  path: '/tesouros',
+  getParentRoute: () => MestreRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/mestre/mesa': typeof MestreMesaRoute
   '/mestre/oficina': typeof MestreOficinaRoute
   '/mestre/sistema': typeof MestreSistemaRoute
+  '/mestre/tesouros': typeof MestreTesourosRoute
   '/mestre/': typeof MestreIndexRoute
 }
 export interface FileRoutesByTo {
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/mestre/mesa': typeof MestreMesaRoute
   '/mestre/oficina': typeof MestreOficinaRoute
   '/mestre/sistema': typeof MestreSistemaRoute
+  '/mestre/tesouros': typeof MestreTesourosRoute
   '/mestre': typeof MestreIndexRoute
 }
 export interface FileRoutesById {
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/mestre/mesa': typeof MestreMesaRoute
   '/mestre/oficina': typeof MestreOficinaRoute
   '/mestre/sistema': typeof MestreSistemaRoute
+  '/mestre/tesouros': typeof MestreTesourosRoute
   '/mestre/': typeof MestreIndexRoute
 }
 export interface FileRouteTypes {
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/mestre/mesa'
     | '/mestre/oficina'
     | '/mestre/sistema'
+    | '/mestre/tesouros'
     | '/mestre/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/mestre/mesa'
     | '/mestre/oficina'
     | '/mestre/sistema'
+    | '/mestre/tesouros'
     | '/mestre'
   id:
     | '__root__'
@@ -406,6 +417,7 @@ export interface FileRouteTypes {
     | '/mestre/mesa'
     | '/mestre/oficina'
     | '/mestre/sistema'
+    | '/mestre/tesouros'
     | '/mestre/'
   fileRoutesById: FileRoutesById
 }
@@ -645,6 +657,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MestreSistemaRouteImport
       parentRoute: typeof MestreRoute
     }
+    '/mestre/tesouros': {
+      id: '/mestre/tesouros'
+      path: '/tesouros'
+      fullPath: '/mestre/tesouros'
+      preLoaderRoute: typeof MestreTesourosRouteImport
+      parentRoute: typeof MestreRoute
+    }
   }
 }
 
@@ -696,6 +715,7 @@ interface MestreRouteChildren {
   MestreMesaRoute: typeof MestreMesaRoute
   MestreOficinaRoute: typeof MestreOficinaRoute
   MestreSistemaRoute: typeof MestreSistemaRoute
+  MestreTesourosRoute: typeof MestreTesourosRoute
   MestreIndexRoute: typeof MestreIndexRoute
 }
 
@@ -710,6 +730,7 @@ const MestreRouteChildren: MestreRouteChildren = {
   MestreMesaRoute: MestreMesaRoute,
   MestreOficinaRoute: MestreOficinaRoute,
   MestreSistemaRoute: MestreSistemaRoute,
+  MestreTesourosRoute: MestreTesourosRoute,
   MestreIndexRoute: MestreIndexRoute,
 }
 

@@ -16,11 +16,12 @@ const DM_SECTIONS = [
   { label: '♜ Mesa', path: '/mestre/mesa', key: '2' },
   { label: '⌖ Mapa', path: '/mestre/mapa', key: '3' },
   { label: '⌂ Base', path: '/mestre/base', key: '4' },
-  { label: '♞ Bestiário', path: '/mestre/bestiario', key: '5' },
-  { label: '⚒ Itens', path: '/mestre/itens', key: '6' },
-  { label: '⚒ Oficina', path: '/mestre/oficina', key: '7' },
-  { label: '▤ Grimórios', path: '/mestre/grimorio', key: '8' },
-  { label: '⚙ Sistema', path: '/mestre/sistema', key: '9' },
+  { label: '◈ Tesouros', path: '/mestre/tesouros', key: '5' },
+  { label: '♞ Bestiário', path: '/mestre/bestiario', key: '6' },
+  { label: '⚒ Itens', path: '/mestre/itens', key: '7' },
+  { label: '⚒ Oficina', path: '/mestre/oficina', key: '8' },
+  { label: '▤ Grimórios', path: '/mestre/grimorio', key: '9' },
+  { label: '⚙ Sistema', path: '/mestre/sistema', key: '0' },
 ] as const;
 
 function isActive(currentPath: string, itemPath: string) {
@@ -43,7 +44,7 @@ export const MestreLayout: React.FC = () => {
   const currentIndexRef = useRef(currentIndex);
   currentIndexRef.current = currentIndex;
 
-  // Navegação por teclado: Q / E (anterior/próxima) e 1-9
+  // Navegação por teclado: Q / E (anterior/próxima) e 1-9, 0
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
@@ -62,9 +63,10 @@ export const MestreLayout: React.FC = () => {
       } else if (e.key === 'e' || e.key === 'E') {
         const nextIdx = idx >= DM_SECTIONS.length - 1 ? 0 : idx + 1;
         navigate({ to: DM_SECTIONS[nextIdx].path });
-      } else if (e.key >= '1' && e.key <= String(DM_SECTIONS.length)) {
-        const kIdx = Number.parseInt(e.key) - 1;
-        if (DM_SECTIONS[kIdx]) navigate({ to: DM_SECTIONS[kIdx].path });
+      } else {
+        // 1–9 e 0 (décima aba)
+        const sec = DM_SECTIONS.find((s) => s.key === e.key);
+        if (sec) navigate({ to: sec.path });
       }
     };
     window.addEventListener('keydown', handleKeyDown);

@@ -321,7 +321,7 @@ const COPY_FIELDS = [
 ] as const;
 
 /** Põe um item do catálogo na mochila (empilha quando dá). */
-async function giveFromCatalog(catalogId: string, heroId: string, qty: number, pricePaid: number) {
+export async function giveFromCatalog(catalogId: string, heroId: string, qty: number, pricePaid: number) {
   const cat = (await run(db.from('item_catalog').select('*').eq('id', catalogId).single())) as Record<string, unknown>;
   const inv = ((await run(
     db.from('inventory_items').select('id, slot_index, quantity, catalog_id, equip_slot, stackable').eq('character_id', heroId),

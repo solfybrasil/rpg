@@ -3,6 +3,7 @@ import { m } from 'motion/react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useActiveBattleMap } from '../../features/battle-map/api/useBattle.ts';
+import { PlayerChestNotifier } from '../../features/treasure/components/ChestNotifier';
 import { PlayerClockStrip } from '../../features/world-clock/components/PlayerClockStrip';
 import { useHero } from '../hooks/baseHooks.ts';
 import { useSessionStore } from '../stores/session.ts';
@@ -136,6 +137,9 @@ export const JogadorLayout: React.FC = () => {
             <BottomNav />
           </div>
         )}
+
+        {/* Baú liberado pelo Mestre (fora da mesa de batalha) */}
+        {!isMesaRoute && <PlayerChestNotifier heroId={heroId ?? null} heroName={hero?.name || 'Jurado'} />}
       </div>
     </div>
   );

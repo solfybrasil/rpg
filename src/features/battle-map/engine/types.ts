@@ -104,4 +104,8 @@ export interface BattleEngineOptions {
   activeTokenId?: string | null;
   /** Vida dos heróis por hero_id, para a barra sobre a peça. */
   heroVitals?: Record<string, HeroVital>;
+  /** Jogador tocou num baú do mapa (`near`: o herói está numa casa vizinha). */
+  onTapChest?: (token: BattleToken, near: boolean) => void;
+  /** Mestre tocou numa casa (usado para pôr efeitos e baús). */
+  onCellClick?: (cell: CellCoord) => void;
 }

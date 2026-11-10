@@ -10,6 +10,7 @@ import {
 } from './IsometricGrid.ts';
 import { readMapSettings } from './mapSettings.ts';
 import { bfs, computeReach, reconstructCoordPath, reconstructPath } from './Pathfinding.ts';
+import { CHEST_FX, CHEST_OPEN_AT, FxSprite, type SpecialToken, parseSpecial } from './FxSprite.ts';
 import { VideoChromaPool } from './VideoChromaPool.ts';
 import type {
   BattleEngineOptions,
@@ -63,6 +64,16 @@ interface LocalTokenState {
   anchorY: number;
   size: number;
   kind: string;
+  /** Efeito (`fx:`) ou baú (`bau:`) guardado na peça; null para peças comuns. */
+  special: SpecialToken | null;
+}
+
+/** Efeito disparado uma vez (sem peça), por exemplo um raio que o Mestre solta. */
+interface OneShotFx {
+  sprite: FxSprite;
+  x: number;
+  y: number;
+  scale: number;
 }
 
 interface ActivePing extends BattlePing {
@@ -125,6 +136,9 @@ export class BattleEngine {
 
   // Peças
   private tokenStates = new Map<string, LocalTokenState>();
+  /** Efeitos das peças especiais (por id da peça). */
+  private fxSprites = new Map<string, FxSprite>();
+  private oneShots: OneShotFx[] = [];
 
   // Movimento do herói do jogador
   private hover: CellCoord | null = null;
@@ -175,6 +189,14 @@ export class BattleEngine {
     if (!context) throw new Error('Could not get 2D context from canvas');
     this.ctx = context;
     this.options = options;
+    // Só em desenvolvimento: deixa os testes de navegador acharem as casas.
+    // @ts-ignore: tipos do Vite fora do tsconfig deste projeto
+    if (import.meta.env?.DEV && typeof window !== 'undefined') {
+      (window as unknown as { __battle?: Record<string, BattleEngine> }).__battle = {
+        ...(window as unknown as { __battle?: Record<string, BattleEngine> }).__battle,
+        [options.mode]: this,
+      };
+    }
 
     this.pool = new VideoChromaPool();
     this.pool.onDirty = () => this.invalidate();
@@ -240,7 +262,7 @@ export class BattleEngine {
 
   private hasVisibleVideo(): boolean {
     for (const s of this.tokenStates.values()) {
-      if (!this.isTokenShown(s)) continue;
+      if (!this.isTokenShown(s) || !s.mediaUrl) continue;
       if (this.pool.get(s.mediaUrl, s.chromaMode)?.type === 'video') return true;
     }
     return false;
@@ -305,6 +327,9 @@ export class BattleEngine {
 
     if (this.activePulse()) this.dirty = true;
 
+    // Efeitos (pixelfx): só pedem quadro quando o desenho muda (~30 fps)
+    const fxAnimating = this.tickFx(dt);
+
     // Fundo em vídeo: redesenha quando há quadro novo (no máximo ~30 fps).
     const bgv = this.bgVideo;
     if (bgv && !bgv.paused && bgv.readyState >= 2 && now - this.lastBgVideoDraw >= 33 && bgv.currentTime !== this.lastBgVideoT) {
@@ -322,7 +347,12 @@ export class BattleEngine {
     this.trackFps(now, performance.now() - frameStart);
 
     const keepRunning =
-      anyMoving || this.pings.length > 0 || this.activePulse() || this.hasVisibleVideo() || Boolean(this.bgVideo);
+      anyMoving ||
+      this.pings.length > 0 ||
+      this.activePulse() ||
+      this.hasVisibleVideo() ||
+      Boolean(this.bgVideo) ||
+      fxAnimating;
     if (keepRunning || this.dirty) {
       this.rafId = requestAnimationFrame(this.step);
     }
@@ -524,9 +554,10 @@ export class BattleEngine {
       const targetPos = this.cc(targetC, targetR);
       let s = this.tokenStates.get(token.id);
 
+      const special = parseSpecial(token.media_url);
       if (!s) {
-        const { url, chroma } = this.resolveTokenMedia(token);
-        this.pool.get(url, chroma);
+        const { url, chroma } = special ? { url: '', chroma: 'nenhum' as ChromaMode } : this.resolveTokenMedia(token);
+        if (url) this.pool.get(url, chroma);
         s = {
           token,
           x: targetPos.x,
@@ -543,8 +574,10 @@ export class BattleEngine {
           anchorY: token.anchor_y ?? 0.985,
           size: token.size ?? 160,
           kind: token.kind,
+          special,
         };
         this.tokenStates.set(token.id, s);
+        this.syncSprite(s);
         continue;
       }
 
@@ -556,13 +589,15 @@ export class BattleEngine {
       s.anchorY = token.anchor_y ?? s.anchorY;
       if (!s.moving) s.facing = token.facing ?? s.facing;
 
-      const { url, chroma } = this.resolveTokenMedia(token);
+      s.special = special;
+      const { url, chroma } = special ? { url: '', chroma: 'nenhum' as ChromaMode } : this.resolveTokenMedia(token);
       if (url !== s.mediaUrl || chroma !== s.chromaMode) {
-        this.pool.release(s.mediaUrl);
-        this.pool.get(url, chroma);
+        if (s.mediaUrl) this.pool.release(s.mediaUrl);
+        if (url) this.pool.get(url, chroma);
         s.mediaUrl = url;
         s.chromaMode = chroma;
       }
+      this.syncSprite(s);
 
       const beingDragged = this.isDraggingToken && this.draggedTokenId === token.id;
       if (!s.moving && !beingDragged && (s.c !== targetC || s.r !== targetR)) {
@@ -581,13 +616,116 @@ export class BattleEngine {
 
     for (const [id, s] of this.tokenStates) {
       if (!currentIds.has(id)) {
-        this.pool.release(s.mediaUrl);
+        if (s.mediaUrl) this.pool.release(s.mediaUrl);
         this.tokenStates.delete(id);
+        this.fxSprites.delete(id);
       }
     }
 
     this.recomputeReach();
     this.invalidate();
+  }
+
+  /** Cria/ajusta o efeito de uma peça especial (efeito em loop ou baú). */
+  private syncSprite(s: LocalTokenState): void {
+    const sp = s.special;
+    const id = s.token.id;
+    if (!sp) {
+      this.fxSprites.delete(id);
+      return;
+    }
+    const cur = this.fxSprites.get(id);
+    if (sp.kind === 'fx') {
+      if (!cur || cur.id !== sp.id) {
+        this.fxSprites.set(id, new FxSprite(sp.id, sp.repeat ? 'loop' : 'once', { every: sp.every }));
+      }
+      return;
+    }
+    // Baú: fechado parado; ao ser aberto toca a tampa abrindo e para aberto.
+    if (!cur) {
+      this.fxSprites.set(id, new FxSprite(CHEST_FX, 'still', { at: sp.opened ? CHEST_OPEN_AT : 0, seed: 3 }));
+    } else if (sp.opened) {
+      cur.setMode(cur.idle && !cur.ready ? 'still' : 'toStill', CHEST_OPEN_AT);
+    } else {
+      cur.setMode('still', 0);
+    }
+  }
+
+  /** Toca um efeito uma vez numa casa (para todos que recebem o aviso). */
+  public playFx(id: string, c: number, r: number, scale = 1): void {
+    const p = this.cc(c, r);
+    this.oneShots.push({ sprite: new FxSprite(id, 'once'), x: p.x, y: p.y, scale });
+    this.invalidate();
+  }
+
+  /** Avança os efeitos; devolve se algum ainda anima. */
+  private tickFx(dt: number): boolean {
+    let animating = false;
+    for (const [id, sp] of this.fxSprites) {
+      const st = this.tokenStates.get(id);
+      if (!st || !this.isTokenShown(st)) continue;
+      if (sp.tick(dt)) this.dirty = true;
+      if (!sp.idle || !sp.ready) animating = true;
+    }
+    if (this.oneShots.length) {
+      for (const o of this.oneShots) if (o.sprite.tick(dt)) this.dirty = true;
+      const before = this.oneShots.length;
+      this.oneShots = this.oneShots.filter((o) => !o.sprite.finished);
+      if (this.oneShots.length !== before) this.dirty = true;
+      if (this.oneShots.length) animating = true;
+    }
+    return animating;
+  }
+
+  /** Desenha um efeito em pixel art, apoiado em (x, y) do mundo. */
+  private drawSprite(sp: FxSprite, x: number, y: number, scale: number, alpha = 1): void {
+    const src = sp.source;
+    if (!src || !sp.ready) return;
+    const { w, h, ox, oy } = sp.box;
+    const k = (this.TW / 40) * scale;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(src, x - ox * k, y - oy * k, w * k, h * k);
+    ctx.restore();
+  }
+
+  /** Peça especial: efeito ou baú (sem base, sombra nem barra de vida). */
+  private drawSpecial(s: LocalTokenState): void {
+    const sp = this.fxSprites.get(s.token.id);
+    const hidden = s.token.visible === false;
+    const isDm = this.options.mode === 'dm';
+    const isSelected = this.options.selectedTokenId === s.token.id;
+    const ctx = this.ctx;
+    const yoff = this.mode === 'square' ? this.TW * 0.12 : this.TH * 0.14;
+    if (isDm && (isSelected || hidden)) {
+      this.shape(ctx, s.x, s.y, this.TW * 0.9, this.TH * 0.9);
+      ctx.setLineDash([4 / this.scale, 3 / this.scale]);
+      ctx.lineWidth = (isSelected ? 2.4 : 1.2) / this.scale;
+      ctx.strokeStyle = isSelected ? C.gold : C.textA(0.5);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if (sp) {
+      const scale = s.special?.kind === 'fx' ? s.special.scale : 0.9;
+      this.drawSprite(sp, s.x, s.y + yoff, scale, hidden ? 0.4 : 1);
+    }
+    // Nome só para o Mestre (efeitos) ou baú escondido
+    if (isDm && (isSelected || s.special?.kind === 'bau')) {
+      const fs = Math.max(9 / this.scale, this.TH * 0.24);
+      ctx.font = `700 ${fs}px Cinzel, Georgia, serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(7, 6, 5, 0.9)';
+      ctx.lineWidth = 3 / this.scale;
+      const label = hidden ? `${s.token.name} (oculto)` : s.token.name;
+      const y = s.y - this.TH * 1.6;
+      ctx.strokeText(label, s.x, y);
+      ctx.fillStyle = C.goldHi;
+      ctx.fillText(label, s.x, y);
+    }
   }
 
   public getMyHeroToken(): LocalTokenState | null {
@@ -612,6 +750,7 @@ export class BattleEngine {
   private isCellBlocked(k: string, ignoreId?: string): boolean {
     if (this.blocked.has(k)) return true;
     for (const s of this.tokenStates.values()) {
+      if (s.special?.kind === 'fx') continue; // efeito não ocupa a casa
       if (s.token.id !== ignoreId && s.token.visible !== false && cellKey(s.c, s.r) === k) {
         return true;
       }
@@ -804,6 +943,7 @@ export class BattleEngine {
     const states = [...this.tokenStates.values()].filter((s) => this.isTokenShown(s));
     states.sort((a, b) => a.y - b.y);
     for (const s of states) this.drawToken(s, now, s === hero);
+    for (const o of this.oneShots) this.drawSprite(o.sprite, o.x, o.y, o.scale);
 
     this.drawMeasure(ctx, lw);
     this.drawPings(ctx, now);
@@ -910,6 +1050,10 @@ export class BattleEngine {
   }
 
   private drawToken(s: LocalTokenState, now: number, isMyHero: boolean): void {
+    if (s.special) {
+      this.drawSpecial(s);
+      return;
+    }
     // Culling: ignora peças fora da câmera
     const margin = Math.max(s.size, this.TW) * 1.5;
     const vw = this.cv.width / this.scale;
@@ -1042,6 +1186,14 @@ export class BattleEngine {
     const rc = this.cv.getBoundingClientRect();
     const s = this.getCssScale();
     return { x: this.view.x + (clientX - rc.left) / s, y: this.view.y + (clientY - rc.top) / s };
+  }
+
+  /** Posição na tela (client) do centro de uma casa. */
+  public cellToClient(c: number, r: number): Point {
+    const rc = this.cv.getBoundingClientRect();
+    const s = this.getCssScale();
+    const p = this.cc(c, r);
+    return { x: rc.left + (p.x - this.view.x) * s, y: rc.top + (p.y - this.view.y) * s };
   }
 
   private cellAt(clientX: number, clientY: number): CellCoord | null {
@@ -1333,6 +1485,10 @@ export class BattleEngine {
       const cell = this.cellAt(e.clientX, e.clientY);
       if (cell) this.handleCellAction(cell);
     }
+    if (isTap && this.options.mode === 'dm' && this.options.onCellClick) {
+      const cell = this.cellAt(e.clientX, e.clientY);
+      if (cell) this.options.onCellClick(cell);
+    }
 
     this.isPaintingBlock = false;
     this.isErasingBlock = false;
@@ -1347,6 +1503,13 @@ export class BattleEngine {
 
   private handleCellAction(cell: CellCoord): void {
     const hero = this.getMyHeroToken();
+    // Baú na casa tocada: abre (se o herói estiver do lado) em vez de andar.
+    for (const st of this.tokenStates.values()) {
+      if (st.special?.kind !== 'bau' || st.token.visible === false || st.c !== cell.c || st.r !== cell.r) continue;
+      const near = Boolean(hero && Math.max(Math.abs(hero.c - st.c), Math.abs(hero.r - st.r)) <= 1);
+      this.options.onTapChest?.(st.token, near);
+      return;
+    }
     if (!hero || hero.moving || !this.graph) return;
     if (!this.reach.has(cellKey(cell.c, cell.r))) return;
     const path = reconstructCoordPath(this.graph.prev, this.graph.dist, cell.c, cell.r, hero.c, hero.r);

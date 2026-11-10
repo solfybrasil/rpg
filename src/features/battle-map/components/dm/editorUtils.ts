@@ -58,7 +58,17 @@ export function useDebouncedSaver<T extends object>(
 }
 
 /** Procura `count` células livres em espiral a partir do centro da imagem. */
-export function findFreeCells(map: BattleMap, tokens: BattleToken[], count: number) {
+/**
+ * Casas livres para novas peças.
+ * - `near`: começa ao redor desta casa (duplicar uma fera ao lado dela);
+ * - `random`: espalha ao acaso pelo mapa (baús).
+ */
+export function findFreeCells(
+  map: BattleMap,
+  tokens: BattleToken[],
+  count: number,
+  opts: { near?: { c: number; r: number }; random?: boolean } = {},
+) {
   const imgW = Number(map.img_w) || 1376;
   const imgH = Number(map.img_h) || 768;
   const tw = Math.max(16, Number(map.tile_size) || 86);
@@ -67,15 +77,36 @@ export function findFreeCells(map: BattleMap, tokens: BattleToken[], count: numb
   const mode = readMapSettings(map.background_url).grid;
   const valid = buildGridG(mode, imgW, imgH, ox, oy, tw);
   const taken = new Set<string>(Array.isArray(map.blocked) ? map.blocked : []);
-  for (const t of tokens) taken.add(cellKey(t.c ?? 0, t.r ?? 0));
+  // Efeitos não ocupam a casa.
+  for (const t of tokens) if (!String(t.media_url ?? '').startsWith('fx:')) taken.add(cellKey(t.c ?? 0, t.r ?? 0));
 
-  // Célula mais próxima do centro visual do mapa
+  if (opts.random) {
+    const free = [...valid].filter((k) => !taken.has(k));
+    for (let i = free.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [free[i], free[j]] = [free[j], free[i]];
+    }
+    // Evita baús colados: ignora casas vizinhas às já escolhidas.
+    const out: Array<{ c: number; r: number }> = [];
+    for (const k of free) {
+      if (out.length >= count) break;
+      const [c, r] = k.split(',').map(Number);
+      if (out.some((o) => Math.max(Math.abs(o.c - c), Math.abs(o.r - r)) < 2)) continue;
+      out.push({ c, r });
+    }
+    return out;
+  }
+
+  // Célula mais próxima do centro visual do mapa (ou da casa pedida)
   let best = { c: 0, r: 0, d: Number.POSITIVE_INFINITY };
-  for (const k of valid) {
-    const [c, r] = k.split(',').map(Number);
-    const p = centerG(mode, c, r, ox, oy, tw);
-    const d = Math.hypot(p.x - imgW / 2, p.y - imgH / 2);
-    if (d < best.d) best = { c, r, d };
+  if (opts.near) best = { ...opts.near, d: 0 };
+  if (!opts.near) {
+    for (const k of valid) {
+      const [c, r] = k.split(',').map(Number);
+      const p = centerG(mode, c, r, ox, oy, tw);
+      const d = Math.hypot(p.x - imgW / 2, p.y - imgH / 2);
+      if (d < best.d) best = { c, r, d };
+    }
   }
 
   const out: Array<{ c: number; r: number }> = [];

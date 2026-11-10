@@ -13,8 +13,17 @@ export interface BattleTurn {
   round: number;
 }
 
+/** Efeito tocado uma vez numa casa (não fica salvo na mesa). */
+export interface BattleFxEvent {
+  id: string;
+  c: number;
+  r: number;
+  scale?: number;
+}
+
 interface SyncHandlers {
   onPing?: (ping: BattlePing) => void;
+  onFx?: (fx: BattleFxEvent) => void;
   onTurn?: (turn: BattleTurn) => void;
   /** Só o Mestre responde a novos participantes com o turno atual. */
   getTurn?: () => BattleTurn | null;
@@ -42,6 +51,9 @@ export function useBattleSync(mapId: string | undefined, handlers: SyncHandlers)
       channel
         .on('broadcast', { event: 'ping' }, ({ payload }) => {
           handlersRef.current.onPing?.(payload as BattlePing);
+        })
+        .on('broadcast', { event: 'fx' }, ({ payload }) => {
+          handlersRef.current.onFx?.(payload as BattleFxEvent);
         })
         .on('broadcast', { event: 'turn' }, ({ payload }) => {
           handlersRef.current.onTurn?.(payload as BattleTurn);
@@ -76,7 +88,11 @@ export function useBattleSync(mapId: string | undefined, handlers: SyncHandlers)
     void channelRef.current?.send({ type: 'broadcast', event: 'turn', payload: turn });
   }, []);
 
-  return { sendPing, sendTurn };
+  const sendFx = useCallback((fx: BattleFxEvent) => {
+    void channelRef.current?.send({ type: 'broadcast', event: 'fx', payload: fx });
+  }, []);
+
+  return { sendPing, sendTurn, sendFx };
 }
 
 const HERO_VITALS_KEY = ['battle', 'hero_vitals'] as const;

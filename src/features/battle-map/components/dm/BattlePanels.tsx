@@ -50,6 +50,8 @@ export interface PiecesPanelProps {
   onAddHero: (hero: HeroOption) => void;
   onAddBeast: (beast: { id: string; name: string; image_url?: string | null }, qty: number) => void;
   onEditMedia: (token: BattleToken) => void;
+  /** Copia a peça (feras e NPCs) para casas livres ao lado. */
+  onDuplicate: (token: BattleToken, qty: number) => void;
 }
 
 export function PiecesPanel(props: PiecesPanelProps) {
@@ -100,6 +102,7 @@ export function PiecesPanel(props: PiecesPanelProps) {
           onRemove={() => props.onRemove(selectedToken.id)}
           onCenter={() => onCenter(selectedToken.id)}
           onEditMedia={() => props.onEditMedia(selectedToken)}
+          onDuplicate={(n) => props.onDuplicate(selectedToken, n)}
         />
       )}
 
@@ -281,6 +284,7 @@ function SelectedTokenEditor({
   onRemove,
   onCenter,
   onEditMedia,
+  onDuplicate,
 }: {
   token: BattleToken;
   moveLimit: number;
@@ -288,8 +292,10 @@ function SelectedTokenEditor({
   onRemove: () => void;
   onCenter: () => void;
   onEditMedia: () => void;
+  onDuplicate: (qty: number) => void;
 }) {
   const [name, setName] = useState(token.name);
+  const [dupQty, setDupQty] = useState(1);
   const moves = token.moves_left ?? moveLimit;
   const hidden = token.visible === false;
 
@@ -342,6 +348,19 @@ function SelectedTokenEditor({
           <IconButton icon={ImageIcon} label="Mídia e croma" onClick={onEditMedia} testId="btn-open-media-modal" />
           <IconButton icon={Trash2} label="Remover peça" shortcut="Del" danger onClick={onRemove} />
         </div>
+
+        {token.kind !== 'heroi' && (
+          <div className="flex items-center gap-1.5">
+            <TextButton icon={Copy} onClick={() => onDuplicate(dupQty)} testId="btn-duplicate" className="flex-1">
+              Duplicar
+            </TextButton>
+            <IconButton size="sm" icon={Minus} label="Menos cópias" onClick={() => setDupQty((n) => Math.max(1, n - 1))} />
+            <span className="w-8 text-center text-sm tabular-nums text-[var(--gold-hi)]" aria-label="Cópias">
+              ×{dupQty}
+            </span>
+            <IconButton size="sm" icon={Plus} label="Mais cópias" onClick={() => setDupQty((n) => Math.min(12, n + 1))} />
+          </div>
+        )}
       </div>
     </Section>
   );

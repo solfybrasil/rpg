@@ -38,8 +38,14 @@ import {
   processBattleMapVideoBackground,
   uploadBattleMedia,
 } from '../media/mediaProcessor.ts';
+import { useCatalogLite } from '../../market/api/marketApi.ts';
+import { useChestActions, useChests } from '../../treasure/api/treasureApi.ts';
+import { type ChestTier, TIERS, rollChest } from '../../treasure/data/loot.ts';
+import { chestUrl, fxUrl, parseSpecial } from '../engine/FxSprite.ts';
 import { MediaBattleModal, type MediaBattleTarget } from './MediaBattleModal.tsx';
 import { PiecesPanel, TablePanel, TurnPanel } from './dm/BattlePanels.tsx';
+import { EffectsPanel, type FxPlacement } from './dm/EffectsPanel.tsx';
+import { MapChestsPanel } from './dm/MapChestsPanel.tsx';
 import { IconButton } from './dm/BattleUI.tsx';
 import {
   findFreeCells,
@@ -56,7 +62,10 @@ const MAPS_KEY = ['battle_maps', 'list'];
 function reportError(err: unknown) {
   toast.error(err instanceof Error ? err.message : 'Algo deu errado ao salvar a mesa.');
 }
-type PanelTab = 'pecas' | 'turno' | 'mesa';
+type PanelTab = 'pecas' | 'turno' | 'efeitos' | 'baus' | 'mesa';
+
+/** Efeitos e baús ficam fora da lista de peças e da ordem de turno. */
+const isSpecialToken = (t: BattleToken) => Boolean(parseSpecial(t.media_url));
 
 const TOOLS: Array<{ id: BattleEditorTool; label: string; key: string; icon: typeof Hand }> = [
   { id: 'select', label: 'Selecionar e arrastar peças', key: 'V', icon: MousePointer2 },
@@ -93,6 +102,10 @@ export function DMBattleMapEditor() {
   // A consulta periódica espera enquanto o Mestre tem gravações pendentes.
   const savingRef = useRef<() => boolean>(() => false);
   const { tokens } = useBattleTokens(map?.id, { isBusy: () => savingRef.current() });
+  const pieceTokens = useMemo(() => tokens.filter((t) => !isSpecialToken(t)), [tokens]);
+  const chestsQ = useChests('dm');
+  const chestActions = useChestActions();
+  const catalogQ = useCatalogLite();
   const { heroes, vitals } = useHeroVitals();
   const moveLimit = map?.move_limit ?? 6;
   const round = map?.round ?? 1;
@@ -106,6 +119,10 @@ export function DMBattleMapEditor() {
   const [mediaTarget, setMediaTarget] = useState<MediaBattleTarget | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  // Próximo clique no mapa põe um efeito ou um baú
+  const [fxPlacing, setFxPlacing] = useState<FxPlacement | null>(null);
+  const [chestPlacing, setChestPlacing] = useState<{ tier: ChestTier; hidden: boolean } | null>(null);
+  const [chestBusy, setChestBusy] = useState(false);
   const selectedToken = useMemo(() => tokens.find((t) => t.id === selectedId) ?? null, [tokens, selectedId]);
 
   // ── Gravação (debounce por item) ──
@@ -156,14 +173,14 @@ export function DMBattleMapEditor() {
   }, [map?.id]);
 
   const order = useMemo(() => {
-    const byId = new Map(tokens.map((t) => [t.id, t]));
+    const byId = new Map(pieceTokens.map((t) => [t.id, t]));
     const known = orderIds.map((id) => byId.get(id)).filter((t): t is BattleToken => Boolean(t));
     const knownSet = new Set(known.map((t) => t.id));
-    const fresh = tokens
+    const fresh = pieceTokens
       .filter((t) => !knownSet.has(t.id))
       .sort((a, b) => (a.kind === 'heroi' ? 0 : 1) - (b.kind === 'heroi' ? 0 : 1) || a.name.localeCompare(b.name));
     return [...known, ...fresh];
-  }, [tokens, orderIds]);
+  }, [pieceTokens, orderIds]);
 
   const safeIdx = order.length ? Math.min(activeIdx, order.length - 1) : 0;
   const activeToken = order[safeIdx] ?? null;
@@ -185,8 +202,9 @@ export function DMBattleMapEditor() {
   // ── Sincronização (ping + turno) ──
   const turnRef = useRef({ tokenId: activeToken?.id ?? null, name: activeToken?.name ?? null, round });
   turnRef.current = { tokenId: activeToken?.id ?? null, name: activeToken?.name ?? null, round };
-  const { sendPing, sendTurn } = useBattleSync(map?.id, {
+  const { sendPing, sendTurn, sendFx } = useBattleSync(map?.id, {
     onPing: (p) => engineRef.current?.showPing(p),
+    onFx: (f) => engineRef.current?.playFx(f.id, f.c, f.r, f.scale),
     getTurn: () => turnRef.current,
   });
   useEffect(() => {
@@ -194,6 +212,7 @@ export function DMBattleMapEditor() {
   }, [activeToken?.id, activeToken?.name, round, sendTurn]);
 
   // ── Motor ──
+  const cellClickRef = useRef<(cell: { c: number; r: number }) => void>(() => {});
   const callbacks = useRef({ patchToken, patchMap, sendPing });
   callbacks.current = { patchToken, patchMap, sendPing };
 
@@ -207,6 +226,7 @@ export function DMBattleMapEditor() {
       onUpdateBlocked: (blocked) => callbacks.current.patchMap({ blocked }),
       onDropToken: (id, c, r) => callbacks.current.patchToken(id, { c, r, path: [] }),
       onPing: (p) => callbacks.current.sendPing(p),
+      onCellClick: (cell) => cellClickRef.current(cell),
     });
     engineRef.current = engine;
     return () => {
@@ -459,6 +479,144 @@ export function DMBattleMapEditor() {
     [addTokens],
   );
 
+  /** Copia uma fera/NPC para casas livres ao lado dela, numerando os nomes. */
+  const duplicateToken = useCallback(
+    async (src: BattleToken, qty: number) => {
+      try {
+        if (!map) return;
+        const base = src.name.replace(/\s+\d+$/, '');
+        const used = tokens
+          .map((t) => t.name.match(new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+(\\d+)$`)))
+          .filter(Boolean)
+          .map((m) => Number((m as RegExpMatchArray)[1]));
+        let n = Math.max(1, ...used);
+        const cells = findFreeCells(map, tokens, qty, { near: { c: src.c ?? 0, r: src.r ?? 0 } });
+        const copy = (({ id: _i, updated_at: _u, c: _c, r: _r, path: _p, move_seq: _m, ...rest }) => rest)(src);
+        const created = await Promise.all(
+          cells.map((cell) => {
+            n += 1;
+            return createBattleToken({ ...copy, name: `${base} ${n}`, ...cell, path: [], moves_left: moveLimit });
+          }),
+        );
+        setTokensCache((prev) => {
+          const ids = new Set(prev.map((t) => t.id));
+          return [...prev, ...created.filter((t) => !ids.has(t.id))];
+        });
+        // A original vira "Nome 1" para não confundir com as cópias.
+        if (!/\s\d+$/.test(src.name)) patchToken(src.id, { name: `${base} 1` });
+        toast.success(`${created.length} ${created.length === 1 ? 'cópia' : 'cópias'} de ${base}.`);
+      } catch (err) {
+        reportError(err);
+      }
+    },
+    [map, tokens, moveLimit, setTokensCache, patchToken],
+  );
+
+  /** Cria baús sorteados e as peças deles no mapa. */
+  const placeChests = useCallback(
+    async (tier: ChestTier, cells: Array<{ c: number; r: number }>, hidden: boolean) => {
+      if (!map || !cells.length) return;
+      const catalog = catalogQ.data ?? [];
+      if (!catalog.length) return toast.error('O catálogo de itens ainda está carregando.');
+      setChestBusy(true);
+      try {
+        const rows = await chestActions.createMany(
+          cells.map(() => {
+            const r = rollChest({ catalog, tier });
+            return { name: TIERS[tier].nome, tier, items: r.items, coins: r.coins, status: 'liberado', map_id: map.id, released_at: new Date().toISOString() };
+          }),
+        );
+        const created = await Promise.all(
+          rows.map((row, i) =>
+            createBattleToken({
+              map_id: map.id,
+              kind: 'npc',
+              name: TIERS[tier].nome,
+              media_url: chestUrl(row.id),
+              media_type: 'imagem',
+              size: 100,
+              facing: 1,
+              visible: !hidden,
+              moves_left: 0,
+              ...cells[i],
+            }),
+          ),
+        );
+        setTokensCache((prev) => [...prev, ...created]);
+        await Promise.all(rows.map((row, i) => chestActions.update.mutateAsync({ chest: row, patch: { map_token_id: created[i].id } })));
+        toast.success(`${created.length} ${created.length === 1 ? 'baú' : 'baús'} no mapa${hidden ? ' (escondidos)' : ''}.`);
+      } catch (err) {
+        reportError(err);
+      } finally {
+        setChestBusy(false);
+      }
+    },
+    [map, catalogQ.data, chestActions, setTokensCache],
+  );
+
+  const spreadChests = useCallback(
+    (tier: ChestTier, count: number, hidden: boolean) => {
+      if (!map) return;
+      const cells = findFreeCells(map, tokens, count, { random: true });
+      if (!cells.length) return toast.error('Não há casas livres no mapa.');
+      void placeChests(tier, cells, hidden);
+    },
+    [map, tokens, placeChests],
+  );
+
+  const removeMapChest = useCallback(
+    async (t: BattleToken) => {
+      const sp = parseSpecial(t.media_url);
+      if (!window.confirm(`Tirar "${t.name}" do mapa? O que ainda estiver dentro some junto.`)) return;
+      try {
+        setTokensCache((prev) => prev.filter((x) => x.id !== t.id));
+        if (selectedId === t.id) setSelectedId(null);
+        await deleteBattleToken(t.id);
+        if (sp?.kind === 'bau') chestActions.remove.mutate(sp.chestId);
+      } catch (err) {
+        reportError(err);
+      }
+    },
+    [setTokensCache, selectedId, chestActions],
+  );
+
+  // Clique no mapa enquanto põe efeito/baú
+  cellClickRef.current = (cell) => {
+    if (fxPlacing && map) {
+      const f = fxPlacing;
+      if (f.mode === 'uma') {
+        engineRef.current?.playFx(f.id, cell.c, cell.r, f.scale);
+        sendFx({ id: f.id, c: cell.c, r: cell.r, scale: f.scale });
+        return; // continua no modo: dá para soltar vários raios seguidos
+      }
+      setFxPlacing(null);
+      void createBattleToken({
+        map_id: map.id,
+        kind: 'npc',
+        name: f.id,
+        media_url: fxUrl(f.id, { scale: f.scale, every: f.every }),
+        media_type: 'imagem',
+        size: 100,
+        facing: 1,
+        visible: true,
+        moves_left: 0,
+        c: cell.c,
+        r: cell.r,
+      })
+        .then((t) => {
+          setTokensCache((prev) => [...prev, t]);
+          setSelectedId(t.id);
+        })
+        .catch(reportError);
+      return;
+    }
+    if (chestPlacing) {
+      const cp = chestPlacing;
+      setChestPlacing(null);
+      void placeChests(cp.tier, [cell], cp.hidden);
+    }
+  };
+
   const removeToken = useCallback(
     async (id: string) => {
       try {
@@ -515,6 +673,8 @@ export function DMBattleMapEditor() {
       if (key === '-') return engineRef.current?.zoomOut();
       if (key === '0') return engineRef.current?.zoomFit();
       if (key === 'escape') {
+        setFxPlacing(null);
+        setChestPlacing(null);
         setSelectedId(null);
         engineRef.current?.clearMeasure();
         return;
@@ -545,6 +705,8 @@ export function DMBattleMapEditor() {
   const tabs: Array<{ id: PanelTab; label: string }> = [
     { id: 'pecas', label: 'Peças' },
     { id: 'turno', label: 'Turno' },
+    { id: 'efeitos', label: 'Efeitos' },
+    { id: 'baus', label: 'Baús' },
     { id: 'mesa', label: 'Mesa' },
   ];
 
@@ -710,7 +872,7 @@ export function DMBattleMapEditor() {
             <div className="flex-1 min-h-0 overflow-y-auto p-3">
               {tab === 'pecas' && (
                 <PiecesPanel
-                  tokens={tokens}
+                  tokens={pieceTokens}
                   selectedToken={selectedToken}
                   activeTokenId={activeToken?.id ?? null}
                   heroes={heroes}
@@ -722,6 +884,7 @@ export function DMBattleMapEditor() {
                   onCenter={centerOn}
                   onAddHero={addHero}
                   onAddBeast={addBeast}
+                  onDuplicate={(t, n) => void duplicateToken(t, n)}
                   onEditMedia={(t) =>
                     setMediaTarget({
                       id: t.hero_id || t.beast_id || t.id,
@@ -752,6 +915,42 @@ export function DMBattleMapEditor() {
                   onNewRound={newRound}
                   onReorder={reorder}
                   onPatch={patchToken}
+                />
+              )}
+              {tab === 'efeitos' && (
+                <EffectsPanel
+                  tokens={tokens}
+                  selectedId={selectedId}
+                  placing={fxPlacing}
+                  onPlace={(p) => {
+                    setChestPlacing(null);
+                    setFxPlacing(p);
+                  }}
+                  onCancel={() => setFxPlacing(null)}
+                  onSelect={setSelectedId}
+                  onPatch={patchToken}
+                  onRemove={(id) => void removeToken(id)}
+                  onCenter={centerOn}
+                />
+              )}
+              {tab === 'baus' && (
+                <MapChestsPanel
+                  tokens={tokens}
+                  chests={chestsQ.chests}
+                  missing={chestsQ.missing}
+                  selectedId={selectedId}
+                  placing={chestPlacing?.tier ?? null}
+                  busy={chestBusy || catalogQ.isLoading}
+                  onSpread={spreadChests}
+                  onPlaceOne={(tier, hidden) => {
+                    setFxPlacing(null);
+                    setChestPlacing({ tier, hidden });
+                  }}
+                  onCancel={() => setChestPlacing(null)}
+                  onSelect={setSelectedId}
+                  onPatch={patchToken}
+                  onRemove={(t) => void removeMapChest(t)}
+                  onCenter={centerOn}
                 />
               )}
               {tab === 'mesa' && (
