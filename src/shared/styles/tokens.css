@@ -573,20 +573,37 @@ button:active,
 }
 
 .r-leg {
+  position: relative;
   border-color: var(--gold) !important;
   color: var(--gold-hi);
   background: radial-gradient(circle, rgba(201, 164, 92, 0.35), #18140c 75%);
   box-shadow: 0 0 10px rgba(201, 164, 92, 0.35);
-  animation: legendaryGlow 3s infinite ease-in-out;
+}
+
+/* Pulso do lendário: o brilho forte fica numa camada própria e só a opacidade
+   anima (feito na GPU). Animar box-shadow redesenhava a célula a cada quadro. */
+.r-leg::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  box-shadow: 0 0 22px rgba(236, 211, 149, 0.75);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .r-leg::after {
+    animation: legendaryGlow 3s infinite ease-in-out;
+  }
 }
 
 @keyframes legendaryGlow {
   0%,
   100% {
-    box-shadow: 0 0 10px rgba(201, 164, 92, 0.35);
+    opacity: 0;
   }
   50% {
-    box-shadow: 0 0 22px rgba(236, 211, 149, 0.75);
+    opacity: 1;
   }
 }
 

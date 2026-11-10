@@ -1,35 +1,30 @@
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
-import { AnimatePresence, m } from 'motion/react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { m } from 'motion/react';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useActiveBattleMap } from '../../features/battle-map/api/useBattle.ts';
 import { PlayerClockStrip } from '../../features/world-clock/components/PlayerClockStrip';
-import { useHero, useInventory } from '../hooks/baseHooks.ts';
+import { useHero } from '../hooks/baseHooks.ts';
 import { useSessionStore } from '../stores/session.ts';
-import { motionTokens, tabTransitionVariants } from '../styles/motion.ts';
-import { Belt, type BeltItem } from '../ui/Belt';
+import { tabTransitionVariants } from '../styles/motion.ts';
 import { BottomNav } from '../ui/BottomNav';
 import { EpicMoment } from '../ui/EpicMoment';
-import { type FloatingItem, FloatingNumberContainer } from '../ui/FloatingNumber';
-import { Orb } from '../ui/Orb';
 import { StatusBar } from '../ui/StatusBar';
 
 export const JogadorLayout: React.FC = () => {
-  const routerState = useRouterState();
+  // Só o caminho: o layout não re-renderiza a cada evento do roteador.
+  const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const currentPath = routerState.location.pathname;
   const heroId = useSessionStore((s) => s.heroId);
   const { hero } = useHero(heroId);
-  const { data: inventory = [] } = useInventory(heroId);
-  const { data: activeBattleMap } = useActiveBattleMap();
+  // Aqui só importa saber se a mesa ligou (o tempo real avisa na hora).
+  const { data: activeBattleMap } = useActiveBattleMap({ pollMs: 15_000 });
 
   const isBattleLive = activeBattleMap?.status === 'ao_vivo';
   const isMesaRoute = currentPath.includes('/jogador/mesa');
 
   // Estados de Realtime e Animações
-  const [isDamaged, setIsDamaged] = useState(false);
-  const [isHealing, setIsHealing] = useState(false);
   const [showVignette, setShowVignette] = useState(false);
-  const [floatingItems, setFloatingItems] = useState<FloatingItem[]>([]);
   const [epicMoment, setEpicMoment] = useState<'level_up' | null>(null);
 
   const prevHealthRef = useRef<number | null>(null);
@@ -44,21 +39,9 @@ export const JogadorLayout: React.FC = () => {
     const currentLevel = hero.level ?? 1;
 
     // Detecta Dano ou Cura do Mestre
-    if (prevHealthRef.current !== null && prevHealthRef.current !== currentHealth) {
-      const diff = currentHealth - prevHealthRef.current;
-      const id = Date.now().toString();
-
-      if (diff < 0) {
-        setIsDamaged(true);
-        setShowVignette(true);
-        setFloatingItems((prev) => [...prev, { id, value: Math.abs(diff), type: 'damage' }]);
-        setTimeout(() => setIsDamaged(false), 400);
-        setTimeout(() => setShowVignette(false), 320);
-      } else if (diff > 0) {
-        setIsHealing(true);
-        setFloatingItems((prev) => [...prev, { id, value: diff, type: 'heal' }]);
-        setTimeout(() => setIsHealing(false), 600);
-      }
+    if (prevHealthRef.current !== null && currentHealth < prevHealthRef.current) {
+      setShowVignette(true);
+      setTimeout(() => setShowVignette(false), 320);
     }
     prevHealthRef.current = currentHealth;
 
@@ -82,15 +65,6 @@ export const JogadorLayout: React.FC = () => {
     }
   }, [activeBattleMap?.status, navigate]);
 
-  // Itens rápidos para o Cinto de Poções/Consumíveis
-  const quickItems: BeltItem[] = useMemo(() => {
-    return inventory.slice(0, 4).map((it) => ({
-      id: it.id,
-      name: it.item_name || 'Item do Cinto',
-      quantity: it.quantity || 1,
-      rarity: (it.rarity as BeltItem['rarity']) || 'comum',
-    }));
-  }, [inventory]);
 
   return (
     <div className="flex-1 flex flex-col h-full w-full bg-[var(--abyss)] text-[var(--text)] overflow-hidden select-none font-sans">
@@ -143,18 +117,17 @@ export const JogadorLayout: React.FC = () => {
               : 'overflow-y-auto pb-[calc(68px+env(safe-area-inset-bottom,0px))]'
           }`}
         >
-          <AnimatePresence mode="wait">
-            <m.div
-              key={currentPath}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              variants={tabTransitionVariants}
-              className="flex-1 flex flex-col w-full"
-            >
-              <Outlet />
-            </m.div>
-          </AnimatePresence>
+          {/* Só a entrada é animada: com "esperar a saída", a tela nova ficava
+              presa atrás da antiga (e o <Outlet/> já mostrava a nova saindo). */}
+          <m.div
+            key={currentPath}
+            initial="initial"
+            animate="animate"
+            variants={tabTransitionVariants}
+            className="flex-1 flex flex-col w-full"
+          >
+            <Outlet />
+          </m.div>
         </main>
 
         {/* 3. Navegação Inferior Fixa (Apenas as 5 abas, sem orbes flutuantes cobrindo a tela e sem cinto) */}

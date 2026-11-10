@@ -2,7 +2,7 @@ import { DoorOpen, House, Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { InventoryItemRecord } from '../../../entities/item';
 import { useHero, useInventory } from '../../../shared/hooks/baseHooks';
-import { useWorldClock } from '../../world-clock/api/clock';
+import { useWorldMinutes } from '../../world-clock/api/clock';
 import { useBase } from '../api/baseApi';
 import { currentCondition } from '../data/parts';
 import { BaseScene } from './BaseScene';
@@ -49,7 +49,8 @@ export function PlayerBaseView({ heroId }: { heroId: string }) {
   const { state, storages, items, parts, partsMissing, loading, missingTables, error } = useBase();
   const { hero } = useHero(heroId);
   const { items: backpack = [] } = useInventory(heroId);
-  const { minutos } = useWorldClock();
+  // Estado das partes não muda a olho nu em menos de 10 min do mundo.
+  const minutos = useWorldMinutes(10);
   const [side, setSide] = useState<BaseSide>('in');
   const [selId, setSelId] = useState<string | null>(null);
   const used = useUsedSlots(items);

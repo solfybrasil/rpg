@@ -1,5 +1,5 @@
 import { EyeOff, Lock, type LucideIcon } from 'lucide-react';
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /** Tamanho usado enquanto o Mestre não escolhe uma imagem. */
 const DEFAULT_W = 1600;
@@ -86,14 +86,15 @@ export function BaseScene({ url, imgW, imgH, emptyText, spots, dm, selectedId, o
     }
   }, [scrollX, sw, box.cw]);
 
-  const toFrac = (clientX: number, clientY: number) => {
+  // Estável entre renders: assim os pontos (memo) não redesenham à toa.
+  const toFrac = useCallback((clientX: number, clientY: number) => {
     const r = stageRef.current?.getBoundingClientRect();
     if (!r || !r.width) return null;
     return {
       x: Math.min(0.98, Math.max(0.02, (clientX - r.left) / r.width)),
       y: Math.min(0.97, Math.max(0.03, (clientY - r.top) / r.height)),
     };
-  };
+  }, []);
 
   return (
     <div

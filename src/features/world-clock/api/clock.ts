@@ -289,3 +289,31 @@ export function useClockTicker(enabled: boolean) {
     return () => clearInterval(t);
   }, [enabled, qc]);
 }
+
+/**
+ * Minutos do mundo arredondados para baixo em blocos de `passo` minutos.
+ * Só re-renderiza quando o bloco muda (ex.: 60 = uma vez por hora do mundo),
+ * em vez de a cada segundo como `useWorldClock`. Para telas grandes que só
+ * precisam saber "que horas são, mais ou menos".
+ */
+export function useWorldMinutes(passo = 60): number {
+  const { gameState } = useGameState() as { gameState: GameStateRow | null };
+  const s = gameState ?? null;
+  const calc = useCallback(() => {
+    const m = baseMinutes(s) + minutosPendentes(s);
+    return Math.floor(m / passo) * passo;
+  }, [s, passo]);
+  const [bloco, setBloco] = useState(calc);
+
+  useEffect(() => {
+    setBloco(calc());
+    if (!s?.relogio_correndo || s.combate_ativo) return;
+    const escala = Number(s.relogio_escala || 1);
+    // Confere algumas vezes por bloco; só muda o estado quando o bloco vira.
+    const ms = Math.max(1000, Math.min(60_000, (passo * 60_000) / escala / 4));
+    const t = setInterval(() => setBloco(calc()), ms);
+    return () => clearInterval(t);
+  }, [calc, s, passo]);
+
+  return bloco;
+}

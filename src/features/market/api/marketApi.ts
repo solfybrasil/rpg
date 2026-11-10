@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { addCoins, refundCoins, spendCoins } from '../../../shared/lib/coins';
 import { queryKeys, supabase as typedSupabase } from '../../../shared/supabase';
 import { subscribeRealtime } from '../../../shared/supabase/realtime';
-import { useWorldClock } from '../../world-clock/api/clock';
+import { useWorldMinutes } from '../../world-clock/api/clock';
 import {
   type CatalogLite,
   type MarketOverride,
@@ -167,7 +167,8 @@ export interface MarketData {
 /** Tudo do mercado de agora: onde é, o que tem, quanto custa e quanto sobrou. */
 export function useMarket(): MarketData {
   const qc = useQueryClient();
-  const { minutos } = useWorldClock();
+  // O estoque muda em dias e o aviso de renovação mostra horas: basta a hora do mundo.
+  const minutos = useWorldMinutes(60);
   const catalogQ = useCatalogLite();
   const placesQ = useMarketPlaces();
 

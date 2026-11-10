@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import baseSql from '../../../../supabase/migrations/20261110_base.sql?raw';
 // @ts-ignore: importação de texto do Vite
 import exteriorSql from '../../../../supabase/migrations/20261111_base_exterior.sql?raw';
-import { useWorldClock } from '../../world-clock/api/clock';
+import { useWorldMinutes } from '../../world-clock/api/clock';
 import { processBattleMapBackground, uploadBattleMedia } from '../../battle-map/media/mediaProcessor';
 import { type BasePart, type BaseStorage, useBase, useBaseActions } from '../api/baseApi';
 import {
@@ -36,7 +36,8 @@ export function DMBaseView() {
   const { state, storages, items, parts, partsMissing, loading, missingTables, error } = useBase();
   const actions = useBaseActions();
   const used = useUsedSlots(items);
-  const { minutos } = useWorldClock();
+  // Estado das partes não muda a olho nu em menos de 10 min do mundo.
+  const minutos = useWorldMinutes(10);
   const [side, setSide] = useState<BaseSide>('in');
   const [selId, setSelId] = useState<string | null>(null);
   const [placing, setPlacing] = useState<StorageKind | null>(null);

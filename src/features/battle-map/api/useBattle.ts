@@ -88,13 +88,18 @@ export function applyTokenPayload(prev: BattleToken[] | undefined, payload: Payl
   return next;
 }
 
-export function useActiveBattleMap() {
+/**
+ * Mesa ativa. O tempo real avisa na hora; a consulta periódica é só a rede de
+ * segurança. Telas que não são a mesa (ex.: o layout do Jogador, que só quer
+ * saber se há mesa ao vivo) passam um intervalo maior para não gastar rede.
+ */
+export function useActiveBattleMap(opts: { pollMs?: number } = {}) {
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: BATTLE_MAP_KEY,
     queryFn: fetchActiveBattleMap,
     staleTime: 1000,
-    refetchInterval: POLL_MAP_MS,
+    refetchInterval: opts.pollMs ?? POLL_MAP_MS,
   });
 
   useEffect(

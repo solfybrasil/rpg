@@ -42,6 +42,14 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        // Fora da instalação offline: o que quase ninguém usa e só pesa no
+        // primeiro acesso (fontes de alfabetos que o jogo não usa, o motor de
+        // vídeo do Mestre e o dado 3D). Continuam carregando quando preciso.
+        globIgnores: [
+          '**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2',
+          '**/ffmpeg-core-*',
+          '**/vendor-three-*',
+        ],
         runtimeCaching: [
           {
             urlPattern: /\.(?:png|jpg|jpeg|webp|svg|gif|webm|mp4)$/i,
@@ -67,20 +75,23 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-dom/client'],
-          'vendor-motion': ['motion', 'motion/react'],
-          'vendor-three': ['three'],
-          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
-          'vendor-tanstack': ['@tanstack/react-router', '@tanstack/react-query'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-radix': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-slot',
-          ],
+        // Por caminho (e não por lista de pacotes): na forma antiga, utilitários
+        // comuns do React caíam dentro do pacote do Radix e toda tela baixava
+        // os 92 KB dos modais. Agora cada biblioteca fica no seu pacote.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          const m = (re: RegExp) => re.test(id.replace(/\\/g, '/'));
+          if (m(/\/node_modules\/(react|react-dom|scheduler|use-sync-external-store)\//)) return 'vendor-react';
+          // Lista virtual: só telas do Mestre usam; fora do pacote do roteador.
+          if (m(/\/node_modules\/@tanstack\/(react-)?virtual/)) return 'vendor-virtual';
+          if (m(/\/node_modules\/@tanstack\//)) return 'vendor-tanstack';
+          if (m(/\/node_modules\/@supabase\//)) return 'vendor-supabase';
+          if (m(/\/node_modules\/(motion|motion-dom|motion-utils|framer-motion)\//)) return 'vendor-motion';
+          if (m(/\/node_modules\/three\//)) return 'vendor-three';
+          if (m(/\/node_modules\/@dnd-kit\//)) return 'vendor-dnd';
+          if (m(/\/node_modules\/(@radix-ui|@floating-ui|aria-hidden|react-remove-scroll[^/]*|react-style-singleton|use-callback-ref|use-sidecar|get-nonce|detect-node-es)\//))
+            return 'vendor-radix';
+          return undefined;
         },
       },
     },

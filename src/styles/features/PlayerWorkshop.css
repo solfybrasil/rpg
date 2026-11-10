@@ -342,9 +342,14 @@
   animation: pulse-slot-glow 0.8s infinite alternate ease-in-out;
 }
 
+/* O brilho fica fixo e só a opacidade pulsa (GPU): animar o drop-shadow
+   redesenhava cada célula cheia a cada quadro. */
+.forge-cell-glow-overlay {
+  filter: drop-shadow(0 0 8px #ff9a2c);
+}
 @keyframes pulse-slot-glow {
-  from { filter: drop-shadow(0 0 4px #ffb02e); opacity: 0.8; }
-  to { filter: drop-shadow(0 0 12px #ff8c28); opacity: 1; }
+  from { opacity: 0.55; }
+  to { opacity: 1; }
 }
 
 .forge-cell-frame {
@@ -1344,13 +1349,32 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  animation: potion-glow 2.5s infinite alternate ease-in-out;
 }
 
-@keyframes potion-glow {
-  0% { filter: brightness(0.95); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.6), 0 0 10px rgba(63, 224, 197, 0.25); }
-  100% { filter: brightness(1.15); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.5), 0 0 20px rgba(63, 224, 197, 0.55); }
+/* Pulso do líquido: uma luz por cima muda só de opacidade (antes o filtro e a
+   sombra animados redesenhavam o frasco e os ingredientes a cada quadro). */
+.alchemy-flask-liquid::after,
+.cozinha-plate-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.16), transparent 70%);
+  opacity: 0;
+  animation: liquid-light 2.5s infinite alternate ease-in-out;
 }
+@media (prefers-reduced-motion: reduce) {
+  .alchemy-flask-liquid::after,
+  .cozinha-plate-glow::after {
+    animation: none;
+  }
+}
+@keyframes liquid-light {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 
 .alchemy-flask-inner-content {
   width: 100%;
@@ -1749,13 +1773,9 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  animation: campfire-glow 2.5s infinite alternate ease-in-out;
 }
 
-@keyframes campfire-glow {
-  0% { filter: brightness(0.95); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.6), 0 0 10px rgba(242, 166, 58, 0.25); }
-  100% { filter: brightness(1.15); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.5), 0 0 20px rgba(242, 166, 58, 0.55); }
-}
+
 
 .cozinha-plate-inner-content {
   width: 100%;
