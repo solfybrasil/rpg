@@ -35,3 +35,38 @@ describe('Base do grupo', () => {
     expect(isMissingTable({ code: '23505', message: 'duplicate' })).toBe(false);
   });
 });
+
+const parts = await import('../features/base/data/parts');
+
+describe('Base — lado de fora', () => {
+  const p = { condition: 80, max_condition: 100, wear_per_day: 10, cond_minutes: 1000 };
+
+  it('desgasta pelo relógio do mundo e para no zero', () => {
+    expect(parts.currentCondition(p, 1000)).toBe(80);
+    expect(parts.currentCondition(p, 1000 + 1440)).toBe(70);
+    expect(parts.currentCondition(p, 1000 + 1440 * 30)).toBe(0);
+    // relógio "voltando" não aumenta o estado
+    expect(parts.currentCondition(p, 0)).toBe(80);
+  });
+
+  it('o que não desgasta fica igual', () => {
+    expect(parts.currentCondition({ ...p, wear_per_day: 0 }, 1e9)).toBe(80);
+    expect(parts.daysToBreak({ ...p, wear_per_day: 0 }, 1e9)).toBeNull();
+    expect(parts.daysToBreak(p, 1000)).toBe(8);
+  });
+
+  it('rótulos do estado', () => {
+    expect(parts.conditionLabel(1)).toBe('Perfeito');
+    expect(parts.conditionLabel(0.8)).toBe('Bom');
+    expect(parts.conditionLabel(0.5)).toBe('Desgastado');
+    expect(parts.conditionLabel(0.1)).toBe('Danificado');
+    expect(parts.conditionLabel(0)).toBe('Quebrado');
+  });
+
+  it('materiais: soma por nome sem diferenciar maiúsculas, ignora linhas vazias', () => {
+    const m = parts.countByName([{ name: 'Tábua', quantity: 2 }, { name: ' tábua ', quantity: 1 }, { name: 'Piche' }]);
+    expect(m.get('tábua')).toBe(3);
+    expect(m.get('piche')).toBe(1);
+    expect(parts.parseNeeds([{ name: 'Corda', qty: 0 }, { name: '', qty: 3 }, null])).toEqual([{ name: 'Corda', qty: 1 }]);
+  });
+});

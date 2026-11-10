@@ -1,37 +1,61 @@
-import { EyeOff, Lock } from 'lucide-react';
+import { EyeOff, Lock, type LucideIcon } from 'lucide-react';
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { BaseState, BaseStorage } from '../api/baseApi';
-import { formatCoins, kindInfo } from '../data/kinds';
 
 /** Tamanho usado enquanto o Mestre não escolhe uma imagem. */
 const DEFAULT_W = 1600;
 const DEFAULT_H = 900;
 
+/** Um ponto clicável no cenário (baú, armário, parte do casco…). */
+export interface SceneSpot {
+  id: string;
+  x: number;
+  y: number;
+  icon: LucideIcon;
+  label: string;
+  /** Texto curto ao lado do nome (ex.: "3/12", "64%"). */
+  sub: string;
+  subTone?: 'muted' | 'ok' | 'warn' | 'danger';
+  /** owned: do grupo · locked: à venda · part: parte com estado. */
+  variant: 'owned' | 'locked' | 'part';
+  /** Só para partes: 0 a 1, desenhado como anel em volta do ícone. */
+  health?: number;
+  hidden?: boolean;
+  ariaLabel: string;
+  testid: string;
+}
+
 interface Props {
-  state: BaseState | null;
-  storages: BaseStorage[];
-  /** Espaços ocupados por armazenamento. */
-  used: Map<string, number>;
-  mode: 'player' | 'dm';
+  url: string | null;
+  imgW?: number | null;
+  imgH?: number | null;
+  emptyText: string;
+  spots: SceneSpot[];
+  dm: boolean;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
-  /** Mestre: clique no cenário para pôr um armazenamento novo. */
+  /** Mestre: clique no cenário para pôr algo novo. */
   placing?: boolean;
   onPlace?: (x: number, y: number) => void;
-  /** Mestre: arrastou um armazenamento. */
+  /** Mestre: arrastou um ponto. */
   onMove?: (id: string, x: number, y: number) => void;
 }
 
+const TONE: Record<NonNullable<SceneSpot['subTone']>, string> = {
+  muted: 'text-[var(--muted)]',
+  ok: 'text-[var(--moss)]',
+  warn: 'text-[var(--ember)]',
+  danger: 'text-[#e0645a]',
+};
+
 /**
  * Cenário da base. No celular em pé, uma imagem larga ocupa a altura toda e
- * rola para os lados (os baús não ficam minúsculos); no resto, cabe inteira.
+ * rola para os lados (os pontos não ficam minúsculos); no resto, cabe inteira.
  */
-export function BaseScene({ state, storages, used, mode, selectedId, onSelect, placing, onPlace, onMove }: Props) {
+export function BaseScene({ url, imgW, imgH, emptyText, spots, dm, selectedId, onSelect, placing, onPlace, onMove }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ cw: 0, ch: 0 });
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
-  const url = state?.background_url || null;
 
   useLayoutEffect(() => {
     const el = wrapRef.current;
@@ -43,8 +67,8 @@ export function BaseScene({ state, storages, used, mode, selectedId, onSelect, p
 
   useEffect(() => setNatural(null), [url]);
 
-  const iw = natural?.w || state?.img_w || DEFAULT_W;
-  const ih = natural?.h || state?.img_h || DEFAULT_H;
+  const iw = natural?.w || imgW || DEFAULT_W;
+  const ih = natural?.h || imgH || DEFAULT_H;
   const contain = Math.min(box.cw / iw, box.ch / ih) || 0;
   const fillH = box.ch / ih || 0;
   // Imagem larga numa tela estreita: usa a altura toda e rola na horizontal.
@@ -115,9 +139,7 @@ export function BaseScene({ state, storages, used, mode, selectedId, onSelect, p
             style={{ backgroundImage: 'var(--mottle)' }}
           >
             <p data-bg="1" className="max-w-[80%] text-center italic text-[var(--muted)] text-sm pointer-events-none">
-              {mode === 'dm'
-                ? 'Escolha a imagem da base (taverna, covil, casa, embarcação…) no painel ao lado.'
-                : 'O Mestre ainda não revelou como é a base do grupo.'}
+              {emptyText}
             </p>
           </div>
         )}
@@ -128,58 +150,61 @@ export function BaseScene({ state, storages, used, mode, selectedId, onSelect, p
           style={{ background: 'radial-gradient(ellipse at center, transparent 55%, rgba(7,6,5,0.55) 100%)' }}
         />
 
-        {storages.map((st) =>
-          mode === 'player' && st.hidden ? null : (
-            <Hotspot
-              key={st.id}
-              st={st}
-              used={used.get(st.id) ?? 0}
-              selected={st.id === selectedId}
-              dm={mode === 'dm'}
-              toFrac={toFrac}
-              onSelect={onSelect}
-              onMove={onMove}
-            />
-          ),
-        )}
+        {spots.map((sp) => (
+          <Hotspot key={sp.id} sp={sp} selected={sp.id === selectedId} dm={dm} toFrac={toFrac} onSelect={onSelect} onMove={onMove} />
+        ))}
       </div>
     </div>
   );
 }
 
+/** Cor do estado de uma parte (0 a 1). */
+export function healthColor(h: number) {
+  if (h <= 0) return 'var(--plague)';
+  if (h < 0.4) return 'var(--blood)';
+  if (h < 0.75) return 'var(--ember)';
+  return 'var(--moss)';
+}
+
 const Hotspot = memo(function Hotspot({
-  st,
-  used,
+  sp,
   selected,
   dm,
   toFrac,
   onSelect,
   onMove,
 }: {
-  st: BaseStorage;
-  used: number;
+  sp: SceneSpot;
   selected: boolean;
   dm: boolean;
   toFrac: (x: number, y: number) => { x: number; y: number } | null;
   onSelect: (id: string) => void;
   onMove?: (id: string, x: number, y: number) => void;
 }) {
-  const info = kindInfo(st.kind);
-  const Icon = info.icon;
+  const Icon = sp.icon;
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const start = useRef<{ px: number; py: number; moved: boolean } | null>(null);
-  const x = drag?.x ?? st.x;
-  const y = drag?.y ?? st.y;
-  const full = st.owned && used >= st.slots;
+  const x = drag?.x ?? sp.x;
+  const y = drag?.y ?? sp.y;
+  const part = sp.variant === 'part';
+  const h = Math.max(0, Math.min(1, sp.health ?? 1));
+
+  const plate = selected
+    ? 'border-[var(--gold-hi)] bg-[var(--gold)]/25 text-[var(--gold-hi)] shadow-[0_0_18px_rgba(201,164,92,0.55)]'
+    : sp.variant === 'locked'
+      ? 'border-dashed border-[var(--iron)] bg-[var(--abyss)]/80 text-[var(--muted)]'
+      : part
+        ? 'border-[var(--iron)] bg-[var(--stone)]/90 text-[var(--text)] shadow-[0_4px_14px_rgba(0,0,0,0.6)]'
+        : 'border-[var(--gold)] bg-[var(--stone)]/90 text-[var(--gold-hi)] shadow-[0_4px_14px_rgba(0,0,0,0.6)]';
 
   return (
     <button
       type="button"
-      data-testid={`storage-${st.id}`}
-      aria-label={`${st.name}${st.owned ? `, ${used} de ${st.slots} espaços` : `, à venda por ${formatCoins(st.price_bronze)}`}`}
+      data-testid={sp.testid}
+      aria-label={sp.ariaLabel}
       className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 outline-none group animate-[fadeIn_var(--t-base)_var(--ease-out)] ${
         dm ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer'
-      } ${st.hidden ? 'opacity-50' : ''}`}
+      } ${sp.hidden ? 'opacity-50' : ''}`}
       style={{ left: `${x * 100}%`, top: `${y * 100}%`, zIndex: selected || drag ? 3 : 2 }}
       onPointerDown={(e) => {
         if (!dm) return;
@@ -198,7 +223,7 @@ const Hotspot = memo(function Hotspot({
         const s0 = start.current;
         start.current = null;
         if (dm && s0?.moved && drag) {
-          onMove?.(st.id, drag.x, drag.y);
+          onMove?.(sp.id, drag.x, drag.y);
           // mantém a posição até o cache atualizar
           setTimeout(() => setDrag(null), 50);
           return;
@@ -207,39 +232,40 @@ const Hotspot = memo(function Hotspot({
       }}
       onClick={(e) => {
         e.stopPropagation();
-        if (!dm || !drag) onSelect(st.id);
+        if (!dm || !drag) onSelect(sp.id);
       }}
     >
       <span
-        className={`relative w-11 h-11 flex items-center justify-center border transition-[transform,border-color,background-color] duration-[var(--t-fast)] group-hover:-translate-y-0.5 group-active:translate-y-px group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-[var(--gold-hi)] ${
-          selected
-            ? 'border-[var(--gold-hi)] bg-[var(--gold)]/25 text-[var(--gold-hi)] shadow-[0_0_18px_rgba(201,164,92,0.55)]'
-            : st.owned
-              ? 'border-[var(--gold)] bg-[var(--stone)]/90 text-[var(--gold-hi)] shadow-[0_4px_14px_rgba(0,0,0,0.6)]'
-              : 'border-dashed border-[var(--iron)] bg-[var(--abyss)]/80 text-[var(--muted)]'
-        }`}
+        className={`relative w-11 h-11 flex items-center justify-center border transition-[transform,border-color,background-color] duration-[var(--t-fast)] group-hover:-translate-y-0.5 group-active:translate-y-px group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-[var(--gold-hi)] ${plate}`}
       >
         <Icon className="w-5 h-5" />
-        {!st.owned && (
+        {part && (
+          // Barra de estado sob o ícone: estado legível de longe, sem texto.
+          <span className="absolute left-0.5 right-0.5 bottom-0.5 h-1 bg-[var(--abyss)]">
+            <span
+              className="block h-full origin-left transition-transform duration-[var(--t-base)]"
+              style={{ transform: `scaleX(${h})`, background: healthColor(h) }}
+            />
+          </span>
+        )}
+        {sp.variant === 'locked' && (
           <span className="absolute -top-1.5 -right-1.5 w-4 h-4 flex items-center justify-center bg-[var(--stone)] border border-[var(--iron)]">
             <Lock className="w-2.5 h-2.5" />
           </span>
         )}
-        {st.hidden && (
+        {sp.hidden && (
           <span className="absolute -top-1.5 -left-1.5 w-4 h-4 flex items-center justify-center bg-[var(--stone)] border border-[var(--iron)] text-[var(--muted)]">
             <EyeOff className="w-2.5 h-2.5" />
           </span>
         )}
       </span>
       <span
-        className={`px-1.5 py-px max-w-[140px] truncate font-['Cinzel',serif] text-[10px] tracking-[0.08em] border bg-[var(--abyss)]/85 ${
+        className={`px-1.5 py-px max-w-[190px] truncate font-['Cinzel',serif] text-[10px] tracking-[0.08em] border bg-[var(--abyss)]/85 ${
           selected ? 'border-[var(--gold)] text-[var(--gold-hi)]' : 'border-[var(--iron)] text-[var(--text)]'
         }`}
       >
-        {st.name}
-        <span className={`ml-1 tabular-nums ${full ? 'text-[#e0645a]' : 'text-[var(--muted)]'}`}>
-          {st.owned ? `${used}/${st.slots}` : formatCoins(st.price_bronze)}
-        </span>
+        {sp.label}
+        <span className={`ml-1 tabular-nums ${TONE[sp.subTone ?? 'muted']}`}>{sp.sub}</span>
       </span>
     </button>
   );

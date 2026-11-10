@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { type InventoryItemRecord, canStackTogether } from '../../../entities/item';
 import { queryKeys, supabase as typedSupabase } from '../../../shared/supabase';
 import { subscribeRealtime } from '../../../shared/supabase/realtime';
+import { type RepairNeed, currentCondition, needsKey, parseNeeds } from '../data/parts';
 
 // As tabelas da base são novas e ainda não estão nos tipos gerados.
 // biome-ignore lint/suspicious/noExplicitAny: tabelas fora do schema gerado
@@ -19,6 +20,28 @@ export interface BaseState {
   background_url: string | null;
   img_w: number | null;
   img_h: number | null;
+  exterior_url?: string | null;
+  ext_w?: number | null;
+  ext_h?: number | null;
+}
+
+export interface BasePart {
+  id: string;
+  session_code: string;
+  name: string;
+  kind: string;
+  description: string | null;
+  x: number;
+  y: number;
+  condition: number;
+  max_condition: number;
+  wear_per_day: number;
+  cond_minutes: number;
+  repair_items: RepairNeed[];
+  repair_amount: number;
+  hidden: boolean;
+  last_repaired_by: string | null;
+  updated_at?: string;
 }
 
 export interface BaseStorage {
@@ -54,6 +77,7 @@ const K = {
   state: ['base', 'state'] as const,
   storages: ['base', 'storages'] as const,
   items: ['base', 'items'] as const,
+  parts: ['base', 'parts'] as const,
 };
 
 /** A tabela não existe ainda (SQL da base não foi rodado). */
@@ -63,7 +87,7 @@ export function isMissingTable(err: unknown) {
   return (
     e.code === '42P01' ||
     e.code === 'PGRST205' ||
-    /does not exist|could not find the table|schema cache/i.test(e.message ?? '')
+    /does not exist|could not find the table|could not find the '.*' column|schema cache/i.test(e.message ?? '')
   );
 }
 
@@ -115,8 +139,20 @@ export function useBase() {
     retry: (n, err) => !(err as MissingTablesError)?.missing && n < 2,
   });
 
+  const partsQ = useQuery({
+    queryKey: K.parts,
+    queryFn: async () =>
+      ((await run(
+        db.from('base_parts').select('*').eq('session_code', BASE_SESSION).order('created_at'),
+      )) ?? []) as BasePart[],
+    staleTime: 5_000,
+    refetchInterval: 20_000,
+    retry: (n, err) => !(err as MissingTablesError)?.missing && n < 2,
+  });
+
   useEffect(() => {
     const subs = [
+      subscribeRealtime({ topic: 'base_parts', table: 'base_parts', handler: () => void qc.invalidateQueries({ queryKey: K.parts }) }),
       subscribeRealtime({ topic: 'base_state', table: 'base_state', handler: () => void qc.invalidateQueries({ queryKey: K.state }) }),
       subscribeRealtime({ topic: 'base_storages', table: 'base_storages', handler: () => void qc.invalidateQueries({ queryKey: K.storages }) }),
       subscribeRealtime({ topic: 'base_items', table: 'base_items', handler: () => void qc.invalidateQueries({ queryKey: K.items }) }),
@@ -131,6 +167,9 @@ export function useBase() {
     state: stateQ.data ?? null,
     storages: storagesQ.data ?? [],
     items: itemsQ.data ?? [],
+    parts: partsQ.data ?? [],
+    /** O SQL do lado de fora ainda não foi rodado. */
+    partsMissing: Boolean((partsQ.error as MissingTablesError | null)?.missing),
     loading: stateQ.isLoading || storagesQ.isLoading || itemsQ.isLoading,
     missingTables: Boolean((err as MissingTablesError | null)?.missing),
     error: err && !(err as MissingTablesError).missing ? (err as Error) : null,
@@ -518,5 +557,126 @@ export function useBaseActions() {
     },
   });
 
-  return { deposit, withdraw, buy, upgrade, saveState, createStorage, updateStorage, deleteStorage, removeItem };
+  // ── Lado de fora: partes com manutenção ──
+
+  const createPart = useMutation({
+    mutationFn: async (p: Partial<BasePart>) =>
+      (await run(db.from('base_parts').insert({ session_code: BASE_SESSION, ...p }).select('*').single())) as BasePart,
+    onSuccess: (row) => qc.setQueryData<BasePart[]>(K.parts, (rows) => [...(rows ?? []), row]),
+    onError: report('Não foi possível criar a parte'),
+  });
+
+  const updatePart = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<BasePart> }) => {
+      await run(db.from('base_parts').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id));
+    },
+    onMutate: ({ id, patch }) => {
+      const prev = qc.getQueryData<BasePart[]>(K.parts);
+      qc.setQueryData<BasePart[]>(K.parts, (rows) => rows?.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+      return { prev };
+    },
+    onError: (err, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(K.parts, ctx.prev);
+      report('Não foi possível salvar a parte')(err);
+    },
+  });
+
+  const deletePart = useMutation({
+    mutationFn: async (id: string) => {
+      await run(db.from('base_parts').delete().eq('id', id));
+    },
+    onMutate: (id) => {
+      const prev = qc.getQueryData<BasePart[]>(K.parts);
+      qc.setQueryData<BasePart[]>(K.parts, (rows) => rows?.filter((r) => r.id !== id));
+      return { prev };
+    },
+    onError: (err, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(K.parts, ctx.prev);
+      report('Não foi possível apagar')(err);
+    },
+  });
+
+  /**
+   * Conserto: gasta os materiais (primeiro da mochila, depois dos baús da base)
+   * e devolve o estado da parte. O desgaste recomeça a contar de agora.
+   */
+  const repairPart = useMutation({
+    mutationFn: async (v: {
+      part: BasePart;
+      minutes: number;
+      heroId: string;
+      heroName: string;
+      backpack: InventoryItemRecord[];
+      stored: BaseItem[];
+    }) => {
+      const { part, minutes, heroId, heroName, backpack, stored } = v;
+      const needs = parseNeeds(part.repair_items);
+      type Src = { table: 'inventory_items' | 'base_items'; id: string; qty: number; key: string };
+      const sources: Src[] = [
+        ...backpack
+          .filter((i) => !i.equip_slot)
+          .map((i) => ({ table: 'inventory_items' as const, id: i.id, qty: Number(i.quantity) || 1, key: needsKey(i.name) })),
+        ...stored.map((b) => ({ table: 'base_items' as const, id: b.id, qty: b.quantity, key: needsKey(String(b.item.name ?? '')) })),
+      ];
+      // 1) confere tudo antes de gastar qualquer coisa
+      for (const n of needs) {
+        const have = sources.filter((s) => s.key === needsKey(n.name)).reduce((a, s) => a + s.qty, 0);
+        if (have < n.qty) throw new Error(`Falta ${n.qty - have}× ${n.name}.`);
+      }
+      // 2) gasta (cada passo só grava se a quantidade ainda for a lida)
+      for (const n of needs) {
+        let left = n.qty;
+        for (const src of sources) {
+          if (!left) break;
+          if (src.key !== needsKey(n.name) || src.qty <= 0) continue;
+          const take = Math.min(left, src.qty);
+          const q =
+            take >= src.qty
+              ? db.from(src.table).delete().eq('id', src.id).select('id')
+              : db.from(src.table).update({ quantity: src.qty - take }).eq('id', src.id).eq('quantity', src.qty).select('id');
+          const done = await run(q);
+          if (!(done as unknown[])?.length) throw new Error(`${n.name} mudou de lugar agora mesmo. Tente de novo.`);
+          src.qty -= take;
+          left -= take;
+        }
+      }
+      // 3) devolve o estado
+      const max = Math.max(1, part.max_condition || 100);
+      const now = currentCondition(part, minutes);
+      const next = part.repair_amount > 0 ? Math.min(max, now + part.repair_amount) : max;
+      await run(
+        db
+          .from('base_parts')
+          .update({ condition: next, cond_minutes: Math.floor(minutes), last_repaired_by: heroName, updated_at: new Date().toISOString() })
+          .eq('id', part.id),
+      );
+      return { name: part.name, pct: Math.round((next / max) * 100), heroId };
+    },
+    onSuccess: (r) => {
+      toast.success(`${r.name} consertado: ${r.pct}%.`);
+      void qc.invalidateQueries({ queryKey: K.parts });
+      invalidateAll(r.heroId);
+    },
+    onError: (err, v) => {
+      report('Conserto não concluído')(err);
+      void qc.invalidateQueries({ queryKey: K.parts });
+      invalidateAll(v.heroId);
+    },
+  });
+
+  return {
+    deposit,
+    withdraw,
+    buy,
+    upgrade,
+    saveState,
+    createStorage,
+    updateStorage,
+    deleteStorage,
+    removeItem,
+    createPart,
+    updatePart,
+    deletePart,
+    repairPart,
+  };
 }
