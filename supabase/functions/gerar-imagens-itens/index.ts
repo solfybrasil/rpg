@@ -33,6 +33,66 @@ function normalizeFamily(name: string): string {
   );
 }
 
+async function translateToVisualEnglishPrompt(
+  name: string,
+  description: string,
+  category: string,
+  cfAccountId: string,
+  cfApiToken: string
+): Promise<string> {
+  try {
+    const llamaUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`;
+    const res = await fetch(llamaUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${cfApiToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert RPG visual asset artist. Convert the Portuguese item name and description into a clear, precise English physical description for an icon generator.
+Identify the exact physical object (e.g. "Alaúde" -> "wooden lute musical instrument", "Adaga" -> "dagger", "Ácido" -> "acid potion vial", "Espada" -> "sword", "Poção" -> "potion bottle", "Armadura" -> "armor").
+Describe its material, color, and distinctive physical visual shape.
+Ignore RPG game stats, dice, damage numbers, mechanics, and lore. Focus ONLY on what the object physically looks like.
+Reply with ONLY the English visual description (max 15 words). No quotes, no explanations.
+Examples:
+- "Alaúde do Bardo" -> "wooden lute musical instrument, polished dark pear-shaped body with strings and tuning pegs"
+- "Adaga de cobre temperado" -> "copper dagger, sharp tempered copper blade, wrapped leather hilt"
+- "Ácido de pedra" -> "bubbling green acid potion vial in ornate glass bottle"`,
+          },
+          {
+            role: "user",
+            content: `Nome: "${name}"\nCategoria: "${category || ""}"\nDescrição: "${(description || "").slice(0, 150)}"`,
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 45,
+      }),
+    });
+
+    if (res.ok) {
+      const data: any = await res.json();
+      const output = data.result?.response?.trim().replace(/^["']|["']$/g, "");
+      if (output && output.length > 3) {
+        return output;
+      }
+    }
+  } catch (err: any) {
+    console.warn("[AI Translator] Falha no Llama 3.1:", err.message);
+  }
+
+  let cleanName = (name || "").toLowerCase();
+  cleanName = cleanName.replace(/\b(alaude|alaúde)\b/gi, "wooden lute musical instrument");
+  cleanName = cleanName.replace(/\b(adaga)\b/gi, "dagger");
+  cleanName = cleanName.replace(/\b(pocao|poção)\b/gi, "potion bottle");
+  cleanName = cleanName.replace(/\b(espada)\b/gi, "sword");
+  cleanName = cleanName.replace(/\b(escudo)\b/gi, "shield");
+  cleanName = cleanName.replace(/\b(cajado)\b/gi, "magic staff");
+  return cleanName;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -62,8 +122,15 @@ serve(async (req) => {
     // =========================================================================
     if (reqBody?.name) {
       const family = reqBody.family || normalizeFamily(reqBody.name);
-      const promptEn = reqBody.promptEn || `${reqBody.name}, ${reqBody.category || "equipment"}`;
-      const fullPrompt = `Fantasy RPG inventory icon of ${promptEn}, single object centered, full view, painterly game asset style, dark fantasy, warm soft lighting, plain dark stone background, no text, no border, square`;
+      const visualPrompt = await translateToVisualEnglishPrompt(
+        reqBody.name,
+        reqBody.description || "",
+        reqBody.category || "",
+        cfAccountId,
+        cfApiToken
+      );
+
+      const fullPrompt = `Fantasy RPG inventory icon of ${visualPrompt}, single object centered, full view, painterly game asset style, dark fantasy, warm soft lighting, plain dark stone background, no text, no border, square`;
 
       const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
       const resp = await fetch(cfUrl, {
@@ -102,7 +169,6 @@ serve(async (req) => {
         });
 
       if (uploadError) {
-        // Fallback caso o bucket itens ainda não esteja criado
         await supabase.storage.from("items").upload(`flux/${storagePath}`, bytes, {
           contentType: "image/jpeg",
           upsert: true,
@@ -112,7 +178,6 @@ serve(async (req) => {
       const { data: publicData } = supabase.storage.from("itens").getPublicUrl(storagePath);
       const publicUrl = publicData.publicUrl;
 
-      // Se tiver itemId, atualiza no banco de dados imediatamente
       if (reqBody.itemId) {
         await supabase
           .from("item_catalog")
@@ -128,7 +193,7 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           imageUrl: publicUrl,
-          promptEn,
+          promptEn: visualPrompt,
           family,
           provider: "cloudflare-flux",
         }),
@@ -200,8 +265,17 @@ serve(async (req) => {
     // Processa cada família com FLUX
     for (let i = 0; i < selectedFamilies.length; i++) {
       const [family, sampleItem] = selectedFamilies[i];
-      const promptEn = sampleItem.image_prompt_en || `${sampleItem.name}, ${sampleItem.category || "equipment"}`;
-      const fullPrompt = `Fantasy RPG inventory icon of ${promptEn}, single object centered, full view, painterly game asset style, dark fantasy, warm soft lighting, plain dark stone background, no text, no border, square`;
+      const visualPrompt =
+        sampleItem.image_prompt_en ||
+        (await translateToVisualEnglishPrompt(
+          sampleItem.name,
+          sampleItem.description || "",
+          sampleItem.category || "",
+          cfAccountId,
+          cfApiToken
+        ));
+
+      const fullPrompt = `Fantasy RPG inventory icon of ${visualPrompt}, single object centered, full view, painterly game asset style, dark fantasy, warm soft lighting, plain dark stone background, no text, no border, square`;
 
       try {
         const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
@@ -234,7 +308,6 @@ serve(async (req) => {
 
         const json = await resp.json();
 
-        // Se mensagem indicar limite de neurons ou cota
         const responseText = JSON.stringify(json).toLowerCase();
         if (responseText.includes("limit") || responseText.includes("neuron") || responseText.includes("quota")) {
           console.warn("⚠️ Mensagem de cota detectada:", json);
@@ -264,7 +337,6 @@ serve(async (req) => {
           bytes[b] = binaryString.charCodeAt(b);
         }
 
-        // Salva em 'itens/{family}.jpg' no Storage do Supabase
         const storagePath = `${family}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from("itens")
@@ -281,12 +353,12 @@ serve(async (req) => {
           .getPublicUrl(storagePath);
         const publicUrl = publicData.publicUrl;
 
-        // Atualiza todos os itens da mesma família como 'pronta'
         await supabase
           .from("item_catalog")
           .update({
             image_url: publicUrl,
             image_status: "pronta",
+            image_prompt_en: visualPrompt,
             image_error: null,
           })
           .eq("image_family", family);
@@ -303,7 +375,6 @@ serve(async (req) => {
           .eq("image_family", family);
       }
 
-      // Espera 2 segundos entre cada imagem para respeitar a taxa
       if (i < selectedFamilies.length - 1) {
         await new Promise((r) => setTimeout(r, 2000));
       }

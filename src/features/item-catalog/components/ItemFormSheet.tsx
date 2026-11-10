@@ -144,7 +144,8 @@ export const ItemFormSheet: React.FC<ItemFormSheetProps> = ({
         category,
         itemId: item?.id,
       });
-      setImageUrl(result.imageUrl);
+      const freshUrl = `${result.imageUrl}?t=${Date.now()}`;
+      setImageUrl(freshUrl);
       toast.success(
         imageUrl
           ? 'Nova imagem regerada com FLUX! Salve o artigo para fixar.'
@@ -184,7 +185,7 @@ export const ItemFormSheet: React.FC<ItemFormSheetProps> = ({
         wear_type: wearType,
         plague_cost: rarity === 'Maldito' ? Math.max(1, Number(plagueCost) || 1) : 0,
         icon: icon.trim() || '🗡️',
-        image_url: imageUrl.trim() || null,
+        image_url: imageUrl ? imageUrl.split('?')[0].trim() : null,
         description: description.trim() || null,
         special: special.trim() || null,
         two_handed: twoHanded,
