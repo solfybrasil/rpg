@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PlayerShopView } from '../../features/shop';
+import { PlayerMarketView } from '../../features/market/components/PlayerMarketView';
 
 export const Route = createFileRoute('/jogador/loja')({
-  component: PlayerShopView,
+  component: PlayerMarketView,
 });

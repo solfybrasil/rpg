@@ -2,7 +2,7 @@ import { BookOpen, Hammer, Store } from 'lucide-react';
 import React, { useState } from 'react';
 import { useGameState } from '../../../shared/hooks/baseHooks';
 import { DMPageHeader, DMStatusPill, DMTabs, DM_PAGE_CLASS } from '../../../shared/ui/DMPage';
-import { DMShopControlTab } from '../../shop/components/DMShopControlTab.tsx';
+import { DMMarketView } from '../../market/components/DMMarketView.tsx';
 import { DMRecipesTab } from './DMRecipesTab.tsx';
 import { DMWorkshopControlTab } from './DMWorkshopControlTab.tsx';
 
@@ -36,13 +36,13 @@ export const DMWorkshopHubView: React.FC = () => {
         tabs={[
           { id: 'oficina', label: 'Bancadas', icon: Hammer, testId: 'tab-oficina' },
           { id: 'receitas', label: 'Receitas', icon: BookOpen, testId: 'tab-receitas' },
-          { id: 'loja', label: 'Loja', icon: Store, testId: 'tab-loja' },
+          { id: 'loja', label: 'Mercado', icon: Store, testId: 'tab-loja' },
         ]}
       />
 
       {activeTab === 'oficina' && <DMWorkshopControlTab />}
       {activeTab === 'receitas' && <DMRecipesTab />}
-      {activeTab === 'loja' && <DMShopControlTab />}
+      {activeTab === 'loja' && <DMMarketView />}
     </div>
   );
 };

@@ -36,7 +36,7 @@ export const BottomNav: React.FC<BottomNavProps> = () => {
     { label: 'Receitas', icon: <Scroll size={22} />, to: '/jogador/receitas' },
     { label: 'Mapa', icon: <MapPin size={22} />, to: '/jogador/mapa' },
     { label: 'Base', icon: <House size={22} />, to: '/jogador/base' },
-    { label: 'Loja', icon: <Store size={22} />, to: '/jogador/loja' },
+    { label: 'Mercado', icon: <Store size={22} />, to: '/jogador/loja' },
   ];
 
   const isMoreActive = moreItems.some((item) => pathname.startsWith(item.to));

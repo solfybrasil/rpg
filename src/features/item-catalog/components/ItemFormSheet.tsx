@@ -194,6 +194,19 @@ export const ItemFormSheet: React.FC<ItemFormSheetProps> = ({
       };
 
       const saved = await saveCatalogItem(payload);
+      // Sem imagem? A IA desenha em segundo plano (Edge Function no Supabase).
+      if (!saved.image_url) {
+        void generateItemImages({ ids: [saved.id] })
+          .then((r) => {
+            if (r.generated.length) {
+              toast.success(`Imagem de "${saved.name}" pronta.`);
+              onSaved?.({ ...saved, image_url: r.generated[0].url });
+            }
+          })
+          .catch(() => {
+            /* função ainda não publicada: segue sem imagem */
+          });
+      }
       toast.success(
         isEditing
           ? `Artigo "${saved.name}" atualizado!`
