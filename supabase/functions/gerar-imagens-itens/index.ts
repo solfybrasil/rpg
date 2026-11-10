@@ -79,16 +79,17 @@ async function translateToVisualEnglishPrompt(
           messages: [
             {
               role: "system",
-              content: `You are an expert RPG visual asset artist. Convert the Portuguese item name and description into a clear, precise English physical description for an icon generator.
-Identify the exact physical object (e.g. "Alaúde" -> "wooden lute musical instrument", "Adaga" -> "dagger", "Ácido" -> "acid potion vial", "Espada" -> "sword", "Poção" -> "potion bottle", "Armadura" -> "armor").
-CRITICAL RULE: Always describe exactly ONE single solitary object. Never describe pairs, dual weapons, sets, or multiples (e.g. "single dagger", "one potion vial", "single sword").
-Describe its material, color, and distinctive physical visual shape.
-Ignore RPG game stats, dice, damage numbers, mechanics, and lore. Focus ONLY on what the object physically looks like.
-Reply with ONLY the English visual description (max 15 words). No quotes, no explanations.
-Examples:
-- "Alaúde do Bardo" -> "single wooden lute musical instrument, polished dark pear-shaped body with strings"
-- "Adaga de cobre temperado" -> "single tempered copper dagger, sharp reddish copper blade with dark hilt"
-- "Ácido de pedra" -> "one bubbling green acid potion vial in ornate glass bottle"`,
+              content: `You are an expert RPG visual asset artist. Convert the Portuguese item name, category, and description into a clear, precise English physical description for an icon generator.
+
+RULES:
+1. ALWAYS describe exactly ONE single standalone object (e.g. 'single battleaxe', 'single knight plate breastplate', 'one severed beast eyeball'). Never describe pairs, sets, characters, or multiples.
+2. Category details:
+   - Monster / Beast parts (olho, garra, presa, dente, pele, escama, chifre, coração, víscera, sangue): describe as an isolated grotesque trophy or organic part, wet texture, severed nerve/tissue, subtle dark blood traces if fitting (e.g. "isolated severed monster eyeball with wet texture and subtle dark blood traces", "sharp curved beast claw with dark dried blood on bone root").
+   - Armor & Apparel (armadura, peitoral, cota de malha, elmo, botas, manoplas, manto): describe the standalone wearable armor piece (e.g. "ornate steel knight breastplate cuirass with engraved trim", "horned iron helmet with closed visor", "studded hardened leather tunic armor").
+   - Axes & Melee weapons (machado, machadinha, espada, adaga, martelo, maça, lança): describe the head/blade shape, metal finish, wood haft, wrapped grip (e.g. "single heavy iron battleaxe with curved crescent blade and oak haft").
+   - Alchemy / Potions / Acids / Poisons: describe the ornate glass vial/flask, cork stopper, bubbling or glowing liquid.
+   - Magic & Relics (cajado, varinha, anel, tomo, amuleto): describe the carved staff with crystal, leatherbound spellbook, glowing gemstone ring.
+3. Max 18 words. Physical visual description only (materials, colors, shapes). No quotes, no intro, no stats.`,
             },
             {
               role: "user",
@@ -112,13 +113,34 @@ Examples:
     }
   }
 
-  let cleanName = (name || "").toLowerCase();
-  cleanName = cleanName.replace(/\b(alaude|alaúde)\b/gi, "wooden lute musical instrument");
-  cleanName = cleanName.replace(/\b(adaga)\b/gi, "dagger");
-  cleanName = cleanName.replace(/\b(pocao|poção)\b/gi, "potion bottle");
-  cleanName = cleanName.replace(/\b(espada)\b/gi, "sword");
-  cleanName = cleanName.replace(/\b(escudo)\b/gi, "shield");
-  cleanName = cleanName.replace(/\b(cajado)\b/gi, "magic staff");
+    let cleanName = (name || "").toLowerCase();
+  cleanName = cleanName.replace(/\b(olho de [^,]+|olho)\b/gi, "severed monster eyeball with wet texture and subtle dark blood traces");
+  cleanName = cleanName.replace(/\b(garra de [^,]+|garra)\b/gi, "sharp curved beast claw with faint blood traces on bone root");
+  cleanName = cleanName.replace(/\b(presa|dente)\b/gi, "jagged monster fang tooth with dark blood traces");
+  cleanName = cleanName.replace(/\b(coracao|coração)\b/gi, "grotesque severed monster heart with visceral texture");
+  cleanName = cleanName.replace(/\b(pele|escama)\b/gi, "reptilian dragon beast scale plate");
+  cleanName = cleanName.replace(/\b(machado de batalha|machado de guerra)\b/gi, "heavy iron battleaxe with curved crescent blade and wood haft");
+  cleanName = cleanName.replace(/\b(machadinha)\b/gi, "forged hand hatchet axe with leather wrapped grip");
+  cleanName = cleanName.replace(/\b(machado)\b/gi, "iron battleaxe with sturdy wooden haft");
+  cleanName = cleanName.replace(/\b(armadura de placas|peitoral)\b/gi, "ornate knight steel plate breastplate cuirass");
+  cleanName = cleanName.replace(/\b(armadura de couro)\b/gi, "studded hardened leather armor cuirass");
+  cleanName = cleanName.replace(/\b(cota de malha)\b/gi, "chainmail hauberk armor shirt");
+  cleanName = cleanName.replace(/\b(armadura)\b/gi, "steel knight breastplate armor");
+  cleanName = cleanName.replace(/\b(elmo)\b/gi, "steel knight helmet with closed visor");
+  cleanName = cleanName.replace(/\b(alaude|alaúde)\b/gi, "wooden lute musical instrument with strings");
+  cleanName = cleanName.replace(/\b(adaga)\b/gi, "sharp steel dagger with wrapped leather hilt");
+  cleanName = cleanName.replace(/\b(espada curta)\b/gi, "iron shortsword with crossguard");
+  cleanName = cleanName.replace(/\b(espada longa|espada)\b/gi, "longsword with ornate guard");
+  cleanName = cleanName.replace(/\b(pocao|poção)\b/gi, "glass potion bottle with cork and glowing liquid");
+  cleanName = cleanName.replace(/\b(acido|ácido)\b/gi, "bubbling acidic green liquid in glass potion vial");
+  cleanName = cleanName.replace(/\b(arco)\b/gi, "recurve hunting bow with bowstring");
+  cleanName = cleanName.replace(/\b(escudo)\b/gi, "iron rimmed heraldic shield");
+  cleanName = cleanName.replace(/\b(cajado)\b/gi, "carved magic wooden staff with glowing crystal");
+  cleanName = cleanName.replace(/\b(anel)\b/gi, "gold ring set with a faceted gemstone");
+  cleanName = cleanName.replace(/\b(martelo)\b/gi, "heavy iron warhammer with spiked head");
+  cleanName = cleanName.replace(/\b(tomo|livro)\b/gi, "ancient leatherbound spellbook with brass clasp");
+  cleanName = cleanName.replace(/\b(cobre temperado)\b/gi, "tempered copper blade");
+
   return cleanName;
 }
 
