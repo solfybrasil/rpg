@@ -189,21 +189,6 @@ export function useItemImageStats() {
 }
 
 export async function triggerItemImageGeneration(item: ItemCatalog): Promise<string> {
-  const family = item.image_family || normalizeItemFamily(item.name);
-
-  // 1. Tentar acionar via Edge Function do Supabase
-  try {
-    const { data, error } = await supabase.functions.invoke('gerar-imagens-itens', {
-      body: { itemId: item.id, family },
-    });
-    if (!error && data?.families?.[0]?.url) {
-      return data.families[0].url;
-    }
-  } catch (e) {
-    console.warn('[triggerItemImageGeneration] Edge function invoke ignorado, fallback para generator:', e);
-  }
-
-  // 2. Fallback direto via AI Generator (Vite endpoint / Pollinations)
   const result = await generateItemImageWithAI({
     name: item.name,
     description: item.description || item.special || undefined,
@@ -211,34 +196,31 @@ export async function triggerItemImageGeneration(item: ItemCatalog): Promise<str
     itemId: item.id,
   });
 
-  // 3. Atualizar no banco Supabase
-  const updatePayload: any = {
-    image_url: result.imageUrl,
-    image_status: 'pronta',
-    image_prompt_en: result.promptEn || null,
-    image_family: family,
-    image_error: null,
-    updated_at: new Date().toISOString(),
-  };
-
   const { error: updateError } = await supabase
     .from('item_catalog')
-    .update(updatePayload)
+    .update({
+      image_url: result.imageUrl,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', item.id);
 
   if (updateError) {
-    if (updateError.message?.includes('column') && updateError.message?.includes('does not exist')) {
-      // Fallback gracioso se as novas colunas da migração ainda não foram criadas no banco
-      await supabase
-        .from('item_catalog')
-        .update({
-          image_url: result.imageUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', item.id);
-    } else {
-      console.warn('[triggerItemImageGeneration] Erro ao atualizar item_catalog:', updateError);
-    }
+    console.warn('[triggerItemImageGeneration] Erro ao atualizar item_catalog:', updateError);
+  }
+
+  // Atualização das colunas extras da migração (se já criadas)
+  const family = item.image_family || normalizeItemFamily(item.name);
+  try {
+    await supabase
+      .from('item_catalog')
+      .update({
+        image_status: 'pronta',
+        image_family: family,
+        image_prompt_en: result.promptEn || null,
+      })
+      .eq('id', item.id);
+  } catch {
+    // Ignora se as colunas ainda não existirem no schema do banco
   }
 
   return result.imageUrl;
@@ -283,29 +265,45 @@ export async function saveCatalogItem(
   const family = itemData.image_family || normalizeItemFamily(itemName);
   const hasImage = Boolean(itemData.image_url && itemData.image_url.trim());
 
+  // Apenas colunas verificadas da tabela real no PostgreSQL
   const payload: any = {
-    ...itemData,
     id,
     name: itemName,
     category: itemData.category || 'Geral',
+    subcategory: itemData.subcategory || null,
     rarity: itemData.rarity || 'Comum',
-    price_bronze: Number(itemData.price_bronze) || 0,
+    quality: itemData.quality || 'Comum',
+    equippable_as: itemData.equippable_as || null,
+    weapon_class: itemData.weapon_class || null,
+    armor_class: itemData.armor_class || null,
+    damage_dice: itemData.damage_dice || null,
+    attack_attr: itemData.attack_attr || null,
     two_handed: !!itemData.two_handed,
     ranged: !!itemData.ranged,
-    stackable: !!itemData.stackable,
-    archived: !!itemData.archived,
+    ammo_type: itemData.ammo_type || null,
     armor_bonus: Number(itemData.armor_bonus || 0),
     attack_bonus: Number(itemData.attack_bonus || 0),
     damage_bonus: Number(itemData.damage_bonus || 0),
     focus_bonus: Number(itemData.focus_bonus || 0),
     health_bonus: Number(itemData.health_bonus || 0),
+    skill_bonus: itemData.skill_bonus || null,
+    wear_type: itemData.wear_type || 'unlimited',
     durability: Number(itemData.durability ?? 1),
     max_durability: Number(itemData.max_durability ?? 1),
+    stackable: !!itemData.stackable,
     default_quantity: Number(itemData.default_quantity ?? 1),
-    plague_cost: itemData.rarity === 'Maldito' ? Number(itemData.plague_cost || 1) : Number(itemData.plague_cost || 0),
-    image_family: family,
-    image_status: itemData.image_status || (hasImage ? 'pronta' : 'pendente'),
+    reagent_tier: itemData.reagent_tier || null,
+    material_tier: itemData.material_tier || null,
+    special: itemData.special || null,
+    description: itemData.description || null,
+    origin: itemData.origin || null,
+    price_bronze: Number(itemData.price_bronze) || 0,
+    icon: itemData.icon || '🗡️',
+    image_url: itemData.image_url || null,
     tags: Array.isArray(itemData.tags) ? itemData.tags : [],
+    archived: !!itemData.archived,
+    plague_cost: itemData.rarity === 'Maldito' ? Number(itemData.plague_cost || 1) : Number(itemData.plague_cost || 0),
+    saciedade: Number(itemData.saciedade || 0),
     updated_at: new Date().toISOString(),
   };
 
@@ -316,24 +314,23 @@ export async function saveCatalogItem(
     .single();
 
   if (error) {
-    if (error.message?.includes('column') && error.message?.includes('does not exist')) {
-      // Fallback gracioso se as novas colunas ainda não foram adicionadas via migração
-      const { image_status, image_family, image_prompt_en, image_error, ...safePayload } = payload;
-      const { data: retryData, error: retryError } = await supabase
-        .from('item_catalog')
-        .upsert(safePayload, { onConflict: 'id' })
-        .select()
-        .single();
-
-      if (retryError) {
-        console.error('[ItemCatalogAPI] Erro ao salvar item no catálogo:', retryError);
-        throw new Error(retryError.message);
-      }
-      return retryData as unknown as ItemCatalog;
-    }
-
     console.error('[ItemCatalogAPI] Erro ao salvar item no catálogo:', error);
     throw new Error(error.message);
+  }
+
+  // Tenta atualizar colunas opcionais da migração se existirem
+  if (family) {
+    try {
+      await supabase
+        .from('item_catalog')
+        .update({
+          image_family: family,
+          image_status: itemData.image_status || (hasImage ? 'pronta' : 'pendente'),
+        })
+        .eq('id', id);
+    } catch {
+      // Ignora se as colunas ainda não existirem
+    }
   }
 
   return data as unknown as ItemCatalog;
