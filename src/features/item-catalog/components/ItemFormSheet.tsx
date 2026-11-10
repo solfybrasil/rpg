@@ -16,6 +16,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge, Button, CoinsBadge, Sheet } from '../../../shared/ui/index.ts';
 import { archiveCatalogItem, saveCatalogItem, uploadItemImage } from '../api/index.ts';
+import { generateItemImages } from '../../market/api/aiImages.ts';
 import type { ItemCatalog } from '../api/types.ts';
 import { ITEM_CATEGORIES, ITEM_EQUIP_SLOTS, ITEM_RARITIES } from '../data/constants.ts';
 import { getItemRarityBadgeVariant, getItemRarityBorder } from './ItemCatalogCardGrid.tsx';
@@ -163,6 +164,19 @@ export const ItemFormSheet: React.FC<ItemFormSheetProps> = ({
       };
 
       const saved = await saveCatalogItem(payload);
+      // Sem imagem? A IA desenha em segundo plano (Edge Function no Supabase).
+      if (!saved.image_url) {
+        void generateItemImages({ ids: [saved.id] })
+          .then((r) => {
+            if (r.generated.length) {
+              toast.success(`Imagem de "${saved.name}" pronta.`);
+              onSaved?.({ ...saved, image_url: r.generated[0].url });
+            }
+          })
+          .catch(() => {
+            /* função ainda não publicada: segue sem imagem */
+          });
+      }
       toast.success(
         isEditing
           ? `Artigo "${saved.name}" atualizado!`

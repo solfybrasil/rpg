@@ -13,6 +13,7 @@ import { ItemCatalogFilterBar } from './ItemCatalogFilterBar.tsx';
 import { ItemCatalogTableView } from './ItemCatalogTableView.tsx';
 import { ItemFormSheet } from './ItemFormSheet.tsx';
 import { DMPageHeader, DM_PAGE_CLASS } from '../../../shared/ui/DMPage';
+import { AiImagesPanel } from '../../market/components/AiImagesPanel.tsx';
 
 export function exportItemsToCSV(items: ItemCatalog[]): void {
   if (!items || items.length === 0) {
@@ -170,6 +171,10 @@ export const DMItemCatalogView: React.FC = memo(() => {
         title="Itens"
         subtitle={`${totalCount} ${totalCount === 1 ? 'item' : 'itens'} no catálogo`}
       />
+
+      <div className="mb-3 max-w-md">
+        <AiImagesPanel />
+      </div>
 
       {/* Filter and View Bar */}
       <ItemCatalogFilterBar

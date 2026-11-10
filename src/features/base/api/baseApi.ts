@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { type InventoryItemRecord, canStackTogether } from '../../../entities/item';
 import { queryKeys, supabase as typedSupabase } from '../../../shared/supabase';
+import { readCoins, refundCoins, spendCoins } from '../../../shared/lib/coins';
 import { subscribeRealtime } from '../../../shared/supabase/realtime';
 import { type RepairNeed, currentCondition, needsKey, parseNeeds } from '../data/parts';
 
@@ -200,49 +201,6 @@ function firstFree(used: Iterable<number>, max: number) {
 
 function report(prefix: string) {
   return (err: unknown) => toast.error(`${prefix}: ${err instanceof Error ? err.message : 'erro'}`);
-}
-
-/** Lê o herói direto do banco (moedas atuais). */
-async function readCoins(heroId: string) {
-  const row = await run(db.from('characters').select('id, name, coins_bronze').eq('id', heroId).single());
-  return row as { id: string; name: string; coins_bronze: number | null };
-}
-
-/** Desconta moedas sem perder corrida: só grava se o saldo ainda for o lido. */
-async function spendCoins(heroId: string, amount: number, reason: string) {
-  const hero = await readCoins(heroId);
-  const before = Number(hero.coins_bronze) || 0;
-  if (before < amount) throw new Error('Moedas insuficientes.');
-  const rows = await run(
-    db
-      .from('characters')
-      .update({ coins_bronze: before - amount, updated_at: new Date().toISOString() })
-      .eq('id', heroId)
-      .eq('coins_bronze', before)
-      .select('id'),
-  );
-  if (!(rows as unknown[])?.length) throw new Error('As moedas mudaram agora mesmo. Tente de novo.');
-  try {
-    await db.from('coin_ledger').insert({
-      character_id: heroId,
-      delta: -amount,
-      amount: -amount,
-      balance_after: before - amount,
-      reason: 'compra',
-      description: reason,
-    });
-  } catch {
-    /* registro opcional */
-  }
-  return { before, after: before - amount };
-}
-
-async function refundCoins(heroId: string, amount: number) {
-  const hero = await readCoins(heroId);
-  await db
-    .from('characters')
-    .update({ coins_bronze: (Number(hero.coins_bronze) || 0) + amount })
-    .eq('id', heroId);
 }
 
 // ─────────────────────────── ações ───────────────────────────
