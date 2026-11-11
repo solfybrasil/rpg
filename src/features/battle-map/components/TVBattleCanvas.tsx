@@ -27,6 +27,7 @@ export function TVBattleCanvas() {
     onPing: (p) => engineRef.current?.showPing(p),
     onTurn: setTurn,
     onFx: (f) => engineRef.current?.playFx(f.id, f.c, f.r, f.scale, f.view),
+    onMeasure: (m) => engineRef.current?.setRemoteMeasure(m.from, m.to),
   });
 
   useEffect(() => {

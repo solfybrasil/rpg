@@ -209,13 +209,15 @@ export function DMBattleMapEditor() {
     [map, order, safeIdx],
   );
 
-  // ── Sincronização (ping + turno) ──
+  // ── Sincronização (ping + turno + régua) ──
   const turnRef = useRef({ tokenId: activeToken?.id ?? null, name: activeToken?.name ?? null, round });
   turnRef.current = { tokenId: activeToken?.id ?? null, name: activeToken?.name ?? null, round };
-  const { sendPing, sendTurn, sendFx } = useBattleSync(map?.id, {
+  const measureRef = useRef<{ from: { c: number; r: number } | null; to: { c: number; r: number } | null }>({ from: null, to: null });
+  const { sendPing, sendTurn, sendFx, sendMeasure } = useBattleSync(map?.id, {
     onPing: (p) => engineRef.current?.showPing(p),
     onFx: (f) => engineRef.current?.playFx(f.id, f.c, f.r, f.scale, f.view),
     getTurn: () => turnRef.current,
+    getMeasure: () => measureRef.current,
   });
   useEffect(() => {
     sendTurn({ tokenId: activeToken?.id ?? null, name: activeToken?.name ?? null, round });
@@ -224,8 +226,8 @@ export function DMBattleMapEditor() {
   // ── Motor ──
   const cellClickRef = useRef<(cell: { c: number; r: number }) => void>(() => {});
   const saveFireRef = useRef<(cells: Array<[number, number]>) => void>(() => {});
-  const callbacks = useRef({ patchToken, patchMap, sendPing });
-  callbacks.current = { patchToken, patchMap, sendPing };
+  const callbacks = useRef({ patchToken, patchMap, sendPing, sendMeasure });
+  callbacks.current = { patchToken, patchMap, sendPing, sendMeasure };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -239,6 +241,10 @@ export function DMBattleMapEditor() {
       onPing: (p) => callbacks.current.sendPing(p),
       onCellClick: (cell) => cellClickRef.current(cell),
       onUpdateFire: (cells) => saveFireRef.current(cells),
+      onMeasureChange: (from, to) => {
+        measureRef.current = { from, to };
+        callbacks.current.sendMeasure({ from, to });
+      },
     });
     engineRef.current = engine;
     return () => {
@@ -919,7 +925,7 @@ export function DMBattleMapEditor() {
                 label={t.label}
                 shortcut={t.key}
                 active={tool === t.id}
-                onClick={() => setTool(t.id)}
+                onClick={() => setTool((prev) => (prev === t.id && t.id === 'measure' ? 'select' : t.id))}
                 testId={`tool-${t.id}`}
               />
             ))}

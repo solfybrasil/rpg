@@ -33,6 +33,11 @@ function myTokenName(tokens: BattleToken[], heroId: string | null) {
 const hudBtn =
   'w-10 h-10 flex items-center justify-center border border-[var(--iron)] bg-[var(--stone)]/95 text-[var(--muted)] hover:text-[var(--text)] active:translate-y-px cursor-pointer';
 
+const formatMeters = (n: number) => {
+  const m = n * 1.5;
+  return Number.isInteger(m) ? `${m} m` : `${m.toFixed(1).replace('.', ',')} m`;
+};
+
 export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasProps) {
   const sessionHeroId = useSessionStore((s) => s.heroId);
   const heroId = propHeroId || sessionHeroId || null;
@@ -64,6 +69,7 @@ export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasPro
     onPing: (p) => engineRef.current?.showPing(p),
     onTurn: setTurn,
     onFx: (f) => engineRef.current?.playFx(f.id, f.c, f.r, f.scale, f.view),
+    onMeasure: (m) => engineRef.current?.setRemoteMeasure(m.from, m.to),
   });
   const sendPingRef = useRef(sendPing);
   sendPingRef.current = sendPing;
@@ -213,7 +219,7 @@ export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasPro
         <p className="px-3 py-1.5 border border-[var(--iron)] bg-[var(--stone)]/90 text-xs italic text-[var(--muted)]">
           {measuring
             ? measure != null
-              ? `Distância: ${measure} ${measure === 1 ? 'quadrado' : 'quadrados'}`
+              ? `Distância: ${measure} ${measure === 1 ? 'quadrado' : 'quadrados'} (${formatMeters(measure)})`
               : 'Arraste para medir a distância'
             : !myToken
               ? 'Seu herói ainda não está nesta mesa'

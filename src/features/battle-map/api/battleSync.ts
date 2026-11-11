@@ -23,12 +23,20 @@ export interface BattleFxEvent {
   view?: 'iso' | 'reta';
 }
 
+/** Medição com régua sincronizada em tempo real. */
+export interface BattleMeasureEvent {
+  from: { c: number; r: number } | null;
+  to: { c: number; r: number } | null;
+}
+
 interface SyncHandlers {
   onPing?: (ping: BattlePing) => void;
   onFx?: (fx: BattleFxEvent) => void;
   onTurn?: (turn: BattleTurn) => void;
+  onMeasure?: (measure: BattleMeasureEvent) => void;
   /** Só o Mestre responde a novos participantes com o turno atual. */
   getTurn?: () => BattleTurn | null;
+  getMeasure?: () => BattleMeasureEvent | null;
 }
 
 /**
@@ -60,9 +68,16 @@ export function useBattleSync(mapId: string | undefined, handlers: SyncHandlers)
         .on('broadcast', { event: 'turn' }, ({ payload }) => {
           handlersRef.current.onTurn?.(payload as BattleTurn);
         })
+        .on('broadcast', { event: 'measure' }, ({ payload }) => {
+          handlersRef.current.onMeasure?.(payload as BattleMeasureEvent);
+        })
         .on('broadcast', { event: 'hello' }, () => {
           const turn = handlersRef.current.getTurn?.();
           if (turn) void channel.send({ type: 'broadcast', event: 'turn', payload: turn });
+          const measure = handlersRef.current.getMeasure?.();
+          if (measure?.from && measure?.to) {
+            void channel.send({ type: 'broadcast', event: 'measure', payload: measure });
+          }
         })
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
@@ -94,7 +109,11 @@ export function useBattleSync(mapId: string | undefined, handlers: SyncHandlers)
     void channelRef.current?.send({ type: 'broadcast', event: 'fx', payload: fx });
   }, []);
 
-  return { sendPing, sendTurn, sendFx };
+  const sendMeasure = useCallback((measure: BattleMeasureEvent) => {
+    void channelRef.current?.send({ type: 'broadcast', event: 'measure', payload: measure });
+  }, []);
+
+  return { sendPing, sendTurn, sendFx, sendMeasure };
 }
 
 const HERO_VITALS_KEY = ['battle', 'hero_vitals'] as const;

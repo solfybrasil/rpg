@@ -173,6 +173,8 @@ export class BattleEngine {
   // Régua e pings
   private measureFrom: CellCoord | null = null;
   private measureTo: CellCoord | null = null;
+  private remoteMeasureFrom: CellCoord | null = null;
+  private remoteMeasureTo: CellCoord | null = null;
   private pings: ActivePing[] = [];
 
   // Loop
@@ -834,7 +836,8 @@ export class BattleEngine {
     const ctx = this.ctx;
     const yoff = this.mode === 'square' ? this.TW * 0.12 : this.TH * 0.14;
     if (isDm && (isSelected || hidden)) {
-      this.shape(ctx, s.x, s.y, this.TW * 0.9, this.TH * 0.9);
+      ctx.beginPath();
+      ctx.ellipse(s.x, s.y + 2, this.TW * 0.4, this.TH * 0.3, 0, 0, Math.PI * 2);
       ctx.setLineDash([4 / this.scale, 3 / this.scale]);
       ctx.lineWidth = (isSelected ? 2.4 : 1.2) / this.scale;
       ctx.strokeStyle = isSelected ? C.gold : C.textA(0.5);
@@ -945,6 +948,14 @@ export class BattleEngine {
     this.measureFrom = null;
     this.measureTo = null;
     this.options.onMeasure?.(null);
+    this.options.onMeasureChange?.(null, null);
+    this.invalidate();
+  }
+
+  /** Atualiza régua remota (ex: Mestre medindo e TV/jogadores assistindo). */
+  public setRemoteMeasure(from: CellCoord | null, to: CellCoord | null): void {
+    this.remoteMeasureFrom = from;
+    this.remoteMeasureTo = to;
     this.invalidate();
   }
 
@@ -1130,10 +1141,27 @@ export class BattleEngine {
   }
 
   private drawMeasure(ctx: CanvasRenderingContext2D, lw: number): void {
-    if (!this.measureFrom || !this.measureTo) return;
-    const a = this.cc(this.measureFrom.c, this.measureFrom.r);
-    const b = this.cc(this.measureTo.c, this.measureTo.r);
-    const n = gridDistance(this.measureFrom.c, this.measureFrom.r, this.measureTo.c, this.measureTo.r);
+    if (this.measureFrom && this.measureTo) {
+      this.drawMeasureLine(ctx, lw, this.measureFrom, this.measureTo);
+    }
+    if (this.remoteMeasureFrom && this.remoteMeasureTo) {
+      const isSame =
+        this.measureFrom &&
+        this.measureTo &&
+        this.measureFrom.c === this.remoteMeasureFrom.c &&
+        this.measureFrom.r === this.remoteMeasureFrom.r &&
+        this.measureTo.c === this.remoteMeasureTo.c &&
+        this.measureTo.r === this.remoteMeasureTo.r;
+      if (!isSame) {
+        this.drawMeasureLine(ctx, lw, this.remoteMeasureFrom, this.remoteMeasureTo);
+      }
+    }
+  }
+
+  private drawMeasureLine(ctx: CanvasRenderingContext2D, lw: number, from: CellCoord, to: CellCoord): void {
+    const a = this.cc(from.c, from.r);
+    const b = this.cc(to.c, to.r);
+    const n = gridDistance(from.c, from.r, to.c, to.r);
 
     for (const pt of [a, b]) {
       this.shape(ctx, pt.x, pt.y, this.TW, this.TH);
@@ -1150,21 +1178,45 @@ export class BattleEngine {
     ctx.stroke();
     ctx.restore();
 
+    // 1 quadrado = 1,5 metros (exibido pequenininho logo na frente dos quadrados)
+    const meters = n * 1.5;
+    const metersStr = Number.isInteger(meters) ? `${meters} m` : `${meters.toFixed(1).replace('.', ',')} m`;
     const label = `${n} ${n === 1 ? 'quadrado' : 'quadrados'}`;
+    const subLabel = `(${metersStr})`;
+
     const fs = Math.max(11, this.TH * 0.36);
+    const fsSub = Math.max(9, Math.round(fs * 0.72));
+
     ctx.font = `700 ${fs}px Cinzel, Georgia, serif`;
-    const tw = ctx.measureText(label).width;
+    const twMain = ctx.measureText(label).width;
+
+    ctx.font = `600 ${fsSub}px Cinzel, Georgia, serif`;
+    const spaceW = ctx.measureText(' ').width;
+    const twSub = ctx.measureText(subLabel).width;
+
+    const totalW = twMain + spaceW + twSub;
     const mx = (a.x + b.x) / 2;
     const my = (a.y + b.y) / 2 - fs;
-    ctx.fillStyle = 'rgba(7, 6, 5, 0.85)';
-    ctx.fillRect(mx - tw / 2 - fs * 0.5, my - fs * 0.8, tw + fs, fs * 1.6);
+
+    const padX = fs * 0.55;
+    const padY = fs * 0.8;
+    ctx.fillStyle = 'rgba(7, 6, 5, 0.88)';
+    ctx.fillRect(mx - totalW / 2 - padX, my - padY, totalW + padX * 2, padY * 2);
     ctx.strokeStyle = C.gold;
     ctx.lineWidth = lw;
-    ctx.strokeRect(mx - tw / 2 - fs * 0.5, my - fs * 0.8, tw + fs, fs * 1.6);
-    ctx.fillStyle = C.goldHi;
-    ctx.textAlign = 'center';
+    ctx.strokeRect(mx - totalW / 2 - padX, my - padY, totalW + padX * 2, padY * 2);
+
+    const startX = mx - totalW / 2;
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, mx, my);
+    ctx.textAlign = 'left';
+
+    ctx.font = `700 ${fs}px Cinzel, Georgia, serif`;
+    ctx.fillStyle = C.goldHi;
+    ctx.fillText(label, startX, my);
+
+    ctx.font = `600 ${fsSub}px Cinzel, Georgia, serif`;
+    ctx.fillStyle = C.gold;
+    ctx.fillText(subLabel, startX + twMain + spaceW, my);
   }
 
   private drawPings(ctx: CanvasRenderingContext2D, now: number): void {
@@ -1229,7 +1281,10 @@ export class BattleEngine {
     // Turno ativo: anel dourado pulsante
     if (isActive) {
       const pulse = 0.5 + 0.5 * Math.sin(now / 260);
-      this.shape(ctx, s.x, s.y, this.TW * (1.05 + pulse * 0.1), this.TH * (1.05 + pulse * 0.1));
+      const rx = this.TW * 0.44 * (1.05 + pulse * 0.1);
+      const ry = this.TH * 0.34 * (1.05 + pulse * 0.1);
+      ctx.beginPath();
+      ctx.ellipse(s.x, s.y + 2, rx, ry, 0, 0, Math.PI * 2);
       ctx.fillStyle = C.goldA(0.12 + pulse * 0.12);
       ctx.fill();
       ctx.lineWidth = (2.2 / this.scale) * (1 + pulse * 0.4);
@@ -1237,11 +1292,14 @@ export class BattleEngine {
       ctx.stroke();
     }
 
-    // Base da peça
-    this.shape(ctx, s.x, s.y, this.TW * 0.9, this.TH * 0.9);
-    ctx.lineWidth = (1.5 / this.scale) * (isSelected ? 2.4 : isMyHero ? 1.6 : 1);
-    ctx.strokeStyle = isSelected || isMyHero ? C.gold : s.kind === 'heroi' ? C.moss : C.bloodHi;
-    ctx.stroke();
+    // Seleção (anel sutil no pé apenas se a peça estiver selecionada)
+    if (isSelected) {
+      ctx.beginPath();
+      ctx.ellipse(s.x, s.y + 2, this.TW * 0.4, this.TH * 0.32, 0, 0, Math.PI * 2);
+      ctx.lineWidth = 2 / this.scale;
+      ctx.strokeStyle = C.gold;
+      ctx.stroke();
+    }
 
     // Sprite / vídeo
     const entry = this.pool.get(s.mediaUrl, s.chromaMode);
@@ -1481,7 +1539,10 @@ export class BattleEngine {
   }
 
   private handlePointerDown(e: PointerEvent): void {
-    if (e.button === 2) return;
+    if (e.button === 2) {
+      if (this.options.tool === 'measure') this.clearMeasure();
+      return;
+    }
     this.cv.setPointerCapture(e.pointerId);
     this.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
@@ -1519,6 +1580,7 @@ export class BattleEngine {
         this.measureFrom = cell;
         this.measureTo = cell;
         this.options.onMeasure?.(0);
+        this.options.onMeasureChange?.(this.measureFrom, this.measureTo);
         this.invalidate();
       }
       return;
@@ -1586,6 +1648,7 @@ export class BattleEngine {
       if (cell && (cell.c !== this.measureTo?.c || cell.r !== this.measureTo?.r)) {
         this.measureTo = cell;
         this.options.onMeasure?.(gridDistance(this.measureFrom.c, this.measureFrom.r, cell.c, cell.r));
+        this.options.onMeasureChange?.(this.measureFrom, this.measureTo);
         this.invalidate();
       }
       return;
@@ -1681,6 +1744,9 @@ export class BattleEngine {
 
   public destroy(): void {
     this.destroyed = true;
+    if (this.measureFrom || this.measureTo) {
+      this.options.onMeasureChange?.(null, null);
+    }
     if (this.rafId !== null) cancelAnimationFrame(this.rafId);
     this.rafId = null;
     if (this.layerTimer) clearTimeout(this.layerTimer);

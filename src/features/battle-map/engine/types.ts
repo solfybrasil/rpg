@@ -100,6 +100,8 @@ export interface BattleEngineOptions {
   onPing?: (ping: BattlePing) => void;
   /** Resultado da régua: distância em quadrados (null ao limpar). */
   onMeasure?: (cells: number | null) => void;
+  /** Régua em tempo real: coordenadas de origem e destino (null ao limpar). */
+  onMeasureChange?: (from: CellCoord | null, to: CellCoord | null) => void;
   /** Peça cujo turno está ativo (anel dourado pulsante). */
   activeTokenId?: string | null;
   /** Vida dos heróis por hero_id, para a barra sobre a peça. */

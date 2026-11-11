@@ -155,4 +155,22 @@ describe('Battle Engine — 8-Direction BFS Pathfinding & Reach', () => {
       [0, 3],
     ]);
   });
+
+  it('calculates grid distance and meters conversion correctly (1 square = 1.5m)', () => {
+    const formatMeasure = (n: number) => {
+      const meters = n * 1.5;
+      const metersStr = Number.isInteger(meters) ? `${meters} m` : `${meters.toFixed(1).replace('.', ',')} m`;
+      const label = `${n} ${n === 1 ? 'quadrado' : 'quadrados'}`;
+      const subLabel = `(${metersStr})`;
+      return `${label} ${subLabel}`;
+    };
+
+    expect(formatMeasure(0)).toBe('0 quadrados (0 m)');
+    expect(formatMeasure(1)).toBe('1 quadrado (1,5 m)');
+    expect(formatMeasure(2)).toBe('2 quadrados (3 m)');
+    expect(formatMeasure(3)).toBe('3 quadrados (4,5 m)');
+    expect(formatMeasure(4)).toBe('4 quadrados (6 m)');
+    expect(formatMeasure(7)).toBe('7 quadrados (10,5 m)');
+    expect(gridDistance(0, 0, 4, 3)).toBe(4);
+  });
 });
