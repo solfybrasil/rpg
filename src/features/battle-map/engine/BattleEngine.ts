@@ -10,6 +10,7 @@ import {
 } from './IsometricGrid.ts';
 import { readMapSettings } from './mapSettings.ts';
 import { bfs, computeReach, reconstructCoordPath, reconstructPath } from './Pathfinding.ts';
+import { splitMediaUrl } from './mediaParams.ts';
 import { CHEST_FX, CHEST_OPEN_AT, FIRE_FX, FxSprite, type FxView, type SpecialToken, parseSpecial } from './FxSprite.ts';
 import { VideoChromaPool } from './VideoChromaPool.ts';
 import type {
@@ -66,6 +67,8 @@ interface LocalTokenState {
   kind: string;
   /** Efeito (`fx:`) ou baú (`bau:`) guardado na peça; null para peças comuns. */
   special: SpecialToken | null;
+  /** Brilho da peça (1 = original). */
+  brightness: number;
 }
 
 /** Uma casa em chamas (incêndio de terreno). */
@@ -555,8 +558,10 @@ export class BattleEngine {
     this.invalidate();
   }
 
-  private resolveTokenMedia(token: BattleToken): { url: string; chroma: ChromaMode } {
-    let url = token.media_url || token.idle_webm_url || token.idle_mp4_url || token.poster_url || '';
+  private resolveTokenMedia(token: BattleToken): { url: string; chroma: ChromaMode; brightness: number } {
+    // O brilho vem no fragmento do endereço; o arquivo é carregado sem ele.
+    const media = splitMediaUrl(token.media_url);
+    let url = media.url || token.idle_mp4_url || token.idle_webm_url || token.poster_url || '';
     let chroma: ChromaMode = (token.chroma as ChromaMode) || 'verde';
     const ident = (token.hero_id || token.name || '').toLowerCase();
     if (!url) {
@@ -565,8 +570,9 @@ export class BattleEngine {
       else if (ident.includes('malenia')) url = '/batalha/malenia_idle.webm';
       else url = '/batalha/fera_idle.webm';
     }
-    if (ident.includes('kaelis') && url.includes('kaelis')) chroma = 'magenta';
-    return { url, chroma };
+    // Só o vídeo padrão da Kaelis tem fundo magenta (mídias enviadas trazem o recorte salvo).
+    if (url.startsWith('/batalha/kaelis_idle')) chroma = 'magenta';
+    return { url, chroma, brightness: media.brightness };
   }
 
   public setTokens(tokens: BattleToken[]): void {
@@ -587,7 +593,9 @@ export class BattleEngine {
 
       const special = parseSpecial(token.media_url);
       if (!s) {
-        const { url, chroma } = special ? { url: '', chroma: 'nenhum' as ChromaMode } : this.resolveTokenMedia(token);
+        const { url, chroma, brightness } = special
+          ? { url: '', chroma: 'nenhum' as ChromaMode, brightness: 1 }
+          : this.resolveTokenMedia(token);
         if (url) this.pool.get(url, chroma);
         s = {
           token,
@@ -606,6 +614,7 @@ export class BattleEngine {
           size: token.size ?? 160,
           kind: token.kind,
           special,
+          brightness,
         };
         this.tokenStates.set(token.id, s);
         this.syncSprite(s);
@@ -621,7 +630,10 @@ export class BattleEngine {
       if (!s.moving) s.facing = token.facing ?? s.facing;
 
       s.special = special;
-      const { url, chroma } = special ? { url: '', chroma: 'nenhum' as ChromaMode } : this.resolveTokenMedia(token);
+      const { url, chroma, brightness } = special
+        ? { url: '', chroma: 'nenhum' as ChromaMode, brightness: 1 }
+        : this.resolveTokenMedia(token);
+      s.brightness = brightness;
       if (url !== s.mediaUrl || chroma !== s.chromaMode) {
         if (s.mediaUrl) this.pool.release(s.mediaUrl);
         if (url) this.pool.get(url, chroma);
@@ -1246,7 +1258,7 @@ export class BattleEngine {
         const bob = s.moving ? Math.abs(Math.sin(now / 95)) * -H * 0.025 : 0;
         ctx.translate(s.x, s.y + (this.mode === 'square' ? this.TW * 0.12 : this.TH * 0.14) + bob);
         ctx.scale(s.facing, 1);
-        ctx.drawImage(source, -W * s.anchorX, -H * s.anchorY, W, H);
+        drawBright(ctx, source, -W * s.anchorX, -H * s.anchorY, W, H, s.brightness);
         ctx.setTransform(this.scale, 0, 0, this.scale, -this.view.x * this.scale, -this.view.y * this.scale);
         drawn = true;
       }
@@ -1687,6 +1699,65 @@ export class BattleEngine {
     this.stopBgVideo();
     this.layer = null;
   }
+}
+
+// ───────────────────────── Brilho da peça ─────────────────────────
+
+/** O navegador aplica `ctx.filter`? (Safari antigo ignora: lá usamos a alternativa abaixo.) */
+const FILTER_OK = (() => {
+  if (typeof document === 'undefined') return false;
+  const t = document.createElement('canvas').getContext('2d');
+  if (!t) return false;
+  t.filter = 'brightness(2)';
+  return t.filter === 'brightness(2)';
+})();
+let darkCanvas: HTMLCanvasElement | null = null;
+
+/**
+ * Desenha a mídia com brilho `b` (1 = original). Com `ctx.filter` quando existe; sem ele, clareia
+ * somando a própria imagem por cima (modo "lighter") e escurece numa tela auxiliar com preto só
+ * sobre os pixels da peça (o fundo transparente continua transparente).
+ */
+function drawBright(ctx: CanvasRenderingContext2D, src: CanvasImageSource, x: number, y: number, w: number, h: number, b: number) {
+  if (Math.abs(b - 1) < 0.01) {
+    ctx.drawImage(src, x, y, w, h);
+    return;
+  }
+  if (FILTER_OK) {
+    const prev = ctx.filter;
+    ctx.filter = `brightness(${b})`;
+    ctx.drawImage(src, x, y, w, h);
+    ctx.filter = prev;
+    return;
+  }
+  if (b > 1) {
+    ctx.drawImage(src, x, y, w, h);
+    const prevOp = ctx.globalCompositeOperation;
+    const prevA = ctx.globalAlpha;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = prevA * Math.min(1, b - 1);
+    ctx.drawImage(src, x, y, w, h);
+    ctx.globalCompositeOperation = prevOp;
+    ctx.globalAlpha = prevA;
+    return;
+  }
+  const cw = Math.max(1, Math.ceil(Math.abs(w)));
+  const ch = Math.max(1, Math.ceil(Math.abs(h)));
+  darkCanvas ??= document.createElement('canvas');
+  if (darkCanvas.width < cw) darkCanvas.width = cw;
+  if (darkCanvas.height < ch) darkCanvas.height = ch;
+  const d = darkCanvas.getContext('2d');
+  if (!d) {
+    ctx.drawImage(src, x, y, w, h);
+    return;
+  }
+  d.globalCompositeOperation = 'source-over';
+  d.clearRect(0, 0, cw, ch);
+  d.drawImage(src, 0, 0, cw, ch);
+  d.globalCompositeOperation = 'source-atop';
+  d.fillStyle = `rgba(0, 0, 0, ${1 - b})`;
+  d.fillRect(0, 0, cw, ch);
+  ctx.drawImage(darkCanvas, 0, 0, cw, ch, x, y, w, h);
 }
 
 function normalizePath(raw: unknown): Array<[number, number]> {

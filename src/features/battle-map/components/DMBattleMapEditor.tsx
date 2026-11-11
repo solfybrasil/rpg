@@ -19,7 +19,10 @@ import {
   createBattleMap,
   createBattleToken,
   deleteBattleMap,
+  applyTokenMedia,
   deleteBattleToken,
+  fetchLatestTokenMedia,
+  pickTokenMedia,
   duplicateBattleMap,
   fetchBattleMaps,
   novaRodadaRPC,
@@ -43,7 +46,8 @@ import { useChestActions, useChests } from '../../treasure/api/treasureApi.ts';
 import { type ChestTier, TIERS, rollChest } from '../../treasure/data/loot.ts';
 import { FX_BY_ID } from '../../../vendor/pixelfx/catalog.ts';
 import { FIRE_URL, chestUrl, fxUrl, parseSpecial } from '../engine/FxSprite.ts';
-import { MediaBattleModal, type MediaBattleTarget } from './MediaBattleModal.tsx';
+import { MediaBattleModal, type MediaBattleResult, type MediaBattleTarget } from './MediaBattleModal.tsx';
+import { creatureTokenMedia, isVideoUrl } from '../engine/mediaParams.ts';
 import { PiecesPanel, TablePanel, TurnPanel } from './dm/BattlePanels.tsx';
 import { EffectsPanel, type FxPlacement } from './dm/EffectsPanel.tsx';
 import { MapChestsPanel } from './dm/MapChestsPanel.tsx';
@@ -117,7 +121,11 @@ export function DMBattleMapEditor() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<PanelTab>('pecas');
   const [panelOpen, setPanelOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 768);
-  const [mediaTarget, setMediaTarget] = useState<MediaBattleTarget | null>(null);
+  /** Peça cuja mídia está sendo editada (e as cópias dela antes da prévia, para desfazer). */
+  const [mediaToken, setMediaToken] = useState<BattleToken | null>(null);
+  const mediaBackup = useRef<Map<string, BattleToken> | null>(null);
+  const mediaOpenRef = useRef(false);
+  mediaOpenRef.current = mediaToken != null;
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   // Próximo clique no mapa põe um efeito ou um baú
@@ -129,7 +137,8 @@ export function DMBattleMapEditor() {
   // ── Gravação (debounce por item) ──
   const queueMapSave = useDebouncedSaver<BattleMap>((id, patch) => updateBattleMap(id, patch));
   const queueTokenSave = useDebouncedSaver<BattleToken>((id, patch) => updateBattleToken(id, patch));
-  savingRef.current = () => queueTokenSave.busy() || queueMapSave.busy();
+  // Com o modal de mídia aberto, a consulta periódica espera (senão desfaria a prévia ao vivo).
+  savingRef.current = () => queueTokenSave.busy() || queueMapSave.busy() || mediaOpenRef.current;
 
   const setMapsCache = useCallback(
     (fn: (prev: BattleMap[]) => BattleMap[]) => qc.setQueryData<BattleMap[]>(MAPS_KEY, (prev) => fn(prev ?? [])),
@@ -456,8 +465,10 @@ export function DMBattleMapEditor() {
   const addHero = useCallback(
     async (hero: { id: string; name: string | null }) => {
       const name = hero.name || hero.id;
-      const media = heroMediaFor(hero.id, name);
-      await addTokens([{ kind: 'heroi', hero_id: hero.id, name, media_type: 'video', ...media }]);
+      // A última mídia salva deste herói (em qualquer mesa) vale mais que a padrão.
+      const saved = await fetchLatestTokenMedia({ heroId: hero.id }).catch(() => null);
+      const media = saved ?? { media_type: 'video', ...heroMediaFor(hero.id, name) };
+      await addTokens([{ kind: 'heroi', hero_id: hero.id, name, ...media }]);
       toast.success(`${name} entrou na mesa.`);
     },
     [addTokens],
@@ -465,16 +476,21 @@ export function DMBattleMapEditor() {
 
   const addBeast = useCallback(
     async (beast: { id: string; name: string; image_url?: string | null }, qty: number) => {
-      const drafts = Array.from({ length: qty }, (_, i) => ({
-        kind: 'fera' as const,
-        beast_id: beast.id,
-        name: qty > 1 ? `${beast.name} ${i + 1}` : beast.name,
-        media_url: beast.image_url || '/batalha/fera_idle.webm',
-        media_type: 'video' as const,
+      const saved = await fetchLatestTokenMedia({ beastId: beast.id }).catch(() => null);
+      const url = beast.image_url || '/batalha/fera_idle.webm';
+      const media = saved ?? creatureTokenMedia(beast.image_url) ?? {
+        media_url: url,
+        media_type: isVideoUrl(url) ? 'video' : 'imagem',
         chroma: 'verde',
         anchor_x: 0.284,
         anchor_y: 0.96,
         size: 160,
+      };
+      const drafts = Array.from({ length: qty }, (_, i) => ({
+        kind: 'fera' as const,
+        beast_id: beast.id,
+        name: qty > 1 ? `${beast.name} ${i + 1}` : beast.name,
+        ...media,
       }));
       await addTokens(drafts);
       toast.success(`${qty > 1 ? `${qty}× ` : ''}${beast.name} na mesa.`);
@@ -663,6 +679,47 @@ export function DMBattleMapEditor() {
     }
   };
 
+  // ── Mídia da peça ──
+  /** Peças desta mesa que mudam junto (mesmo herói/fera, ou só ela). */
+  const sameOwner = useCallback(
+    (t: BattleToken, ref: BattleToken) =>
+      t.id === ref.id || (ref.hero_id ? t.hero_id === ref.hero_id : ref.beast_id ? t.beast_id === ref.beast_id : false),
+    [],
+  );
+
+  const previewMedia = useCallback(
+    (r: MediaBattleResult | null) => {
+      const ref = mediaToken;
+      if (!ref) return;
+      if (!r) {
+        const backup = mediaBackup.current;
+        if (backup) setTokensCache((prev) => prev.map((t) => backup.get(t.id) ?? t));
+        mediaBackup.current = null;
+        return;
+      }
+      const patch = pickTokenMedia(r as unknown as Record<string, unknown>);
+      setTokensCache((prev) => {
+        if (!mediaBackup.current) mediaBackup.current = new Map(prev.filter((t) => sameOwner(t, ref)).map((t) => [t.id, t]));
+        return prev.map((t) => (sameOwner(t, ref) ? { ...t, ...patch } : t));
+      });
+    },
+    [mediaToken, sameOwner, setTokensCache],
+  );
+
+  /** Grava a mídia (todas as peças do mesmo herói/fera, em qualquer mesa) e mostra o erro real se falhar. */
+  const saveMedia = useCallback(
+    async (r: MediaBattleResult) => {
+      const ref = mediaToken;
+      if (!ref) return;
+      const patch = pickTokenMedia(r as unknown as Record<string, unknown>);
+      const rows = await applyTokenMedia({ tokenId: ref.id, heroId: ref.hero_id, beastId: ref.beast_id }, patch);
+      const byId = new Map(rows.map((t) => [t.id, t]));
+      mediaBackup.current = null;
+      setTokensCache((prev) => prev.map((t) => (byId.has(t.id) ? { ...t, ...byId.get(t.id) } : sameOwner(t, ref) ? { ...t, ...patch } : t)));
+    },
+    [mediaToken, sameOwner, setTokensCache],
+  );
+
   const removeToken = useCallback(
     async (id: string) => {
       try {
@@ -688,7 +745,10 @@ export function DMBattleMapEditor() {
     const handler = (e: Event) => {
       const { id, media } = (e as CustomEvent).detail || {};
       if (!id || !media) return;
-      for (const t of tokens) if (t.hero_id === id || t.beast_id === id) patchToken(t.id, media);
+      // Só colunas que existem na peça: campo a mais faz o banco recusar a gravação inteira.
+      const patch = pickTokenMedia(media);
+      if (!Object.keys(patch).length) return;
+      for (const t of tokens) if (t.hero_id === id || t.beast_id === id) patchToken(t.id, patch);
     };
     window.addEventListener('peste-media-updated', handler);
     return () => window.removeEventListener('peste-media-updated', handler);
@@ -932,19 +992,10 @@ export function DMBattleMapEditor() {
                   onAddHero={addHero}
                   onAddBeast={addBeast}
                   onDuplicate={(t, n) => void duplicateToken(t, n)}
-                  onEditMedia={(t) =>
-                    setMediaTarget({
-                      id: t.hero_id || t.beast_id || t.id,
-                      name: t.name,
-                      kind: t.kind,
-                      media_url: t.media_url,
-                      chroma: t.chroma,
-                      anchor_x: t.anchor_x,
-                      anchor_y: t.anchor_y,
-                      size: t.size,
-                      facing: t.facing,
-                    })
-                  }
+                  onEditMedia={(t) => {
+                    mediaBackup.current = null;
+                    setMediaToken(t);
+                  }}
                 />
               )}
               {tab === 'turno' && (
@@ -1034,25 +1085,29 @@ export function DMBattleMapEditor() {
         )}
       </div>
 
-      {mediaTarget && (
+      {mediaToken && (
         <MediaBattleModal
-          isOpen
-          targetType={(mediaTarget.kind as 'heroi' | 'fera') || 'heroi'}
-          targetData={mediaTarget}
-          onClose={() => setMediaTarget(null)}
-          onMediaSaved={(u) => {
-            const patch = {
-              media_url: u.media_url,
-              chroma: u.chroma,
-              anchor_x: u.anchor_x,
-              anchor_y: u.anchor_y,
-              size: u.size,
-              facing: u.facing,
-            };
-            for (const t of tokens) {
-              if (t.hero_id === u.id || t.beast_id === u.id || t.id === u.id) patchToken(t.id, patch);
-            }
-          }}
+          key={mediaToken.id}
+          target={
+            {
+              ownerId: mediaToken.hero_id || mediaToken.beast_id || mediaToken.id,
+              name: mediaToken.name,
+              kind: mediaToken.kind,
+              media_url: mediaToken.media_url,
+              media_type: mediaToken.media_type,
+              poster_url: mediaToken.poster_url,
+              idle_mp4_url: mediaToken.idle_mp4_url,
+              idle_webm_url: mediaToken.idle_webm_url,
+              chroma: mediaToken.chroma,
+              anchor_x: mediaToken.anchor_x,
+              anchor_y: mediaToken.anchor_y,
+              size: mediaToken.size,
+              facing: mediaToken.facing,
+            } satisfies MediaBattleTarget
+          }
+          onPreview={previewMedia}
+          onSave={saveMedia}
+          onClose={() => setMediaToken(null)}
         />
       )}
     </div>

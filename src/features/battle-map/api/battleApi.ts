@@ -205,6 +205,86 @@ export async function updateBattleToken(id: string, updates: Partial<BattleToken
   return data[0] as BattleToken;
 }
 
+/** Colunas de mídia que existem em `battle_tokens` (qualquer outra faz o banco recusar a gravação). */
+export const TOKEN_MEDIA_KEYS = [
+  'media_url',
+  'media_type',
+  'chroma',
+  'anchor_x',
+  'anchor_y',
+  'size',
+  'facing',
+  'poster_url',
+  'idle_mp4_url',
+  'idle_webm_url',
+] as const;
+
+export type TokenMediaPatch = Partial<Pick<BattleToken, (typeof TOKEN_MEDIA_KEYS)[number]>>;
+
+/** Só os campos de mídia válidos (descarta o resto). */
+export function pickTokenMedia(src: Record<string, unknown>): TokenMediaPatch {
+  const out: Record<string, unknown> = {};
+  for (const k of TOKEN_MEDIA_KEYS) if (src[k] !== undefined) out[k] = src[k];
+  return out as TokenMediaPatch;
+}
+
+/**
+ * Grava a mídia numa peça e em todas as peças do mesmo herói/fera (em qualquer mesa), para a
+ * próxima mesa já abrir com ela. Cada filtro numa consulta própria: misturar `hero_id` (texto) com
+ * `id` (uuid) num `or` faz o banco recusar tudo quando o valor não é um uuid.
+ */
+export async function applyTokenMedia(
+  target: { tokenId: string; heroId?: string | null; beastId?: string | null },
+  patch: TokenMediaPatch,
+): Promise<BattleToken[]> {
+  const db = await getBattleDb();
+  const row = { ...pickTokenMedia(patch as Record<string, unknown>), updated_at: now() };
+  const runs: Array<PromiseLike<{ data: unknown; error: unknown }>> = [
+    db.from('battle_tokens').update(row).eq('id', target.tokenId).select(),
+  ];
+  if (target.heroId) runs.push(db.from('battle_tokens').update(row).eq('hero_id', target.heroId).select());
+  else if (target.beastId) runs.push(db.from('battle_tokens').update(row).eq('beast_id', target.beastId).select());
+  const results = await Promise.all(runs);
+  const first = results[0];
+  if (first.error) fail('Não foi possível salvar a mídia da peça', first.error);
+  const byId = new Map<string, BattleToken>();
+  for (const r of results) for (const t of ((r.data as BattleToken[] | null) ?? [])) byId.set(t.id, t);
+  if (!byId.has(target.tokenId)) fail('A peça não existe mais no banco', null);
+  return [...byId.values()];
+}
+
+/** Mesma gravação, sem peça de referência (ex.: Bestiário atualizando as peças de uma fera). */
+export async function applyOwnerMedia(owner: { heroId?: string; beastId?: string }, patch: TokenMediaPatch): Promise<BattleToken[]> {
+  const db = await getBattleDb();
+  const col = owner.heroId ? 'hero_id' : 'beast_id';
+  const val = owner.heroId ?? owner.beastId;
+  if (!val) return [];
+  const { data, error } = await db
+    .from('battle_tokens')
+    .update({ ...pickTokenMedia(patch as Record<string, unknown>), updated_at: now() })
+    .eq(col, val)
+    .select();
+  if (error) fail('Não foi possível atualizar as peças desta fera', error);
+  return (data ?? []) as BattleToken[];
+}
+
+/** Última mídia salva para um herói ou fera (para a peça já entrar na mesa com ela). */
+export async function fetchLatestTokenMedia(owner: { heroId?: string; beastId?: string }): Promise<TokenMediaPatch | null> {
+  const db = await getBattleDb();
+  const col = owner.heroId ? 'hero_id' : 'beast_id';
+  const val = owner.heroId ?? owner.beastId;
+  if (!val) return null;
+  const { data, error } = await db
+    .from('battle_tokens')
+    .select(TOKEN_MEDIA_KEYS.join(', '))
+    .eq(col, val)
+    .not('media_url', 'is', null)
+    .order('updated_at', { ascending: false })
+    .limit(1);
+  if (error || !data?.length) return null;
+  return pickTokenMedia(data[0] as unknown as Record<string, unknown>);
+}
+
 export async function deleteBattleToken(id: string): Promise<void> {
   const db = await getBattleDb();
   const { error } = await db.from('battle_tokens').delete().eq('id', id);

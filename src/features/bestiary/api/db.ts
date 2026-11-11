@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { creatureMediaFields } from './creatureMedia';
 import { getSafeRealtimeChannel, subscribeRealtime, supabase } from '../../../shared/supabase';
 
 const CHAR_COLS =
@@ -154,14 +155,9 @@ export async function fetchCreatureCatalogFromDB({
       } catch (_) {}
       return {
         ...cr,
-        idle_mp4_url: cr.idle_mp4_url || localMedia.idle_mp4_url || null,
-        idle_webm_url: cr.idle_webm_url || localMedia.idle_webm_url || null,
-        poster_url: cr.poster_url || localMedia.poster_url || cr.image_url || null,
-        media_chroma: cr.media_chroma || localMedia.media_chroma || 'verde',
-        media_anchor_x: Number(cr.media_anchor_x ?? localMedia.media_anchor_x ?? 0.5),
-        media_anchor_y: Number(cr.media_anchor_y ?? localMedia.media_anchor_y ?? 0.98),
-        media_size: Number(cr.media_size ?? localMedia.media_size ?? 160),
-        media_facing: Number(cr.media_facing ?? localMedia.media_facing ?? 1),
+        // A mídia de batalha fica no fragmento de image_url (a tabela não tem colunas próprias);
+        // o localStorage é só o que outros navegadores ainda não tinham salvo no banco.
+        ...creatureMediaFields(cr, localMedia),
       };
     });
     return { data: items, count: count || 0 };

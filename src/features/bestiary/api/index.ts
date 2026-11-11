@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { decodeCreatureMedia, encodeCreatureMedia, isVideoUrl, withMediaParams } from '../../battle-map/engine/mediaParams.ts';
+import { creatureMediaFields } from './creatureMedia';
 import { formatarCriaturaParaBatalha } from '../../../entities/creature/index.ts';
 import { supabase } from '../../../shared/supabase/client.ts';
 import { createBattleToken, fetchActiveBattleMap, fetchBattleTokens } from '../../battle-map/api/battleApi.ts';
@@ -122,21 +124,15 @@ export async function fetchCreaturesCatalog(
       lair: c.lair || null,
       description: c.description || null,
       icon: c.icon || '🐺',
-      image_url: c.image_url || null,
       tags: Array.isArray(c.tags) ? c.tags : [],
       archived: !!c.archived,
       created_at: c.created_at || null,
       updated_at: c.updated_at || null,
 
       // Battle media
-      idle_mp4_url: c.idle_mp4_url || localMedia.idle_mp4_url || null,
-      idle_webm_url: c.idle_webm_url || localMedia.idle_webm_url || null,
-      poster_url: c.poster_url || localMedia.poster_url || c.image_url || null,
-      media_chroma: c.media_chroma || localMedia.media_chroma || 'verde',
-      media_anchor_x: Number(c.media_anchor_x ?? localMedia.media_anchor_x ?? 0.5),
-      media_anchor_y: Number(c.media_anchor_y ?? localMedia.media_anchor_y ?? 0.98),
-      media_size: Number(c.media_size ?? localMedia.media_size ?? 160),
-      media_facing: Number(c.media_facing ?? localMedia.media_facing ?? 1),
+      // A mídia de batalha fica no fragmento de image_url (a tabela não tem colunas próprias);
+      // o localStorage é só o que outros navegadores ainda não tinham salvo no banco.
+      ...creatureMediaFields(c, localMedia),
 
       // Derived
       ataques: formatted?.ataques || [],
@@ -228,6 +224,9 @@ export async function updateCreature(
   delete payload.ataques;
   delete payload.drops;
   delete payload.efeitos_auto;
+  // Campos de mídia de batalha não são colunas: vivem no fragmento de image_url.
+  for (const k of MEDIA_VIRTUAL_KEYS) delete payload[k];
+  if ('image_url' in payload) payload.image_url = await keepCreatureMedia(id, payload.image_url);
 
   const { data, error } = await supabase
     .from('creature_catalog')
@@ -351,7 +350,9 @@ export async function sendCreatureToTable(
   // Primeira célula livre perto do centro do mapa
   const tokens = await fetchBattleTokens(activeMap.id);
   const [cell] = findFreeCells(activeMap, tokens, 1);
-  const media = creature.idle_webm_url || creature.idle_mp4_url || creature.image_url || creature.poster_url || '/batalha/fera_idle.webm';
+  // MP4 toca em qualquer aparelho; o brilho vai no fragmento do endereço.
+  const main = creature.idle_mp4_url || creature.idle_webm_url || creature.image_url || creature.poster_url || '/batalha/fera_idle.webm';
+  const media = withMediaParams(main, { brightness: (creature as { media_brightness?: number }).media_brightness ?? 1 });
 
   const token = await createBattleToken({
     map_id: activeMap.id,
@@ -359,7 +360,10 @@ export async function sendCreatureToTable(
     beast_id: creature.id,
     name: creature.name,
     media_url: media,
-    media_type: /\.(webm|mp4)$/i.test(media) ? 'video' : 'imagem',
+    media_type: isVideoUrl(media) ? 'video' : 'imagem',
+    poster_url: creature.poster_url || creature.image_url || null,
+    idle_mp4_url: creature.idle_mp4_url || null,
+    idle_webm_url: creature.idle_webm_url || null,
     chroma: (creature.media_chroma as string) || 'verde',
     anchor_x: creature.media_anchor_x ?? 0.284,
     anchor_y: creature.media_anchor_y ?? 0.96,
@@ -372,19 +376,56 @@ export async function sendCreatureToTable(
   return { success: true, token };
 }
 
+/** Campos de mídia que aparecem na fera mas não existem na tabela. */
+const MEDIA_VIRTUAL_KEYS = [
+  'idle_mp4_url',
+  'idle_webm_url',
+  'poster_url',
+  'media_chroma',
+  'media_anchor_x',
+  'media_anchor_y',
+  'media_size',
+  'media_facing',
+  'media_brightness',
+];
+
+/** Ao trocar a imagem da fera pelo formulário, mantém o vídeo e os ajustes de batalha salvos. */
+async function keepCreatureMedia(id: string, nextImage: string | null): Promise<string | null> {
+  const { data } = await supabase.from('creature_catalog').select('image_url').eq('id', id).maybeSingle();
+  const cur = decodeCreatureMedia((data as { image_url?: string | null } | null)?.image_url);
+  const next = decodeCreatureMedia(nextImage);
+  if (!next.image) return null;
+  // O formulário mandou só a imagem: recoloca a mídia que já estava salva.
+  if (!next.mp4 && !next.webm && (cur.mp4 || cur.webm || cur.chroma)) return encodeCreatureMedia({ ...cur, image: next.image });
+  return nextImage;
+}
+
+/**
+ * Mídia de batalha da fera no catálogo. Grava no fragmento de `image_url` (única coluna de mídia da
+ * tabela), para valer em qualquer aparelho. Erro sobe para a tela.
+ */
 export async function saveCreatureBattleMedia(
   creatureId: string,
-  mediaData: Record<string, any>,
-): Promise<void> {
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      localStorage.setItem(`peste_fera_media_${creatureId}`, JSON.stringify(mediaData));
-    } catch (_) {}
-  }
-
+  media: {
+    image: string | null;
+    mp4: string | null;
+    webm: string | null;
+    chroma: string;
+    anchorX: number;
+    anchorY: number;
+    size: number;
+    facing: number;
+    brightness: number;
+  },
+): Promise<string | null> {
+  const image_url = encodeCreatureMedia(media);
+  const { error } = await supabase
+    .from('creature_catalog')
+    .update({ image_url, updated_at: new Date().toISOString() })
+    .eq('id', creatureId);
+  if (error) throw new Error(`Não foi possível salvar a mídia da fera: ${error.message}`);
   try {
-    await supabase.from('creature_catalog').update(mediaData).eq('id', creatureId);
-  } catch (err) {
-    console.warn('[BestiaryAPI] Falha ao atualizar banco de mídia da fera:', err);
-  }
+    localStorage.removeItem(`peste_fera_media_${creatureId}`); // agora está no banco
+  } catch (_) {}
+  return image_url;
 }

@@ -2,10 +2,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BookOpen, Film, Flame, LayoutGrid, List, Plus, Shield, Skull, Sparkles, Sword } from 'lucide-react';
 import React, { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import { MediaBattleModal, type MediaBattleTarget } from '../../battle-map/components/MediaBattleModal.tsx';
+import { applyOwnerMedia, pickTokenMedia } from '../../battle-map/api/battleApi.ts';
+import { MediaBattleModal, type MediaBattleResult } from '../../battle-map/components/MediaBattleModal.tsx';
+import { isVideoUrl, splitMediaUrl, withMediaParams } from '../../battle-map/engine/mediaParams.ts';
+import { creatureMediaFields } from '../api/creatureMedia.ts';
 import {
   archiveCreature,
   createCreature,
+  saveCreatureBattleMedia,
   sendCreatureToBattle,
   sendCreatureToTable,
   updateCreature,
@@ -39,8 +43,7 @@ export const DMBestiaryView: React.FC = memo(() => {
   const [selectedCreature, setSelectedCreature] = useState<Creature | null>(null);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [creatureToEdit, setCreatureToEdit] = useState<Creature | null>(null);
-  const [mediaTarget, setMediaTarget] = useState<MediaBattleTarget | null>(null);
-  const [mediaModalOpen, setMediaModalOpen] = useState(false);
+  const [mediaCreature, setMediaCreature] = useState<Creature | null>(null);
 
   // Filter Handlers
   const handleFilterChange = useCallback((updates: Partial<CreatureFilter>) => {
@@ -84,42 +87,34 @@ export const DMBestiaryView: React.FC = memo(() => {
   }, []);
 
   const handleOpenMedia = useCallback((creature: Creature) => {
-    const target: MediaBattleTarget = {
-      id: creature.id,
-      name: creature.name,
-      kind: 'fera',
-      image_url: creature.image_url,
-      poster_url: creature.poster_url || creature.image_url,
-      idle_mp4_url: creature.idle_mp4_url,
-      idle_webm_url: creature.idle_webm_url,
-      media_chroma: creature.media_chroma,
-      media_anchor_x: creature.media_anchor_x,
-      media_anchor_y: creature.media_anchor_y,
-      media_size: creature.media_size,
-      media_facing: creature.media_facing,
-    };
-    setMediaTarget(target);
-    setMediaModalOpen(true);
+    setMediaCreature(creature);
   }, []);
 
-  const handleMediaSaved = useCallback((updatedTarget: MediaBattleTarget) => {
-    setSelectedCreature((prev) =>
-      prev && prev.id === updatedTarget.id
-        ? {
-            ...prev,
-            idle_mp4_url: updatedTarget.idle_mp4_url,
-            idle_webm_url: updatedTarget.idle_webm_url,
-            poster_url: updatedTarget.poster_url,
-            media_chroma: updatedTarget.media_chroma as string,
-            media_anchor_x: updatedTarget.media_anchor_x,
-            media_anchor_y: updatedTarget.media_anchor_y,
-            media_size: updatedTarget.media_size,
-            media_facing: updatedTarget.media_facing,
-          }
-        : prev,
-    );
-    queryClient.invalidateQueries({ queryKey: ['creatures_catalog'] });
-  }, [queryClient]);
+  /** Grava a mídia da fera no catálogo e nas peças dela que já estão nas mesas. */
+  const handleSaveMedia = useCallback(
+    async (r: MediaBattleResult) => {
+      const creature = mediaCreature;
+      if (!creature) return;
+      const { url: main, brightness } = splitMediaUrl(r.media_url);
+      const image = r.poster_url || (isVideoUrl(main) ? null : main) || creature.image_url || null;
+      const image_url = await saveCreatureBattleMedia(creature.id, {
+        image,
+        mp4: r.idle_mp4_url,
+        webm: r.idle_webm_url,
+        chroma: r.chroma,
+        anchorX: r.anchor_x,
+        anchorY: r.anchor_y,
+        size: r.size,
+        facing: r.facing,
+        brightness,
+      });
+      await applyOwnerMedia({ beastId: creature.id }, pickTokenMedia(r as unknown as Record<string, unknown>)).catch(() => {});
+      const fields = creatureMediaFields({ ...creature, image_url });
+      setSelectedCreature((prev) => (prev && prev.id === creature.id ? { ...prev, ...fields } : prev));
+      queryClient.invalidateQueries({ queryKey: ['creatures_catalog'] });
+    },
+    [mediaCreature, queryClient],
+  );
 
   const handleCreateNew = useCallback(() => {
     setCreatureToEdit(null);
@@ -278,13 +273,30 @@ export const DMBestiaryView: React.FC = memo(() => {
       />
 
       {/* Media Battle Modal (Prompt 06 Integration) */}
-      <MediaBattleModal
-        isOpen={mediaModalOpen}
-        onClose={() => setMediaModalOpen(false)}
-        targetType="fera"
-        targetData={mediaTarget}
-        onMediaSaved={handleMediaSaved}
-      />
+      {mediaCreature && (
+        <MediaBattleModal
+          key={mediaCreature.id}
+          target={{
+            ownerId: mediaCreature.id,
+            name: mediaCreature.name,
+            kind: 'fera',
+            media_url: withMediaParams(
+              mediaCreature.idle_mp4_url || mediaCreature.idle_webm_url || mediaCreature.image_url || '',
+              { brightness: (mediaCreature as { media_brightness?: number }).media_brightness ?? 1 },
+            ),
+            poster_url: mediaCreature.poster_url || mediaCreature.image_url,
+            idle_mp4_url: mediaCreature.idle_mp4_url,
+            idle_webm_url: mediaCreature.idle_webm_url,
+            chroma: mediaCreature.media_chroma,
+            anchor_x: mediaCreature.media_anchor_x,
+            anchor_y: mediaCreature.media_anchor_y,
+            size: mediaCreature.media_size,
+            facing: mediaCreature.media_facing,
+          }}
+          onSave={handleSaveMedia}
+          onClose={() => setMediaCreature(null)}
+        />
+      )}
     </div>
   );
 });

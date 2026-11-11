@@ -26,6 +26,7 @@ import { useEffect, useState } from 'react';
 import { fetchCreatureCatalog } from '../../api/battleApi.ts';
 import type { GridMode } from '../../engine/IsometricGrid.ts';
 import { readMapSettings, writeMapSettings } from '../../engine/mapSettings.ts';
+import { BRIGHTNESS_MAX, BRIGHTNESS_MIN, splitMediaUrl, withMediaParams } from '../../engine/mediaParams.ts';
 import type { BattleMap, BattleToken, HeroVital } from '../../engine/types.ts';
 import { IconButton, RangeField, Section, TextButton, Toggle, inputClass, kindColor } from './BattleUI.tsx';
 
@@ -335,6 +336,18 @@ function SelectedTokenEditor({
           unit="px"
           onChange={(v) => onPatch({ size: v })}
         />
+
+        {token.media_url && (
+          <RangeField
+            label="Brilho"
+            value={Math.round(splitMediaUrl(token.media_url).brightness * 100)}
+            min={Math.round(BRIGHTNESS_MIN * 100)}
+            max={Math.round(BRIGHTNESS_MAX * 100)}
+            step={5}
+            unit="%"
+            onChange={(v) => onPatch({ media_url: withMediaParams(token.media_url, { brightness: v / 100 }) })}
+          />
+        )}
 
         <div className="grid grid-cols-4 gap-1.5">
           <IconButton
