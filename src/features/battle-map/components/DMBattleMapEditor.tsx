@@ -41,7 +41,8 @@ import {
 import { useCatalogLite } from '../../market/api/marketApi.ts';
 import { useChestActions, useChests } from '../../treasure/api/treasureApi.ts';
 import { type ChestTier, TIERS, rollChest } from '../../treasure/data/loot.ts';
-import { chestUrl, fxUrl, parseSpecial } from '../engine/FxSprite.ts';
+import { FX_BY_ID } from '../../../vendor/pixelfx/catalog.ts';
+import { FIRE_URL, chestUrl, fxUrl, parseSpecial } from '../engine/FxSprite.ts';
 import { MediaBattleModal, type MediaBattleTarget } from './MediaBattleModal.tsx';
 import { PiecesPanel, TablePanel, TurnPanel } from './dm/BattlePanels.tsx';
 import { EffectsPanel, type FxPlacement } from './dm/EffectsPanel.tsx';
@@ -204,7 +205,7 @@ export function DMBattleMapEditor() {
   turnRef.current = { tokenId: activeToken?.id ?? null, name: activeToken?.name ?? null, round };
   const { sendPing, sendTurn, sendFx } = useBattleSync(map?.id, {
     onPing: (p) => engineRef.current?.showPing(p),
-    onFx: (f) => engineRef.current?.playFx(f.id, f.c, f.r, f.scale),
+    onFx: (f) => engineRef.current?.playFx(f.id, f.c, f.r, f.scale, f.view),
     getTurn: () => turnRef.current,
   });
   useEffect(() => {
@@ -213,6 +214,7 @@ export function DMBattleMapEditor() {
 
   // ── Motor ──
   const cellClickRef = useRef<(cell: { c: number; r: number }) => void>(() => {});
+  const saveFireRef = useRef<(cells: Array<[number, number]>) => void>(() => {});
   const callbacks = useRef({ patchToken, patchMap, sendPing });
   callbacks.current = { patchToken, patchMap, sendPing };
 
@@ -227,6 +229,7 @@ export function DMBattleMapEditor() {
       onDropToken: (id, c, r) => callbacks.current.patchToken(id, { c, r, path: [] }),
       onPing: (p) => callbacks.current.sendPing(p),
       onCellClick: (cell) => cellClickRef.current(cell),
+      onUpdateFire: (cells) => saveFireRef.current(cells),
     });
     engineRef.current = engine;
     return () => {
@@ -580,21 +583,64 @@ export function DMBattleMapEditor() {
     [setTokensCache, selectedId, chestActions],
   );
 
+  // ── Incêndio de terreno: as casas ficam no `path` de uma peça `fogo:` ──
+  const fireToken = useMemo(() => tokens.find((t) => t.media_url?.startsWith(FIRE_URL)) ?? null, [tokens]);
+  const fireCount = Array.isArray(fireToken?.path) ? fireToken.path.length : 0;
+  const fireCreate = useRef<{ busy: boolean; pending: Array<[number, number]> | null }>({ busy: false, pending: null });
+  const saveFire = useCallback(
+    (cells: Array<[number, number]>) => {
+      if (!map) return;
+      if (fireToken) return patchToken(fireToken.id, { path: cells });
+      // Primeira pincelada: cria a peça; o que for pintado enquanto isso vai junto depois.
+      if (fireCreate.current.busy) {
+        fireCreate.current.pending = cells;
+        return;
+      }
+      fireCreate.current.busy = true;
+      void createBattleToken({
+        map_id: map.id,
+        kind: 'npc',
+        name: 'Incêndio',
+        media_url: FIRE_URL,
+        media_type: 'imagem',
+        size: 100,
+        facing: 1,
+        visible: true,
+        moves_left: 0,
+        c: 0,
+        r: 0,
+        path: cells,
+      })
+        .then((t) => {
+          const pending = fireCreate.current.pending;
+          setTokensCache((prev) => [...prev, pending ? { ...t, path: pending } : t]);
+          if (pending) queueTokenSave(t.id, { path: pending });
+        })
+        .catch(reportError)
+        .finally(() => {
+          fireCreate.current = { busy: false, pending: null };
+        });
+    },
+    [map, fireToken, patchToken, setTokensCache, queueTokenSave],
+  );
+  saveFireRef.current = saveFire;
+
   // Clique no mapa enquanto põe efeito/baú
   cellClickRef.current = (cell) => {
     if (fxPlacing && map) {
       const f = fxPlacing;
       if (f.mode === 'uma') {
-        engineRef.current?.playFx(f.id, cell.c, cell.r, f.scale);
-        sendFx({ id: f.id, c: cell.c, r: cell.r, scale: f.scale });
+        const view = f.view === 'auto' ? undefined : f.view;
+        engineRef.current?.playFx(f.id, cell.c, cell.r, f.scale, view);
+        sendFx({ id: f.id, c: cell.c, r: cell.r, scale: f.scale, view });
         return; // continua no modo: dá para soltar vários raios seguidos
       }
       setFxPlacing(null);
       void createBattleToken({
         map_id: map.id,
         kind: 'npc',
-        name: f.id,
-        media_url: fxUrl(f.id, { scale: f.scale, every: f.every }),
+        name: FX_BY_ID.get(f.id)?.nome ?? f.id,
+        media_url: fxUrl(f.id, { scale: f.scale, every: f.every, view: f.view }),
         media_type: 'imagem',
         size: 100,
         facing: 1,
@@ -675,6 +721,7 @@ export function DMBattleMapEditor() {
       if (key === 'escape') {
         setFxPlacing(null);
         setChestPlacing(null);
+        setTool((t) => (t === 'paint_fire' || t === 'erase_fire' ? 'select' : t));
         setSelectedId(null);
         engineRef.current?.clearMeasure();
         return;
@@ -919,6 +966,19 @@ export function DMBattleMapEditor() {
               )}
               {tab === 'efeitos' && (
                 <EffectsPanel
+                  gridView={readMapSettings(map.background_url).grid === 'square' ? 'reta' : 'iso'}
+                  tool={tool}
+                  onTool={(t) => {
+                    setFxPlacing(null);
+                    setChestPlacing(null);
+                    setTool(t);
+                  }}
+                  fireCount={fireCount}
+                  onClearFire={() => {
+                    if (!fireToken || !window.confirm('Apagar todo o fogo do mapa?')) return;
+                    engineRef.current?.clearFire();
+                    patchToken(fireToken.id, { path: [] });
+                  }}
                   tokens={tokens}
                   selectedId={selectedId}
                   placing={fxPlacing}

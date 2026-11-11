@@ -87,12 +87,24 @@ describe('Baús de tesouro', () => {
 
 describe('Peças especiais do mapa', () => {
   it('efeito e baú vão e voltam pelo endereço da peça', () => {
-    expect(parseSpecial(fxUrl('fire/campfire'))).toEqual({ kind: 'fx', id: 'fire/campfire', scale: 1, repeat: true, every: 0 });
+    expect(parseSpecial(fxUrl('fire/campfire'))).toEqual({ kind: 'fx', id: 'fire/campfire', scale: 1, repeat: true, every: 0, view: 'auto' });
+    expect(parseSpecial(fxUrl('arcane/rune-circle', { view: 'reta' }))).toMatchObject({ view: 'reta' });
+    expect(parseSpecial(fxUrl('arcane/rune-circle', { view: 'iso', scale: 2 }))).toMatchObject({ view: 'iso', scale: 2 });
+    expect(parseSpecial('fogo:')).toEqual({ kind: 'fogo' });
     expect(parseSpecial(fxUrl('lightning/zap-hit', { scale: 2.5, every: 4 }))).toMatchObject({ scale: 2.5, every: 4 });
     expect(parseSpecial(chestUrl('abc'))).toEqual({ kind: 'bau', chestId: 'abc', opened: false });
     expect(parseSpecial(chestUrl('abc', true))).toMatchObject({ opened: true });
     expect(parseSpecial('/batalha/fera_idle.webm')).toBeNull();
     expect(parseSpecial(null)).toBeNull();
+  });
+
+  it('efeitos de chão e o incêndio têm as duas perspectivas', () => {
+    const two = FX_LIST.filter((f) => f.persp).map((f) => f.id);
+    expect(two).toContain('fire/incendio');
+    expect(two).toContain('arcane/rune-circle');
+    expect(two).toContain('water/ripples');
+    expect(two.length).toBeGreaterThanOrEqual(16);
+    expect(FX_LIST.find((f) => f.id === 'fire/campfire')?.persp).toBeFalsy();
   });
 
   it('catálogo de efeitos em português, sem repetição', () => {

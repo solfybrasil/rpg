@@ -16,7 +16,11 @@ export const meta = {
   options: { palette: WATER, seed: 5 },
 };
 
-const D = meta.duration, R = 60, SY = 0.6, K = 2.4, EYE = 0.16;
+const D = meta.duration, R = 60, K = 2.4, EYE = 0.16;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.6;
+export const SY0 = 0.6;
+export function setSY(v) { SY = v; }
 
 // the flow at radius rho (0 eye, 1 rim), angle th: thin streaks of foam laid along a log spiral that turns once a
 // loop (a turning log spiral reads as water drawn inward), dashed and brightest where two sets of streaks cross

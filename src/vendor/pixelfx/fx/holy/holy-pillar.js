@@ -14,7 +14,12 @@ export const meta = {
   options: { palette: GOLD, shafts: 7, seed: 3 },
 };
 
-const TOP = -204, PY = -1, SUN = TOP + 38, SY = 0.24, RX = 26;
+const TOP = -204, PY = -1, SUN = TOP + 38, RX = 26;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.24;
+export const SY0 = 0.24;
+export function setSY(v) { SY = v; }
+
 // the sun opens, the fan unfolds and pours down, it holds and pulses, folds shut, the light lifts away
 const OPEN = 0.3, HIT = 0.66, FOLD = 2.05, SHUT = 2.45, LIFT = 2.75;
 const frac = (x) => x - Math.floor(x);

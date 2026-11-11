@@ -66,7 +66,7 @@ export interface CameraView {
 }
 
 export type BattleEngineMode = 'player' | 'tv' | 'dm';
-export type BattleEditorTool = 'select' | 'paint_block' | 'erase_block' | 'pan' | 'measure';
+export type BattleEditorTool = 'select' | 'paint_block' | 'erase_block' | 'paint_fire' | 'erase_fire' | 'pan' | 'measure';
 
 /** Vida atual/máxima de um herói, indexada pelo `hero_id` da peça. */
 export interface HeroVital {
@@ -106,6 +106,8 @@ export interface BattleEngineOptions {
   heroVitals?: Record<string, HeroVital>;
   /** Jogador tocou num baú do mapa (`near`: o herói está numa casa vizinha). */
   onTapChest?: (token: BattleToken, near: boolean) => void;
+  /** Mestre pintou/apagou fogo: lista completa das casas em chamas. */
+  onUpdateFire?: (cells: Array<[number, number]>) => void;
   /** Mestre tocou numa casa (usado para pôr efeitos e baús). */
   onCellClick?: (cell: CellCoord) => void;
 }

@@ -10,6 +10,7 @@ export const FxCanvas = memo(function FxCanvas({
   mode = 'loop',
   at,
   every,
+  view,
   className = '',
   title,
 }: {
@@ -17,6 +18,8 @@ export const FxCanvas = memo(function FxCanvas({
   mode?: 'loop' | 'once' | 'still' | 'toStill';
   at?: number;
   every?: number;
+  /** Perspectiva do chão do efeito (isométrica ou reta). */
+  view?: 'iso' | 'reta';
   className?: string;
   title?: string;
 }) {
@@ -27,7 +30,7 @@ export const FxCanvas = memo(function FxCanvas({
     if (!cv) return;
     const ctx = cv.getContext('2d');
     if (!ctx) return;
-    const sp = new FxSprite(id, mode, { at, every, seed: 3 });
+    const sp = new FxSprite(id, mode, { at, every, view, seed: 3 });
     let raf = 0;
     let last = performance.now();
     let gone = false;
@@ -69,7 +72,7 @@ export const FxCanvas = memo(function FxCanvas({
       cancelAnimationFrame(raf);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [id, mode, at, every]);
+  }, [id, mode, at, every, view]);
 
   return (
     <canvas

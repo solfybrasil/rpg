@@ -17,7 +17,12 @@ export const meta = {
   options: { palette: WATER, height: 100, seed: 4 },
 };
 
-const SY = 0.22, G = 820, ERUPT = 1.15, FALL = 2.6, GONE = 3.3;
+const G = 820, ERUPT = 1.15, FALL = 2.6, GONE = 3.3;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.22;
+export const SY0 = 0.22;
+export function setSY(v) { SY = v; }
+
 // small spurts while it builds, and the sputters after: [time, height]
 const SPURTS = [[0.46, 7], [0.72, 12], [0.92, 9], [1.04, 15], [GONE + 0.15, 15], [GONE + 0.55, 8]];
 

@@ -14,7 +14,11 @@ export const meta = {
   options: { palette: WATER, seed: 2 },
 };
 
-const D = meta.duration, SY = 0.26, EVERY = 0.5, LIFE = 2, RMAX = 60, PATCH = 64;
+const D = meta.duration, EVERY = 0.5, LIFE = 2, RMAX = 60, PATCH = 64;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.26;
+export const SY0 = 0.26;
+export function setSY(v) { SY = v; }
 
 // one ring at age a: its radius (fast out, slowing) and strength
 const radius = (a) => 2 + (RMAX - 2) * ease.outCubic(a / LIFE);

@@ -14,7 +14,11 @@ export const meta = {
   options: { palette: GREEN, reach: 104, seed: 6 },
 };
 
-const SY = 0.2, SEED = 0.3, ROLL = 1.0;
+const SEED = 0.3, ROLL = 1.0;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.2;
+export const SY0 = 0.2;
+export function setSY(v) { SY = v; }
 
 export function create(o) {
   const C = fit(o.palette, 8), REACH = o.reach, R = new Rng(o.seed);

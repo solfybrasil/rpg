@@ -78,7 +78,7 @@ export function findFreeCells(
   const valid = buildGridG(mode, imgW, imgH, ox, oy, tw);
   const taken = new Set<string>(Array.isArray(map.blocked) ? map.blocked : []);
   // Efeitos não ocupam a casa.
-  for (const t of tokens) if (!String(t.media_url ?? '').startsWith('fx:')) taken.add(cellKey(t.c ?? 0, t.r ?? 0));
+  for (const t of tokens) if (!/^(fx|fogo):/.test(String(t.media_url ?? ''))) taken.add(cellKey(t.c ?? 0, t.r ?? 0));
 
   if (opts.random) {
     const free = [...valid].filter((k) => !taken.has(k));

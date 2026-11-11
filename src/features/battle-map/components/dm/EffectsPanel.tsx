@@ -1,8 +1,8 @@
-import { Crosshair, Eye, EyeOff, MapPin, Search, Sparkles, Trash2, X } from 'lucide-react';
+import { Crosshair, Eraser, Eye, EyeOff, Flame, MapPin, Search, Sparkles, Trash2, X } from 'lucide-react';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { FX_BY_ID, FX_CATS, FX_LIST, type FxCat } from '../../../../vendor/pixelfx';
-import { fxUrl, parseSpecial } from '../../engine/FxSprite';
-import type { BattleToken } from '../../engine/types';
+import { type FxView, fxUrl, parseSpecial } from '../../engine/FxSprite';
+import type { BattleEditorTool, BattleToken } from '../../engine/types';
 import { FxCanvas } from '../FxCanvas';
 import { IconButton, RangeField, Section, TextButton, inputClass } from './BattleUI';
 
@@ -13,6 +13,39 @@ export interface FxPlacement {
   scale: number;
   /** Efeitos que não repetem sozinhos: pausa entre uma vez e outra (s). */
   every: number;
+  /** Perspectiva: automática (segue a grade da mesa), isométrica ou reta. */
+  view: FxView | 'auto';
+}
+
+const VIEWS: Array<[FxView | 'auto', string]> = [
+  ['auto', 'Automática'],
+  ['iso', 'Isométrica'],
+  ['reta', 'Reta'],
+];
+
+function ViewPicker({ value, onChange, gridView }: { value: FxView | 'auto'; onChange: (v: FxView | 'auto') => void; gridView: FxView }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs text-[var(--muted)]">Perspectiva</span>
+      <div className="grid grid-cols-3 gap-1">
+        {VIEWS.map(([k, t]) => (
+          <button
+            key={k}
+            type="button"
+            aria-pressed={value === k}
+            onClick={() => onChange(k)}
+            data-testid={`fx-view-${k}`}
+            title={k === 'auto' ? `Segue a grade desta mesa (${gridView === 'iso' ? 'isométrica' : 'reta'})` : undefined}
+            className={`h-7 text-[11px] border cursor-pointer ${
+              value === k ? 'border-[var(--gold)] text-[var(--gold-hi)] bg-[var(--gold)]/10' : 'border-[var(--iron)] text-[var(--muted)]'
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function EffectsPanel({
@@ -25,7 +58,19 @@ export function EffectsPanel({
   onPatch,
   onRemove,
   onCenter,
+  gridView,
+  tool,
+  onTool,
+  fireCount,
+  onClearFire,
 }: {
+  /** Perspectiva da grade desta mesa (o que "Automática" usa). */
+  gridView: FxView;
+  /** Pincel de incêndio: ferramenta atual do mapa e como trocá-la. */
+  tool: BattleEditorTool;
+  onTool: (t: BattleEditorTool) => void;
+  fireCount: number;
+  onClearFire: () => void;
   tokens: BattleToken[];
   selectedId: string | null;
   placing: FxPlacement | null;
@@ -44,7 +89,9 @@ export function EffectsPanel({
   const [mode, setMode] = useState<FxPlacement['mode']>('fixo');
   const [scale, setScale] = useState(1);
   const [every, setEvery] = useState(2);
+  const [view, setView] = useState<FxView | 'auto'>('auto');
   const info = FX_BY_ID.get(fxId);
+  const shownView = view === 'auto' ? gridView : view;
 
   const list = useMemo(
     () => (q ? FX_LIST.filter((f) => f.nome.toLowerCase().includes(q)) : FX_LIST.filter((f) => f.cat === cat)),
@@ -56,6 +103,45 @@ export function EffectsPanel({
 
   return (
     <div className="flex flex-col gap-4" data-testid="effects-panel">
+      <Section title="Incêndio">
+        <div className="flex justify-center bg-[var(--abyss)] border border-[var(--iron)] py-1">
+          <FxCanvas id="fire/incendio" mode="loop" view={gridView} className="h-[84px] w-auto" />
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <TextButton
+            variant={tool === 'paint_fire' ? 'gold' : 'stone'}
+            icon={Flame}
+            onClick={() => onTool(tool === 'paint_fire' ? 'select' : 'paint_fire')}
+            testId="btn-paint-fire"
+          >
+            {tool === 'paint_fire' ? 'Pintando…' : 'Pintar fogo'}
+          </TextButton>
+          <TextButton
+            variant={tool === 'erase_fire' ? 'gold' : 'stone'}
+            icon={Eraser}
+            onClick={() => onTool(tool === 'erase_fire' ? 'select' : 'erase_fire')}
+            testId="btn-erase-fire"
+          >
+            {tool === 'erase_fire' ? 'Apagando…' : 'Apagar fogo'}
+          </TextButton>
+        </div>
+        <p className="text-[11px] text-[var(--muted)]">
+          {tool === 'paint_fire' || tool === 'erase_fire'
+            ? 'Clique ou arraste sobre as casas do mapa. Esc para sair do pincel.'
+            : `Casas vizinhas se unem numa chama só. Segue a grade desta mesa (${gridView === 'iso' ? 'isométrica' : 'reta'}).`}
+        </p>
+        {fireCount > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[var(--text)] tabular-nums">
+              {fireCount} {fireCount === 1 ? 'casa em chamas' : 'casas em chamas'}
+            </span>
+            <TextButton variant="danger" icon={Trash2} onClick={onClearFire} testId="btn-clear-fire">
+              Apagar tudo
+            </TextButton>
+          </div>
+        )}
+      </Section>
+
       <Section title="Efeitos">
         <label className="relative block">
           <Search className="absolute left-2 top-2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
@@ -90,6 +176,11 @@ export function EffectsPanel({
                 }`}
               >
                 <span className="flex-1 truncate">{f.nome}</span>
+                {f.persp && (
+                  <span className="text-[9px] px-1 border border-[var(--iron)] text-[var(--muted)]" title="Tem versão isométrica e reta">
+                    2 vistas
+                  </span>
+                )}
                 <span className="text-[10px] text-[var(--muted)]">{f.loop ? 'contínuo' : `${f.dur}s`}</span>
               </button>
             </li>
@@ -100,7 +191,7 @@ export function EffectsPanel({
       {info && (
         <Section title={info.nome}>
           <div className="flex justify-center bg-[var(--abyss)] border border-[var(--iron)] py-2">
-            <FxCanvas key={fxId} id={fxId} mode="loop" every={info.loop ? 0 : 0.6} className="max-w-full h-[120px] w-auto" />
+            <FxCanvas key={`${fxId}-${shownView}`} id={fxId} mode="loop" every={info.loop ? 0 : 0.6} view={shownView} className="max-w-full h-[120px] w-auto" />
           </div>
           <div className="grid grid-cols-2 gap-1">
             {(
@@ -131,6 +222,10 @@ export function EffectsPanel({
               : 'Toca uma vez para todos (mesa, TV e jogadores) e some.'}
           </p>
           <RangeField label="Tamanho" value={scale} min={0.5} max={4} step={0.25} unit="×" onChange={setScale} />
+          <ViewPicker value={view} onChange={setView} gridView={gridView} />
+          {!info.persp && (
+            <p className="text-[11px] text-[var(--muted)]">Este efeito fica em pé: é igual nas duas perspectivas.</p>
+          )}
           {mode === 'fixo' && !info.loop && (
             <RangeField label="Pausa entre repetições" value={every} min={0} max={20} step={1} unit="s" onChange={setEvery} />
           )}
@@ -144,7 +239,7 @@ export function EffectsPanel({
             <TextButton
               variant="gold"
               icon={Sparkles}
-              onClick={() => onPlace({ id: fxId, mode, scale, every: info.loop ? 0 : every })}
+              onClick={() => onPlace({ id: fxId, mode, scale, every: info.loop ? 0 : every, view })}
               testId="btn-place-fx"
             >
               {mode === 'fixo' ? 'Pôr no mapa' : 'Escolher onde tocar'}
@@ -164,7 +259,12 @@ export function EffectsPanel({
               max={4}
               step={0.25}
               unit="×"
-              onChange={(v) => onPatch(sel.id, { media_url: fxUrl(selSpec.id, { scale: v, repeat: selSpec.repeat, every: selSpec.every }) })}
+              onChange={(v) => onPatch(sel.id, { media_url: fxUrl(selSpec.id, { ...selSpec, scale: v }) })}
+            />
+            <ViewPicker
+              value={selSpec.view}
+              gridView={gridView}
+              onChange={(v) => onPatch(sel.id, { media_url: fxUrl(selSpec.id, { ...selSpec, view: v }) })}
             />
             <div className="grid grid-cols-3 gap-1.5">
               <IconButton

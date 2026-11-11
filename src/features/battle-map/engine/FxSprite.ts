@@ -10,10 +10,21 @@ import {
   loadFx,
 } from '../../../vendor/pixelfx';
 
-/** Efeito/baú guardado numa peça: `fx:fire/campfire?s=1.5&r=1&e=6` ou `bau:<id>?a=1`. */
+/** Perspectiva de um efeito: isométrica (losango 2:1) ou reta (vista de cima, grade quadrada). */
+export type FxView = 'iso' | 'reta';
+
+/**
+ * O que uma peça especial guarda no endereço:
+ * `fx:fire/campfire?s=1.5&r=1&e=6&v=r` (efeito), `bau:<id>?a=1` (baú) ou `fogo:` (incêndio de terreno,
+ * com as casas em chamas no campo `path` da peça).
+ */
 export type SpecialToken =
-  | { kind: 'fx'; id: string; scale: number; repeat: boolean; every: number }
-  | { kind: 'bau'; chestId: string; opened: boolean };
+  | { kind: 'fx'; id: string; scale: number; repeat: boolean; every: number; view: FxView | 'auto' }
+  | { kind: 'bau'; chestId: string; opened: boolean }
+  | { kind: 'fogo' };
+
+export const FIRE_FX = 'fire/incendio';
+export const FIRE_URL = 'fogo:';
 
 export function parseSpecial(url: string | null | undefined): SpecialToken | null {
   if (!url) return null;
@@ -26,17 +37,21 @@ export function parseSpecial(url: string | null | undefined): SpecialToken | nul
       scale: Math.max(0.25, Math.min(8, Number(q.get('s')) || 1)),
       repeat: q.get('r') !== '0',
       every: Math.max(0, Number(q.get('e')) || 0),
+      view: q.get('v') === 'i' ? 'iso' : q.get('v') === 'r' ? 'reta' : 'auto',
     };
   }
+  if (head.startsWith('fogo:')) return { kind: 'fogo' };
   if (head.startsWith('bau:')) return { kind: 'bau', chestId: head.slice(4), opened: q.get('a') === '1' };
   return null;
 }
 
-export function fxUrl(id: string, o: { scale?: number; repeat?: boolean; every?: number } = {}) {
+export function fxUrl(id: string, o: { scale?: number; repeat?: boolean; every?: number; view?: FxView | 'auto' } = {}) {
   const q = new URLSearchParams();
   if (o.scale && o.scale !== 1) q.set('s', String(Math.round(o.scale * 100) / 100));
   if (o.repeat === false) q.set('r', '0');
   if (o.every) q.set('e', String(o.every));
+  if (o.view === 'iso') q.set('v', 'i');
+  if (o.view === 'reta') q.set('v', 'r');
   const s = q.toString();
   return `fx:${id}${s ? `?${s}` : ''}`;
 }
@@ -48,6 +63,24 @@ export function chestUrl(chestId: string, opened = false) {
 export const CHEST_FX = 'pickups/chest-open';
 /** Quadro do baú aberto: tampa aberta e moedas já recolhidas, antes do "puf". */
 const CHEST_OPEN_T = 3.1;
+
+/** Quanto tempo (ms) todas as gravações juntas podem gastar por quadro de animação. */
+const BAKE_MS = 7;
+let bakeFrame = 0;
+let bakeSpent = 0;
+/** Ainda cabe gravar mais um quadro neste quadro de animação? (`t0`: início deste lote) */
+function bakeBudget(t0: number): boolean {
+  return bakeSpent + (performance.now() - t0) < BAKE_MS;
+}
+function bakeBegin(): number {
+  const now = performance.now();
+  const frame = Math.floor(now / 16);
+  if (frame !== bakeFrame) {
+    bakeFrame = frame;
+    bakeSpent = 0;
+  }
+  return now;
+}
 
 /** Gravação de um ciclo de efeito que repete, compartilhada por todas as cópias. */
 interface Recording {
@@ -108,7 +141,15 @@ export class FxSprite {
   constructor(
     readonly id: string,
     private mode: 'loop' | 'once' | 'still' | 'toStill',
-    private opts: { every?: number; at?: number; seed?: number } = {},
+    private opts: {
+      every?: number;
+      at?: number;
+      seed?: number;
+      /** Perspectiva: redesenha o chão do efeito (os que têm chão) em losango ou de cima. */
+      view?: FxView;
+      /** Opções próprias do efeito (ex.: `mask` do incêndio). */
+      fx?: Record<string, unknown>;
+    } = {},
   ) {
     this.info = fxInfo(id);
     this.seed = opts.seed ?? Math.floor(Math.random() * 1e6);
@@ -121,6 +162,15 @@ export class FxSprite {
       .catch(() => {
         this.finished = true;
       });
+  }
+
+  get view() {
+    return this.opts.view;
+  }
+
+  /** Tem chão próprio (círculo, onda…): fica centrado na casa. */
+  get grounded() {
+    return Boolean(this.mod?.setSY);
   }
 
   /** Estático (não precisa de quadros contínuos). */
@@ -143,10 +193,28 @@ export class FxSprite {
     if (this.mod) this.start();
   }
 
+  /** Achatamento do chão pedido (ry/rx): 0.5 no isométrico, 1 visto de cima; null = o do próprio efeito. */
+  private get sy(): number | null {
+    if (!this.mod?.setSY || !this.opts.view) return null;
+    return this.opts.view === 'reta' ? 1 : 0.5;
+  }
+
+  /** Os efeitos de chão leem o achatamento de uma variável do módulo: ajusta antes de cada uso. */
+  private applyView() {
+    this.mod?.setSY?.(this.sy ?? this.mod.SY0);
+  }
+
+  private get fxOpts() {
+    return { ...(this.opts.fx ?? {}), ...(this.opts.view ? { view: this.opts.view } : {}) };
+  }
+
   private get dims() {
     const w = this.mod?.meta?.size?.[0] ?? this.info?.w ?? 128;
-    const h = this.mod?.meta?.size?.[1] ?? this.info?.h ?? 128;
-    return { w, h, ox: this.mod?.meta?.origin?.[0] ?? w / 2, oy: this.mod?.meta?.origin?.[1] ?? h / 2 };
+    const h0 = this.mod?.meta?.size?.[1] ?? this.info?.h ?? 128;
+    // Chão mais "aberto" ocupa mais altura: o quadro cresce para cima e para baixo.
+    const sy = this.sy;
+    const pad = sy == null ? 0 : Math.ceil((w / 2) * Math.max(0, sy - (this.mod.SY0 ?? sy)));
+    return { w, h: h0 + pad * 2, ox: this.mod?.meta?.origin?.[0] ?? w / 2, oy: (this.mod?.meta?.origin?.[1] ?? h0 / 2) + pad };
   }
 
   private get cycle() {
@@ -168,7 +236,7 @@ export class FxSprite {
     this.wait = 0;
 
     if (this.mode === 'loop') {
-      const key = `${this.id}|${this.opts.every ?? 0}`;
+      const key = `${this.id}|${this.opts.every ?? 0}|${this.opts.view ?? ''}|${JSON.stringify(this.opts.fx ?? {})}`;
       const px = w * h * 4;
       const fps =
         Math.round(this.cycle * REC_FPS) * px <= REC_MAX_BYTES
@@ -192,7 +260,8 @@ export class FxSprite {
       }
     }
 
-    this.inst = createFx(this.mod, { x: ox, y: oy, seed: this.recording ? 7 : this.seed });
+    this.applyView();
+    this.inst = createFx(this.mod, { x: ox, y: oy, seed: this.recording ? 7 : this.seed, ...this.fxOpts });
     if (this.mode === 'still') this.inst.update(this.opts.at ?? 0);
     this.paint();
     if (this.recording) this.capture();
@@ -247,14 +316,27 @@ export class FxSprite {
       if (this.wait <= 0) this.restart();
       return false;
     }
-    const big = this.mode === 'loop' && !this.recording && !this.rec;
-    const fps = this.recording ? (this.rec?.fps ?? REC_FPS) : big ? LIVE_BIG_FPS : (this.inst.meta.fps ?? 30);
-    const step = 1 / fps;
+    this.applyView();
+    if (this.recording) {
+      // Gravando: passos fixos e adiantados (não espera o tempo real). Vários quadros por
+      // tick enquanto couber no orçamento do quadro, para a gravação acabar em instantes.
+      const step = 1 / (this.rec?.fps ?? REC_FPS);
+      const t0 = bakeBegin();
+      do {
+        this.inst.update(step);
+        this.paint();
+        this.capture();
+      } while (this.recording && this.inst && bakeBudget(t0));
+      bakeSpent += performance.now() - t0;
+      if (this.rec?.done) this.pickFrame();
+      return true;
+    }
+    const big = this.mode === 'loop' && !this.rec;
+    const step = 1 / (big ? LIVE_BIG_FPS : (this.inst.meta.fps ?? 30));
     this.acc += dt;
     if (this.acc < step) return false;
-    // Gravando: passos fixos, para o ciclo ter exatamente n quadros.
-    const adv = this.recording ? step : this.acc;
-    this.acc = this.recording ? Math.min(this.acc - step, step) : 0;
+    const adv = this.acc;
+    this.acc = 0;
     this.inst.update(adv);
 
     if (this.mode === 'toStill' && this.inst.t >= (this.opts.at ?? 0)) {
@@ -268,19 +350,29 @@ export class FxSprite {
       }
     }
     this.paint();
-    if (this.recording) this.capture();
     return true;
+  }
+
+  /** Quadro da gravação com uma fase própria (várias casas do incêndio, um sprite só). */
+  frameAt(phase: number): HTMLCanvasElement | ImageBitmap | null {
+    const rec = this.rec;
+    if (!rec?.done) return this.wait > 0 ? null : this.canvas;
+    const total = rec.n + rec.pause;
+    const idx = (Math.floor((performance.now() / 1000) * rec.fps) + phase) % total;
+    return idx < rec.n ? rec.frames[idx] : null;
   }
 
   private restart() {
     this.seed = (this.seed * 9301 + 49297) % 233280;
     const { ox, oy } = this.dims;
-    this.inst = createFx(this.mod, { seed: this.seed, x: ox, y: oy });
+    this.applyView();
+    this.inst = createFx(this.mod, { seed: this.seed, x: ox, y: oy, ...this.fxOpts });
     this.paint();
   }
 
   private paint() {
     if (!this.inst || !this.frame || !this.img || !this.ctx) return;
+    this.applyView();
     clearFrame(this.frame);
     if (this.wait <= 0) this.inst.draw(this.frame);
     composite(this.frame, this.img.data, null);

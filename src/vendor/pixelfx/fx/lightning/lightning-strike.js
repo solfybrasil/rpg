@@ -16,7 +16,12 @@ export const meta = {
   options: { palette: VOLT, sparks: PLASMA, seed: 5 },
 };
 
-const W = 120, TOP = -224, RX = 28, SY = 0.22, REACH = 52, LEAD0 = 0.48, STEPS = 9, MEET = -30;
+const W = 120, TOP = -224, RX = 28, REACH = 52, LEAD0 = 0.48, STEPS = 9, MEET = -30;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.22;
+export const SY0 = 0.22;
+export function setSY(v) { SY = v; }
+
 const STROKES = [{ t: 0.76, k: 1 }, { t: 1.04, k: 0.8 }, { t: 1.26, k: 0.55 }];
 const FLICK = [1, 0.72, 0.3, 0.95, 0.5, 0.8, 0.22];
 const level = (a) => (a < 0 ? 0 : FLICK[Math.floor(a * 30 + 1e-4)] ?? 0);

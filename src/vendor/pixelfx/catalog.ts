@@ -16,6 +16,8 @@ export interface FxInfo {
   h: number;
   ox: number;
   oy: number;
+  /** Tem chão próprio redesenhado nas duas perspectivas (isométrica e reta). */
+  persp?: boolean;
 }
 
 export const FX_CATS: Array<{ id: FxCat; nome: string }> = [
@@ -36,6 +38,7 @@ export const FX_CATS: Array<{ id: FxCat; nome: string }> = [
 ];
 
 export const FX_LIST: FxInfo[] = [
+  { id: 'fire/incendio', nome: 'Fogo no chão (uma casa)', cat: 'fire', loop: true, dur: 2, w: 76, h: 84, ox: 38, oy: 60, persp: true },
   { id: 'fire/fire-breath', nome: 'Bafo de fogo', cat: 'fire', loop: true, dur: 1.5, w: 160, h: 116, ox: 12, oy: 72 },
   { id: 'fire/fireball', nome: 'Bola de fogo', cat: 'fire', loop: true, dur: 1.2, w: 136, h: 56, ox: 112, oy: 28 },
   { id: 'fire/brazier', nome: 'Braseiro', cat: 'fire', loop: true, dur: 3, w: 112, h: 148, ox: 56, oy: 136 },
@@ -61,18 +64,18 @@ export const FX_LIST: FxInfo[] = [
   { id: 'lightning/zap-hit', nome: 'Choque', cat: 'lightning', loop: false, dur: 0.9, w: 144, h: 112, ox: 76, oy: 56 },
   { id: 'lightning/plasma-ball', nome: 'Esfera elétrica', cat: 'lightning', loop: true, dur: 3, w: 112, h: 104, ox: 56, oy: 96 },
   { id: 'lightning/storm-cloud', nome: 'Nuvem de tempestade', cat: 'lightning', loop: true, dur: 3, w: 168, h: 176, ox: 84, oy: 164 },
-  { id: 'lightning/lightning-strike', nome: 'Raio', cat: 'lightning', loop: false, dur: 3, w: 240, h: 264, ox: 120, oy: 228 },
+  { id: 'lightning/lightning-strike', nome: 'Raio', cat: 'lightning', loop: false, dur: 3, w: 240, h: 264, ox: 120, oy: 228, persp: true },
   { id: 'arcane/star-fall', nome: 'Chuva de estrelas', cat: 'arcane', loop: false, dur: 2.5, w: 232, h: 172, ox: 124, oy: 150 },
-  { id: 'arcane/rune-circle', nome: 'Círculo de runas', cat: 'arcane', loop: true, dur: 4, w: 136, h: 100, ox: 68, oy: 80 },
-  { id: 'arcane/magic-circle-cast', nome: 'Círculo mágico', cat: 'arcane', loop: false, dur: 3.9, w: 200, h: 220, ox: 100, oy: 192 },
+  { id: 'arcane/rune-circle', nome: 'Círculo de runas', cat: 'arcane', loop: true, dur: 4, w: 136, h: 100, ox: 68, oy: 80, persp: true },
+  { id: 'arcane/magic-circle-cast', nome: 'Círculo mágico', cat: 'arcane', loop: false, dur: 3.9, w: 200, h: 220, ox: 100, oy: 192, persp: true },
   { id: 'arcane/mana-burst', nome: 'Explosão de mana', cat: 'arcane', loop: false, dur: 1.8, w: 208, h: 150, ox: 104, oy: 124 },
   { id: 'arcane/arcane-orb', nome: 'Orbe arcano', cat: 'arcane', loop: true, dur: 2.4, w: 136, h: 112, ox: 68, oy: 104 },
   { id: 'arcane/time-stop', nome: 'Parar o tempo', cat: 'arcane', loop: false, dur: 3.6, w: 196, h: 136, ox: 98, oy: 118 },
   { id: 'arcane/portal', nome: 'Portal', cat: 'arcane', loop: true, dur: 2.4, w: 152, h: 116, ox: 76, oy: 106 },
-  { id: 'holy/heal-aoe', nome: 'Anel de cura', cat: 'holy', loop: false, dur: 2.9, w: 256, h: 136, ox: 128, oy: 104 },
-  { id: 'holy/smite', nome: 'Castigo divino', cat: 'holy', loop: false, dur: 2.8, w: 224, h: 176, ox: 112, oy: 148 },
+  { id: 'holy/heal-aoe', nome: 'Anel de cura', cat: 'holy', loop: false, dur: 2.9, w: 256, h: 136, ox: 128, oy: 104, persp: true },
+  { id: 'holy/smite', nome: 'Castigo divino', cat: 'holy', loop: false, dur: 2.8, w: 224, h: 176, ox: 112, oy: 148, persp: true },
   { id: 'holy/feather-burst', nome: 'Explosão de penas', cat: 'holy', loop: false, dur: 3, w: 160, h: 160, ox: 80, oy: 60 },
-  { id: 'holy/holy-pillar', nome: 'Pilar sagrado', cat: 'holy', loop: false, dur: 3.5, w: 192, h: 232, ox: 96, oy: 204 },
+  { id: 'holy/holy-pillar', nome: 'Pilar sagrado', cat: 'holy', loop: false, dur: 3.5, w: 192, h: 232, ox: 96, oy: 204, persp: true },
   { id: 'holy/sunburst', nome: 'Raio de sol', cat: 'holy', loop: true, dur: 4, w: 128, h: 128, ox: 64, oy: 64 },
   { id: 'shadow/black-hole', nome: 'Buraco negro', cat: 'shadow', loop: true, dur: 4, w: 184, h: 132, ox: 92, oy: 124 },
   { id: 'shadow/necro-skulls', nome: 'Caveiras necromânticas', cat: 'shadow', loop: true, dur: 3, w: 136, h: 116, ox: 68, oy: 108 },
@@ -97,16 +100,16 @@ export const FX_LIST: FxInfo[] = [
   { id: 'nature/quake', nome: 'Tremor de terra', cat: 'nature', loop: false, dur: 3.1, w: 288, h: 104, ox: 144, oy: 88 },
   { id: 'water/bubbles', nome: 'Bolhas', cat: 'water', loop: true, dur: 4, w: 104, h: 112, ox: 52, oy: 104 },
   { id: 'water/waterfall', nome: 'Cachoeira', cat: 'water', loop: true, dur: 2, w: 144, h: 136, ox: 72, oy: 118 },
-  { id: 'water/splash', nome: 'Espirro de água', cat: 'water', loop: false, dur: 2.5, w: 176, h: 100, ox: 88, oy: 78 },
+  { id: 'water/splash', nome: 'Espirro de água', cat: 'water', loop: false, dur: 2.5, w: 176, h: 100, ox: 88, oy: 78, persp: true },
   { id: 'water/fountain', nome: 'Fonte', cat: 'water', loop: true, dur: 2, w: 120, h: 104, ox: 60, oy: 96 },
-  { id: 'water/drip', nome: 'Gotejar', cat: 'water', loop: true, dur: 1.6, w: 72, h: 88, ox: 36, oy: 78 },
-  { id: 'water/geyser', nome: 'Gêiser', cat: 'water', loop: false, dur: 5, w: 184, h: 168, ox: 92, oy: 146 },
+  { id: 'water/drip', nome: 'Gotejar', cat: 'water', loop: true, dur: 1.6, w: 72, h: 88, ox: 36, oy: 78, persp: true },
+  { id: 'water/geyser', nome: 'Gêiser', cat: 'water', loop: false, dur: 5, w: 184, h: 168, ox: 92, oy: 146, persp: true },
   { id: 'water/water-jet', nome: 'Jato de água', cat: 'water', loop: true, dur: 1, w: 188, h: 80, ox: 14, oy: 32 },
   { id: 'water/wave-crash', nome: 'Onda quebrando', cat: 'water', loop: false, dur: 3.2, w: 224, h: 104, ox: 112, oy: 86 },
-  { id: 'water/ripples', nome: 'Ondulações', cat: 'water', loop: true, dur: 2, w: 136, h: 52, ox: 68, oy: 30 },
-  { id: 'water/water-orb', nome: 'Orbe de água', cat: 'water', loop: true, dur: 3, w: 100, h: 108, ox: 50, oy: 100 },
-  { id: 'water/whirlpool', nome: 'Redemoinho', cat: 'water', loop: true, dur: 3, w: 128, h: 84, ox: 64, oy: 42 },
-  { id: 'water/rain-splash', nome: 'Respingos de chuva', cat: 'water', loop: true, dur: 2.4, w: 176, h: 80, ox: 88, oy: 50 },
+  { id: 'water/ripples', nome: 'Ondulações', cat: 'water', loop: true, dur: 2, w: 136, h: 52, ox: 68, oy: 30, persp: true },
+  { id: 'water/water-orb', nome: 'Orbe de água', cat: 'water', loop: true, dur: 3, w: 100, h: 108, ox: 50, oy: 100, persp: true },
+  { id: 'water/whirlpool', nome: 'Redemoinho', cat: 'water', loop: true, dur: 3, w: 128, h: 84, ox: 64, oy: 42, persp: true },
+  { id: 'water/rain-splash', nome: 'Respingos de chuva', cat: 'water', loop: true, dur: 2.4, w: 176, h: 80, ox: 88, oy: 50, persp: true },
   { id: 'weather/aurora', nome: 'Aurora', cat: 'weather', loop: true, dur: 12, w: 320, h: 180, ox: 160, oy: 180 },
   { id: 'weather/rain', nome: 'Chuva', cat: 'weather', loop: true, dur: 8, w: 320, h: 180, ox: 160, oy: 170 },
   { id: 'weather/shooting-stars', nome: 'Estrelas cadentes', cat: 'weather', loop: true, dur: 10, w: 320, h: 180, ox: 160, oy: 180 },
@@ -139,10 +142,10 @@ export const FX_LIST: FxInfo[] = [
   { id: 'impacts/ground-slam', nome: 'Impacto no chão', cat: 'impacts', loop: false, dur: 3.2, w: 288, h: 208, ox: 144, oy: 164 },
   { id: 'impacts/impact-frame', nome: 'Quadro de impacto', cat: 'impacts', loop: false, dur: 0.3, w: 320, h: 180, ox: 160, oy: 90 },
   { id: 'impacts/ricochet', nome: 'Ricochete', cat: 'impacts', loop: false, dur: 1.1, w: 232, h: 84, ox: 64, oy: 60 },
-  { id: 'spawn/summon-rise', nome: 'Invocação', cat: 'spawn', loop: false, dur: 4.6, w: 176, h: 116, ox: 88, oy: 94 },
+  { id: 'spawn/summon-rise', nome: 'Invocação', cat: 'spawn', loop: false, dur: 4.6, w: 176, h: 116, ox: 88, oy: 94, persp: true },
   { id: 'spawn/coin-drop', nome: 'Moedas caindo', cat: 'spawn', loop: false, dur: 3, w: 160, h: 88, ox: 80, oy: 78 },
   { id: 'spawn/egg-hatch', nome: 'Ovo chocando', cat: 'spawn', loop: false, dur: 3.1, w: 120, h: 96, ox: 60, oy: 84 },
-  { id: 'spawn/spawn-portal', nome: 'Portal de invocação', cat: 'spawn', loop: false, dur: 3.8, w: 208, h: 150, ox: 104, oy: 122 },
+  { id: 'spawn/spawn-portal', nome: 'Portal de invocação', cat: 'spawn', loop: false, dur: 3.8, w: 208, h: 150, ox: 104, oy: 122, persp: true },
   { id: 'spawn/poof', nome: 'Puf de fumaça', cat: 'spawn', loop: false, dur: 1.6, w: 112, h: 92, ox: 56, oy: 80 },
   { id: 'pickups/chest-open', nome: 'Baú abrindo', cat: 'pickups', loop: false, dur: 4.6, w: 176, h: 112, ox: 88, oy: 96 },
   { id: 'pickups/collect-burst', nome: 'Brilho de coleta', cat: 'pickups', loop: false, dur: 1.35, w: 112, h: 108, ox: 56, oy: 94 },

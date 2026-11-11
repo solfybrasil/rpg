@@ -19,6 +19,8 @@ export interface BattleFxEvent {
   c: number;
   r: number;
   scale?: number;
+  /** Perspectiva escolhida pelo Mestre (sem isto, acompanha a grade). */
+  view?: 'iso' | 'reta';
 }
 
 interface SyncHandlers {

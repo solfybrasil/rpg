@@ -16,7 +16,11 @@ export const meta = {
   options: { palette: WATER, height: 62, source: true, seed: 1 },
 };
 
-const D = meta.duration, SY = 0.28, G = 760, LET = 0.78, PRX = 20;
+const D = meta.duration, G = 760, LET = 0.78, PRX = 20;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.28;
+export const SY0 = 0.28;
+export function setSY(v) { SY = v; }
 
 // the stone the water gathers on: a lump of ceiling rock tapering to a dripstone point, lit on its left, a dark
 // rim, a wet streak running down to the point

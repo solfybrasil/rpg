@@ -63,7 +63,7 @@ export function PlayerBattleCanvas({ heroId: propHeroId }: PlayerBattleCanvasPro
   const { sendPing } = useBattleSync(map?.id, {
     onPing: (p) => engineRef.current?.showPing(p),
     onTurn: setTurn,
-    onFx: (f) => engineRef.current?.playFx(f.id, f.c, f.r, f.scale),
+    onFx: (f) => engineRef.current?.playFx(f.id, f.c, f.r, f.scale, f.view),
   });
   const sendPingRef = useRef(sendPing);
   sendPingRef.current = sendPing;

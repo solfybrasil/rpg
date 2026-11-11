@@ -21,7 +21,11 @@ export const meta = {
   },
 };
 
-const SOOT = hex("#2a1e2a"), IGN = 0.5, RUNES = 0.78, BREAK = 1.05, EYES = 2.3, FADE = 3.4, SY = 0.3, R0 = 36, R1 = 27;
+const SOOT = hex("#2a1e2a"), IGN = 0.5, RUNES = 0.78, BREAK = 1.05, EYES = 2.3, FADE = 3.4, R0 = 36, R1 = 27;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.3;
+export const SY0 = 0.3;
+export function setSY(v) { SY = v; }
 
 // the brute, built part by part so overlapping forms keep their own edges. Parts front to back: 1 head,
 // 2 horns, 3 arms, 4 shoulders, 5 chest, 6 waist, 7 legs, 8 tail. Each pixel keeps the frontmost part over it, that

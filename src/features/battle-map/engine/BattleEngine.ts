@@ -10,7 +10,7 @@ import {
 } from './IsometricGrid.ts';
 import { readMapSettings } from './mapSettings.ts';
 import { bfs, computeReach, reconstructCoordPath, reconstructPath } from './Pathfinding.ts';
-import { CHEST_FX, CHEST_OPEN_AT, FxSprite, type SpecialToken, parseSpecial } from './FxSprite.ts';
+import { CHEST_FX, CHEST_OPEN_AT, FIRE_FX, FxSprite, type FxView, type SpecialToken, parseSpecial } from './FxSprite.ts';
 import { VideoChromaPool } from './VideoChromaPool.ts';
 import type {
   BattleEngineOptions,
@@ -66,6 +66,18 @@ interface LocalTokenState {
   kind: string;
   /** Efeito (`fx:`) ou baú (`bau:`) guardado na peça; null para peças comuns. */
   special: SpecialToken | null;
+}
+
+/** Uma casa em chamas (incêndio de terreno). */
+interface FireCell {
+  c: number;
+  r: number;
+  x: number;
+  y: number;
+  /** Variante do efeito (quais vizinhas queimam), já contando o espelhamento. */
+  mask: number;
+  flip: boolean;
+  phase: number;
 }
 
 /** Efeito disparado uma vez (sem peça), por exemplo um raio que o Mestre solta. */
@@ -139,6 +151,13 @@ export class BattleEngine {
   /** Efeitos das peças especiais (por id da peça). */
   private fxSprites = new Map<string, FxSprite>();
   private oneShots: OneShotFx[] = [];
+  /** Incêndio de terreno: casas em chamas e um efeito gravado por variante de vizinhança. */
+  private fire = new Map<string, FireCell>();
+  private fireSprites = new Map<number, FxSprite>();
+  /** Enquanto o Mestre pinta, o que chega do banco não desfaz o que ele acabou de pintar. */
+  private fireLocalUntil = 0;
+  private isPaintingFire = false;
+  private isErasingFire = false;
 
   // Movimento do herói do jogador
   private hover: CellCoord | null = null;
@@ -496,7 +515,13 @@ export class BattleEngine {
         const p = this.cc(s.c, s.r);
         s.x = p.x;
         s.y = p.y;
+        this.syncSprite(s); // a perspectiva dos efeitos acompanha a grade
       }
+      // Incêndio: refaz posições e variantes na nova grade/perspectiva
+      const burning = [...this.fire.keys()];
+      this.fire = new Map();
+      this.fireSprites.clear();
+      this.setFire(burning);
     }
     if (grid !== this.showGrid) {
       this.showGrid = grid;
@@ -546,8 +571,14 @@ export class BattleEngine {
 
   public setTokens(tokens: BattleToken[]): void {
     const currentIds = new Set<string>();
+    const burning: string[] = [];
 
     for (const token of tokens) {
+      // Incêndio: a peça só guarda a lista de casas; não é desenhada nem selecionável.
+      if (token.media_url?.startsWith('fogo:')) {
+        for (const [c, r] of normalizePath(token.path)) burning.push(cellKey(c, r));
+        continue;
+      }
       currentIds.add(token.id);
       const targetC = token.c ?? 0;
       const targetR = token.r ?? 0;
@@ -622,8 +653,88 @@ export class BattleEngine {
       }
     }
 
+    if (performance.now() > this.fireLocalUntil && !this.isPaintingFire && !this.isErasingFire) this.setFire(burning);
+
     this.recomputeReach();
     this.invalidate();
+  }
+
+  /** Perspectiva dos efeitos nesta mesa: acompanha a grade. */
+  private get fxView(): FxView {
+    return this.mode === 'square' ? 'reta' : 'iso';
+  }
+
+  // ───────────────────────── Incêndio de terreno ─────────────────────────
+
+  /** Define as casas em chamas e recalcula como cada uma se emenda às vizinhas. */
+  private setFire(keys: Iterable<string>): void {
+    const set = new Set(keys);
+    if (set.size === this.fire.size && [...set].every((k) => this.fire.has(k))) return;
+    const iso = this.mode !== 'square';
+    const next = new Map<string, FireCell>();
+    for (const k of set) {
+      const [c, r] = k.split(',').map(Number);
+      // bits: 1 = c+1, 2 = c-1, 4 = r+1, 8 = r-1
+      let mask =
+        (set.has(cellKey(c + 1, r)) ? 1 : 0) |
+        (set.has(cellKey(c - 1, r)) ? 2 : 0) |
+        (set.has(cellKey(c, r + 1)) ? 4 : 0) |
+        (set.has(cellKey(c, r - 1)) ? 8 : 0);
+      // Metade das casas é desenhada espelhada (variedade sem gravar mais efeitos). Espelhar troca
+      // as bordas de lugar: no losango c↔r; no quadrado direita↔esquerda.
+      const h = Math.abs((c * 73856093) ^ (r * 19349663));
+      const flip = h % 2 === 1;
+      if (flip) {
+        mask = iso
+          ? ((mask & 1) << 2) | ((mask & 4) >> 2) | ((mask & 2) << 2) | ((mask & 8) >> 2)
+          : ((mask & 1) << 1) | ((mask & 2) >> 1) | (mask & 12);
+      }
+      const p = this.cc(c, r);
+      next.set(k, { c, r, x: p.x, y: p.y, mask, flip, phase: h % 37 });
+      if (!this.fireSprites.has(mask)) {
+        this.fireSprites.set(mask, new FxSprite(FIRE_FX, 'loop', { view: this.fxView, fx: { mask } }));
+      }
+    }
+    this.fire = next;
+    this.invalidate();
+  }
+
+  /** Apaga todo o fogo agora (o Mestre clicou em "Apagar tudo"). */
+  public clearFire(): void {
+    this.fireLocalUntil = 0;
+    this.setFire([]);
+  }
+
+  /** Mestre pintando/apagando fogo com o pincel. */
+  private paintFire(cell: CellCoord | null, add: boolean): void {
+    if (!cell) return;
+    const k = cellKey(cell.c, cell.r);
+    if (add === this.fire.has(k) || (add && !this.valid.has(k))) return;
+    const keys = new Set(this.fire.keys());
+    if (add) keys.add(k);
+    else keys.delete(k);
+    this.fireLocalUntil = performance.now() + 3000;
+    this.setFire(keys);
+    this.options.onUpdateFire?.([...keys].map((x) => x.split(',').map(Number) as [number, number]));
+  }
+
+  private drawFireCell(f: FireCell): void {
+    const sp = this.fireSprites.get(f.mask);
+    const src = sp?.ready ? sp.frameAt(f.phase) : null;
+    if (!sp || !src) return;
+    const { w, h, ox, oy } = sp.box;
+    const k = this.TW / 40;
+    const ctx = this.ctx;
+    ctx.imageSmoothingEnabled = false;
+    if (f.flip) {
+      ctx.translate(f.x, f.y);
+      ctx.scale(-1, 1);
+      ctx.drawImage(src, -ox * k, -oy * k, w * k, h * k);
+      ctx.setTransform(this.scale, 0, 0, this.scale, -this.view.x * this.scale, -this.view.y * this.scale);
+    } else {
+      ctx.drawImage(src, f.x - ox * k, f.y - oy * k, w * k, h * k);
+    }
+    ctx.imageSmoothingEnabled = true;
   }
 
   /** Cria/ajusta o efeito de uma peça especial (efeito em loop ou baú). */
@@ -635,9 +746,11 @@ export class BattleEngine {
       return;
     }
     const cur = this.fxSprites.get(id);
+    if (sp.kind === 'fogo') return;
     if (sp.kind === 'fx') {
-      if (!cur || cur.id !== sp.id) {
-        this.fxSprites.set(id, new FxSprite(sp.id, sp.repeat ? 'loop' : 'once', { every: sp.every }));
+      const view = sp.view === 'auto' ? this.fxView : sp.view;
+      if (!cur || cur.id !== sp.id || cur.view !== view) {
+        this.fxSprites.set(id, new FxSprite(sp.id, sp.repeat ? 'loop' : 'once', { every: sp.every, view }));
       }
       return;
     }
@@ -652,9 +765,9 @@ export class BattleEngine {
   }
 
   /** Toca um efeito uma vez numa casa (para todos que recebem o aviso). */
-  public playFx(id: string, c: number, r: number, scale = 1): void {
+  public playFx(id: string, c: number, r: number, scale = 1, view?: FxView): void {
     const p = this.cc(c, r);
-    this.oneShots.push({ sprite: new FxSprite(id, 'once'), x: p.x, y: p.y, scale });
+    this.oneShots.push({ sprite: new FxSprite(id, 'once', { view: view ?? this.fxView }), x: p.x, y: p.y, scale });
     this.invalidate();
   }
 
@@ -666,6 +779,15 @@ export class BattleEngine {
       if (!st || !this.isTokenShown(st)) continue;
       if (sp.tick(dt)) this.dirty = true;
       if (!sp.idle || !sp.ready) animating = true;
+    }
+    if (this.fire.size) {
+      const used = new Set<number>();
+      for (const f of this.fire.values()) used.add(f.mask);
+      for (const [mask, sp] of this.fireSprites) {
+        if (!used.has(mask)) continue;
+        if (sp.tick(dt)) this.dirty = true;
+      }
+      animating = true;
     }
     if (this.oneShots.length) {
       for (const o of this.oneShots) if (o.sprite.tick(dt)) this.dirty = true;
@@ -709,7 +831,8 @@ export class BattleEngine {
     }
     if (sp) {
       const scale = s.special?.kind === 'fx' ? s.special.scale : 0.9;
-      this.drawSprite(sp, s.x, s.y + yoff, scale, hidden ? 0.4 : 1);
+      // Efeitos de chão (círculos, ondas…) ficam centrados na casa; os em pé, apoiados um pouco abaixo.
+      this.drawSprite(sp, s.x, s.y + (sp.grounded ? 0 : yoff), scale, hidden ? 0.4 : 1);
     }
     // Nome só para o Mestre (efeitos) ou baú escondido
     if (isDm && (isSelected || s.special?.kind === 'bau')) {
@@ -942,8 +1065,19 @@ export class BattleEngine {
     // Peças por profundidade (y)
     const states = [...this.tokenStates.values()].filter((s) => this.isTokenShown(s));
     states.sort((a, b) => a.y - b.y);
-    for (const s of states) this.drawToken(s, now, s === hero);
-    for (const o of this.oneShots) this.drawSprite(o.sprite, o.x, o.y, o.scale);
+    if (this.fire.size === 0) {
+      for (const s of states) this.drawToken(s, now, s === hero);
+    } else {
+      // Fogo e peças na mesma ordem de profundidade: quem está à frente cobre as chamas de trás.
+      const flames = [...this.fire.values()].sort((a, b) => a.y - b.y);
+      let i = 0;
+      for (const s of states) {
+        while (i < flames.length && flames[i].y <= s.y) this.drawFireCell(flames[i++]);
+        this.drawToken(s, now, s === hero);
+      }
+      while (i < flames.length) this.drawFireCell(flames[i++]);
+    }
+    for (const o of this.oneShots) this.drawSprite(o.sprite, o.x, o.y + (o.sprite.grounded ? 0 : this.TH * 0.14), o.scale);
 
     this.drawMeasure(ctx, lw);
     this.drawPings(ctx, now);
@@ -1345,7 +1479,7 @@ export class BattleEngine {
       this.pinchDist0 = Math.hypot(p2.x - p1.x, p2.y - p1.y);
       this.pinchZ0 = this.view.z;
       this.isDragging = true;
-      this.isPaintingBlock = this.isErasingBlock = false;
+      this.isPaintingBlock = this.isErasingBlock = this.isPaintingFire = this.isErasingFire = false;
       this.draggedTokenId = null;
       return;
     }
@@ -1385,6 +1519,12 @@ export class BattleEngine {
     } else if (tool === 'erase_block') {
       this.isErasingBlock = true;
       this.paintAt(cell, false);
+    } else if (tool === 'paint_fire') {
+      this.isPaintingFire = true;
+      this.paintFire(cell, true);
+    } else if (tool === 'erase_fire') {
+      this.isErasingFire = true;
+      this.paintFire(cell, false);
     } else if (tool === 'select') {
       const hit = this.hitToken(pt, cell);
       const id = hit?.token.id ?? null;
@@ -1442,6 +1582,8 @@ export class BattleEngine {
     if (this.options.mode === 'dm') {
       if (this.isPaintingBlock) return this.paintAt(this.cellAt(e.clientX, e.clientY), true);
       if (this.isErasingBlock) return this.paintAt(this.cellAt(e.clientX, e.clientY), false);
+      if (this.isPaintingFire) return this.paintFire(this.cellAt(e.clientX, e.clientY), true);
+      if (this.isErasingFire) return this.paintFire(this.cellAt(e.clientX, e.clientY), false);
       if (this.draggedTokenId && tool === 'select') {
         if (moved) this.isDraggingToken = true;
         if (this.isDraggingToken) {
@@ -1492,6 +1634,8 @@ export class BattleEngine {
 
     this.isPaintingBlock = false;
     this.isErasingBlock = false;
+    this.isPaintingFire = false;
+    this.isErasingFire = false;
     this.isDraggingToken = false;
     this.draggedTokenId = null;
     if (this.pts.size === 0) {

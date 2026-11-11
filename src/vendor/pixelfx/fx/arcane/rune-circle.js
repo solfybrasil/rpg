@@ -4,7 +4,11 @@ import { PAL, fit, cycle, smooth, ease, sparkle, TAU, WHITE } from "../../core/i
 import { floorRing, glyph, mote } from "./_lib.js";
 
 // turning a quarter a loop keeps every part seamless: 16 ticks, a square, and 12 runes in a pattern of three
-const D = 4, R = 46, RR = 39, RI = 23, RC = 7, SY = 0.3, NR = 12;
+const D = 4, R = 46, RR = 39, RI = 23, RC = 7, NR = 12;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.3;
+export const SY0 = 0.3;
+export function setSY(v) { SY = v; }
 
 export const meta = {
   name: "Rune circle",

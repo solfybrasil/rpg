@@ -14,7 +14,12 @@ export const meta = {
   options: { palette: GOLD, stone: "#5a5066", seed: 9 },
 };
 
-const TOP = -148, SY = 0.38, MARK = 0.42, HIT = 0.54, LEN = 44;
+const TOP = -148, MARK = 0.42, HIT = 0.54, LEN = 44;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.38;
+export const SY0 = 0.38;
+export function setSY(v) { SY = v; }
+
 const OUTLINE = hex("#1a1422");
 
 // a chip of stone: lit side, shaded side, outline

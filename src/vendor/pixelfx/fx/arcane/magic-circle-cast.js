@@ -5,7 +5,12 @@ import { Particles, Lights, P, Rng, PAL, fit, band, flare, sparkle, clamp, smoot
 import { floorRing, bayer, glyph } from "./_lib.js";
 
 // the circle on the floor (plane px; the floor squashes depth by SY), the column, the beats
-const R = 40, R2 = 35, RI = 24, RR = 30, SY = 0.3, TOP = 192, W = 11, NRUNE = 8;
+const R = 40, R2 = 35, RI = 24, RR = 30, TOP = 192, W = 11, NRUNE = 8;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.3;
+export const SY0 = 0.3;
+export function setSY(v) { SY = v; }
+
 const PEN = [0.04, 0.42], PEN2 = [0.1, 0.48], INNER = [0.3, 0.6], STAR = [0.52, 0.88], RUNES = [0.9, 1.3];
 const FLASH = 1.52, BREAK = 2.42, GONE = 3.45, END = 3.9;
 

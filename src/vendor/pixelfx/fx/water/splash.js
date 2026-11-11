@@ -17,7 +17,11 @@ export const meta = {
   options: { palette: WATER, stone: true, seed: 3 },
 };
 
-const SY = 0.22, HIT = 0.16, G = 820, FINGERS = 12, JET = 0.3, TEAR = 0.11;
+const HIT = 0.16, G = 820, FINGERS = 12, JET = 0.3, TEAR = 0.11;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.22;
+export const SY0 = 0.22;
+export function setSY(v) { SY = v; }
 
 // the crown over time u after the hit: it leaps up in a few frames, flares out, then falls back
 const height = (u) => 19 * ease.outCubic(clamp(u / 0.09)) * (1 - ease.inQuad(clamp((u - 0.12) / 0.3)));

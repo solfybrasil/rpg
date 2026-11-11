@@ -17,7 +17,11 @@ export const meta = {
   options: { palette: WATER, radius: 19, seed: 2 },
 };
 
-const D = meta.duration, SY = 0.3, G = 700, DRIP = 1.5, LET = 0.5;
+const D = meta.duration, G = 700, DRIP = 1.5, LET = 0.5;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.3;
+export const SY0 = 0.3;
+export function setSY(v) { SY = v; }
 
 const center = (ph) => [0, -52 + Math.sin(ph * TAU) * 2];
 // the skin wobbles: radius at angle a, and the belly sags into a drip before each one falls

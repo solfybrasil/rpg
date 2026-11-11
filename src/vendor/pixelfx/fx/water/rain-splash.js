@@ -16,7 +16,11 @@ export const meta = {
   options: { palette: WATER, seed: 9 },
 };
 
-const D = meta.duration, SY = 0.3, RX = 92, G = 640, N = 8, LAMP = 34;
+const D = meta.duration, RX = 92, G = 640, N = 8, LAMP = 34;
+// Achatamento do chão (ry/rx). Ajustável: o app redesenha o efeito em perspectiva isométrica (0.5) ou reta (1).
+let SY = 0.3;
+export const SY0 = 0.3;
+export function setSY(v) { SY = v; }
 
 // the big drops: where each lands on the puddle (x across, z into it), when, how tall its crown stands
 function drops(S) {
