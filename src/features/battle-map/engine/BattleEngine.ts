@@ -851,13 +851,13 @@ export class BattleEngine {
     }
     // Nome só para o Mestre (efeitos) ou baú escondido
     if (isDm && (isSelected || s.special?.kind === 'bau')) {
-      const fs = Math.max(9 / this.scale, this.TH * 0.24);
-      ctx.font = `700 ${fs}px Cinzel, Georgia, serif`;
+      const fs = Math.max(7 / this.scale, Math.round(this.TH * 0.13));
+      ctx.font = `600 ${fs}px Cinzel, Georgia, serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';
       ctx.lineJoin = 'round';
       ctx.strokeStyle = 'rgba(7, 6, 5, 0.9)';
-      ctx.lineWidth = 3 / this.scale;
+      ctx.lineWidth = Math.max(1, 1.8 / this.scale);
       const label = hidden ? `${s.token.name} (oculto)` : s.token.name;
       const y = s.y - this.TH * 1.6;
       ctx.strokeText(label, s.x, y);
@@ -1337,34 +1337,37 @@ export class BattleEngine {
       ctx.fillText((s.token.name || '?').substring(0, 2).toUpperCase(), s.x, s.y - s.size * 0.3 + 1);
     }
 
-    // Barra de vida (heróis via heroVitals, demais via hp da peça)
-    const vital = s.token.hero_id ? this.options.heroVitals?.[s.token.hero_id] : undefined;
-    const hp = vital?.hp ?? s.token.hp ?? undefined;
-    const maxHp = vital?.maxHp ?? s.token.max_hp ?? hp;
+    // Barra de vida (apenas para criaturas/feras e NPCs; jogadores não exibem vida sobre a peça)
+    const isHero = s.kind === 'heroi' || Boolean(s.token.hero_id);
+    const vital = !isHero && s.token.hero_id ? this.options.heroVitals?.[s.token.hero_id] : undefined;
+    const hp = !isHero ? (vital?.hp ?? s.token.hp ?? undefined) : undefined;
+    const maxHp = !isHero ? (vital?.maxHp ?? s.token.max_hp ?? hp) : undefined;
+    const hasHpBar = !isHero && hp != null && maxHp != null && maxHp > 0;
     const top = s.y - s.size * 1.02;
-    if (hp != null && maxHp && maxHp > 0) {
-      const bw = this.TW * 0.9;
-      const bh = Math.max(3 / this.scale, this.TH * 0.12);
+
+    if (hasHpBar) {
+      const bw = this.TW * 0.75;
+      const bh = Math.max(3 / this.scale, this.TH * 0.1);
       const bx = s.x - bw / 2;
       ctx.fillStyle = 'rgba(7, 6, 5, 0.8)';
       ctx.fillRect(bx, top, bw, bh);
-      const pct = Math.max(0, Math.min(1, hp / maxHp));
-      ctx.fillStyle = pct <= 0.3 ? C.bloodHi : s.kind === 'heroi' ? C.moss : C.blood;
+      const pct = Math.max(0, Math.min(1, hp! / maxHp!));
+      ctx.fillStyle = pct <= 0.3 ? C.bloodHi : C.blood;
       ctx.fillRect(bx, top, bw * pct, bh);
       ctx.strokeStyle = C.goldA(0.5);
       ctx.lineWidth = 1 / this.scale;
       ctx.strokeRect(bx, top, bw, bh);
     }
 
-    // Nome
-    const fs = Math.max(10 / this.scale, this.TH * 0.3);
-    const labelY = top - fs * 0.5;
-    ctx.font = `700 ${fs}px Cinzel, Georgia, serif`;
+    // Nome (bem pequeno para não poluir o mapa)
+    const fs = Math.max(7 / this.scale, Math.round(this.TH * 0.13));
+    const labelY = hasHpBar ? top - fs * 0.6 : top;
+    ctx.font = `600 ${fs}px Cinzel, Georgia, serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = 'rgba(7, 6, 5, 0.9)';
-    ctx.lineWidth = 3 / this.scale;
+    ctx.lineWidth = Math.max(1, 1.8 / this.scale);
     const name = hidden ? `${s.token.name} (oculto)` : s.token.name;
     ctx.strokeText(name, s.x, labelY);
     ctx.fillStyle = isActive ? C.goldHi : C.text;
